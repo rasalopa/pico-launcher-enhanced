@@ -114,6 +114,14 @@ void App::VCountIrq()
 
 void App::Run()
 {
+    // The hardware OAM still holds whatever the firmware or the previous
+    // process left in it, and the splash turns the screens on before the
+    // first VBlank copy of our (all-disabled) shadow tables. Without this,
+    // a chunk of stale sprite flashes at the top-left during boot and on
+    // slow theme loads (likely one half of upstream #82).
+    _mainOam.Apply(GFX_OAM_MAIN);
+    _subOam.Apply(GFX_OAM_SUB);
+
     InitVramMapping();
     DisplaySplashScreen();
     gx_init();
