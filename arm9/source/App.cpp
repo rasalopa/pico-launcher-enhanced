@@ -456,7 +456,19 @@ void App::HandleNavigateTrigger()
         _focusListAfterFolderLoad = true;
     }
     if (!_romBrowserBottomScreenView->IsAppBarFocused(_focusManager))
+    {
         _focusManager.Unfocus();
+    }
+    else
+    {
+        // The app bar already holds focus, so the clear above is skipped and the
+        // handoff below would never fire: FolderLoadDone only takes over when
+        // focus is null. That is how stepping out of an EMPTY folder used to
+        // strand the highlight on the back button - an empty listing has no row
+        // to focus, so Focus() had fallen back to the app bar on the way in.
+        // Flag it instead of nulling here, for the same reason as the panels.
+        _focusListAfterFolderLoad = true;
+    }
 }
 
 void App::HandleFolderLoadDoneTrigger()
@@ -475,9 +487,12 @@ void App::HandleFolderLoadDoneTrigger()
     _romBrowserTopScreenView->InitVram(_subVramContext);
     _romBrowserBottomScreenView->RomBrowserViewModelInvalidated(_mainVramContext);
     // Normally focus is null here (the navigated-from list row was destroyed) and
-    // this puts it on the newly loaded folder. After a panel navigation focus is
-    // still on the app-bar button, so the flag makes us move it onto the game too
-    // - a straight app-bar -> list handoff, never through null.
+    // this puts it on the newly loaded folder. When the navigation started with
+    // the app bar focused - from a panel, from the back arrow, or from a folder
+    // whose listing was empty - focus is still on that button, so the flag makes
+    // us move it onto the entry instead: a straight app-bar -> list handoff,
+    // never through null. Focus() falls back to the app bar on its own if the
+    // folder that just loaded has nothing to put the highlight on.
     if (_focusListAfterFolderLoad || !_focusManager.GetCurrentFocus())
         _romBrowserBottomScreenView->Focus(_focusManager);
     _focusListAfterFolderLoad = false;
