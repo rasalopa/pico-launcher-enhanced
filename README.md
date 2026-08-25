@@ -8,7 +8,7 @@ A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by 
 
 ## Features
 
-Everything upstream Pico Launcher offers (display modes, [covers](docs/Covers.md), [custom icons & banners](docs/Customization.md), [themes](docs/Themes.md), [cheats](docs/Cheats.md), [file associations](docs/FileAssociations.md) — see [Usage](docs/Usage.md)), plus:
+Everything upstream Pico Launcher offers (display modes, [custom icons, banners & covers](docs/Customization.md) for games *and folders*, [themes](docs/Themes.md), [cheats](docs/Cheats.md), [file associations](docs/FileAssociations.md) — see [Usage](docs/Usage.md)), plus:
 
 - **Game count** of the current folder on the top screen
 - **Random game launch** with the SELECT button
