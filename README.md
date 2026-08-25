@@ -1,5 +1,9 @@
 # Pico Launcher Enhanced
 
+[![Latest release](https://img.shields.io/github/v/release/rasalopa/pico-launcher-enhanced?display_name=tag&sort=semver&label=release)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/rasalopa/pico-launcher-enhanced/total?label=downloads)](../../releases)
+[![License](https://img.shields.io/github/license/rasalopa/pico-launcher-enhanced)](LICENSE.txt)
+
 A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by the LNH team, adding library features inspired by modern consoles — favorites, play stats, recently played, and more — while staying fully compatible with stock SD cards: it is a drop-in `_picoboot.nds` replacement, and all upstream features remain intact.
 
 ![Horizontal display mode with custom theme](docs/images/HorizontalCustom.png)
@@ -10,17 +14,22 @@ A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by 
 
 Everything upstream Pico Launcher offers (display modes, [custom icons, banners & covers](docs/Customization.md) for games *and folders*, [themes](docs/Themes.md), [cheats](docs/Cheats.md), [file associations](docs/FileAssociations.md) — see [Usage](docs/Usage.md)), plus:
 
+- **Jump by initial** — press L or R to jump to the next initial letter in a folder sorted by name; a chip shows the letter you landed on
 - **Game count** of the current folder on the top screen
 - **Random game launch** with the SELECT button
 - **Favorites** — press X on a game; a heart shows on the top screen
 - **Completed games** — hold X on a game; a green check shows on the top screen
 - **Favorites and completed filters** — heart and check buttons in the app bar, tinted while active
+- **Favorites panel** — hold the heart button to see every favorite across all folders; tapping one jumps to it
 - **Recently played panel** — clock button in the app bar; tapping an entry jumps to the game
 - **Statistics panel** — press START for totals and most-played games
 - **Per-game launch tracking** — launch count and last-played date on the top screen
 - **Approximate play time** — per game and in the statistics panel
 - **Game deletion** — trash button with confirmation; removes the ROM and its save
 - **Brightness control** — set the DS Lite's backlight level from display settings
+- **Hide empty folders** — optional; folders with nothing playable inside are left out of the listing
+- **Cheats list that reads better** — the list wraps around at both ends, and X turns every cheat off at once
+- **Top strip readable on any theme** — the game count and launch info sit on their own backdrop, and a [custom theme](docs/Themes.md) can move or hide them
 - **Per-folder background music** — drop a `bgm.bcstm` inside a folder
 - **Time-of-day theme backgrounds** — optional night variants shown from 20:00 to 6:59
 - **Per-file game data** — favorites, completed marks and play stats belong to the ROM file, so two copies of a game never share them
