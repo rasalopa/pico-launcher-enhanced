@@ -122,10 +122,15 @@ def main() -> None:
             dst = os.path.join(covers_user, f + ".bmp")
         try:
             url = RAW + urllib.parse.quote(match)
-            with urllib.request.urlopen(url, timeout=60) as r, tempfile.NamedTemporaryFile(suffix=".png") as tmp:
-                tmp.write(r.read())
-                tmp.flush()
-                convert(tmp.name, dst)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Windows refuses a second handle on a NamedTemporaryFile while
+                # the first is still open, and convert() opens it by name - so
+                # the download goes to a plain file inside a temporary directory
+                # that is closed before converting. Reported as issue #12.
+                png = os.path.join(tmpdir, "cover.png")
+                with urllib.request.urlopen(url, timeout=60) as r, open(png, "wb") as fh:
+                    fh.write(r.read())
+                convert(png, dst)
             ok.append((f, code, match))
         except Exception as e:  # noqa: BLE001 — report and keep going with the rest
             fail.append((f, code, str(e)))
