@@ -27,7 +27,12 @@ def convert(src_path: str, dst_path: str) -> None:
     canvas.paste(art, (0, 0))
 
     quant = canvas.quantize(colors=256, method=Image.MEDIANCUT, dither=Image.FLOYDSTEINBERG)
-    pal = quant.getpalette()[: 256 * 3]
+    # An image with few colours quantizes to fewer than 256 entries, and the
+    # packing below indexes all 256 unconditionally - a flat boxart died with
+    # "list index out of range", which both fetch scripts then reported as if
+    # the download had failed.
+    pal = (quant.getpalette() or [])[: 256 * 3]
+    pal += [0] * (256 * 3 - len(pal))
     pixels = quant.tobytes()
 
     pal_bytes = b"".join(

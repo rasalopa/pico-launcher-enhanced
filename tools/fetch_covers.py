@@ -15,6 +15,7 @@ import difflib
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import unicodedata
@@ -82,17 +83,49 @@ def pick(title: str, by_norm: dict[str, list[str]]) -> str | None:
 
 
 def main() -> None:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    # --sd takes a value, so it cannot be filtered by prefix: doing that left
+    # the path itself in the system list and the next check rejected it, which
+    # made the documented option always print the usage and exit. Since the
+    # default only exists on a mac, that made this script unusable anywhere
+    # else - a worse bug than the one reported in issue #12, found reviewing it.
+    argv = sys.argv[1:]
     sd = "/Volumes/DSPICO"
-    if "--sd" in sys.argv:
-        sd = sys.argv[sys.argv.index("--sd") + 1]
-    dry = "--dry-run" in sys.argv
+    dry = "--dry-run" in argv
+    args: list[str] = []
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--sd":
+            if i + 1 >= len(argv):
+                sys.exit("--sd needs a path after it")
+            sd = argv[i + 1]
+            i += 2
+            continue
+        if argv[i].startswith("--"):
+            # Not swallowed: a mistyped --dry-run would otherwise drop through
+            # and install for real, writing files the user asked not to write.
+            if argv[i] != "--dry-run":
+                sys.exit(f"unknown option {argv[i]}")
+        else:
+            args.append(argv[i])
+        i += 1
     if not args or any(a not in SYSTEMS for a in args):
         sys.exit(__doc__ + "\nSystems: " + ", ".join(SYSTEMS))
 
+    # Checked before anything is created: with --sd working, a typo used to be
+    # silently materialized on the wrong volume and the run still said it
+    # succeeded. And nothing is created at all under --dry-run.
+    # A bare drive letter on windows passes isdir but joins without a
+    # separator, so "E:" plus "_pico" resolves against whatever directory that
+    # drive is sitting in rather than its root.
+    sd = os.path.abspath(sd)
+    if not os.path.isdir(sd):
+        sys.exit(f"No card at {sd}")
+
     covers_user = os.path.join(sd, "_pico", "covers", "user")
-    os.makedirs(covers_user, exist_ok=True)
-    have = {f for f in os.listdir(covers_user) if not f.startswith("._")}
+    if not dry:
+        os.makedirs(covers_user, exist_ok=True)
+    have = ({f for f in os.listdir(covers_user) if not f.startswith("._")}
+            if os.path.isdir(covers_user) else set())
 
     ok, fail = [], []
     for system in args:
@@ -126,15 +159,20 @@ def main() -> None:
                 continue
             try:
                 url = raw_base + urllib.parse.quote(match)
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    # Windows refuses a second handle on a NamedTemporaryFile while
-                    # the first is still open, and convert() opens it by name - so
-                    # the download goes to a plain file inside a temporary directory
-                    # that is closed before converting. Reported as issue #12.
+                # A temporary directory rather than a NamedTemporaryFile:
+                # windows holds that one with an exclusive handle, and convert()
+                # opens the file by name (issue #12). Torn down with
+                # ignore_errors because a cleanup that fails - an indexer still
+                # holding the png, again windows - must not turn a cover that is
+                # already on the card into a reported failure.
+                tmpdir = tempfile.mkdtemp()
+                try:
                     png = os.path.join(tmpdir, "cover.png")
                     with urllib.request.urlopen(url, timeout=60) as r, open(png, "wb") as fh:
                         fh.write(r.read())
                     convert(png, os.path.join(covers_user, f + ".bmp"))
+                finally:
+                    shutil.rmtree(tmpdir, ignore_errors=True)
                 ok.append((system, f, match))
             except Exception as e:  # noqa: BLE001 — report and keep going
                 fail.append((system, f, str(e)))
