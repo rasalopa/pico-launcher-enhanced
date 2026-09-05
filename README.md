@@ -16,7 +16,7 @@ Everything upstream Pico Launcher offers (display modes, [custom icons, banners 
 
 - **Jump by initial** — press L or R to jump to the next initial letter in a folder sorted by name; a chip shows the letter you landed on
 - **Game count** of the current folder on the top screen
-- **Random game launch** with the SELECT button
+- **Random game launch** with SELECT + A
 - **Favorites** — press X on a game; a heart shows on the top screen
 - **Completed games** — hold X on a game; a green check shows on the top screen
 - **Favorites and completed filters** — heart and check buttons in the app bar, tinted while active

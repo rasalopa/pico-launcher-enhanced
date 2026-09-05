@@ -43,8 +43,8 @@ bool RomBrowserItemInputHandler::HandleInput(const InputProvider& inputProvider,
             _xHeldFrames = 0; // consumed; the release must not toggle favorite
             return true;
         }
-        // still deciding: the frame must keep bubbling so B/SELECT/START
-        // stay responsive under an X that may end up being a short press
+        // still deciding: the frame must keep bubbling so B/START stay
+        // responsive under an X that may end up being a short press
         return false;
     }
     else if (_xHeldFrames > 0 && inputProvider.Released(InputKey::X))

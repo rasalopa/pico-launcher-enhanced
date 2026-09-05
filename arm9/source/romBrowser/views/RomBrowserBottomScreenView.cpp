@@ -112,11 +112,6 @@ bool RomBrowserBottomScreenView::HandleInput(const InputProvider& inputProvider,
         _viewModel->NavigateUp();
         return true;
     }
-    if (inputProvider.Triggered(InputKey::Select))
-    {
-        _viewModel->LaunchRandomGame();
-        return true;
-    }
     if (inputProvider.Triggered(InputKey::Start))
     {
         _viewModel->ShowStatistics();

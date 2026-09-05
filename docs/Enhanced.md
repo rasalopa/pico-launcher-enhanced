@@ -9,7 +9,7 @@ These controls are available in the rom browser, on top of the standard ones (se
 | L / R | Jump to the previous or next initial (see [Jumping by initial](#jumping-by-initial)) |
 | X (short press) | Toggle favorite for the highlighted game |
 | X (hold ~half a second) | Toggle completed for the highlighted game |
-| SELECT | Launch a random game from the current folder |
+| SELECT + A | Launch a random game from the current folder |
 | START | Open the statistics panel |
 | Heart button (app bar) | Toggle the favorites filter (the heart turns red while active) |
 | Heart button (hold ~half a second) | Open the favorites panel: all favorites from every folder |
@@ -58,7 +58,7 @@ The heart button in the app bar filters the browser down to favorites; the heart
 Marks, play counts and play time all belong to the ROM file, so what the top screen shows and what the filter matches are always the same thing (see [GameData.md](GameData.md)). Two copies of a game are marked separately, and a ROM hack no longer inherits its base game's mark. Renaming a ROM outside the launcher starts it over, and games whose file name is longer than 96 bytes cannot be marked at all (accented characters count double).
 
 ## Random game
-Press SELECT to launch a random game from the folder you are currently viewing. With the favorites filter active, it picks a random favorite.
+Hold SELECT and press A to launch a random game from the folder you are currently viewing. With the favorites filter active, it picks a random favorite. SELECT on its own does nothing, so the DSi brightness shortcut (SELECT + volume) stays free.
 
 ## Launch tracking and play time
 Every launch is recorded automatically. The top-right of the top screen shows the highlighted game's launch count together with its total play time (`3x 2h05`), or with the date it was last played (`3x 16/07`, day/month) when no play time has been recorded yet.

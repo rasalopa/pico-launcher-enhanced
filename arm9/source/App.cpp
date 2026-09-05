@@ -666,7 +666,21 @@ void App::RestoreVramState(const VramState& vramState)
 
 void App::HandleInput()
 {
-    _focusManager.Update(_inputRepeater);
+    if (!_dialogPresenter.IsBottomSheetVisible() &&
+        _inputRepeater.Triggered(InputKey::A) && _inputRepeater.Current(InputKey::Select))
+    {
+        // SELECT + A launches a random game. The chord is claimed here, before
+        // the focused view sees the frame, because dispatch is leaf first and
+        // the highlighted game or app bar button would take the A press
+        // otherwise. It is a chord rather than a bare SELECT because on the
+        // DSi SELECT + volume is the brightness shortcut, so SELECT on its own
+        // must not launch anything.
+        _romBrowserBottomScreenViewModel.LaunchRandomGame();
+    }
+    else
+    {
+        _focusManager.Update(_inputRepeater);
+    }
     Point touchPoint;
     if (_inputRepeater.Triggered(InputKey::Touch) &&
         _inputRepeater.GetCurrentTouchPoint(touchPoint))

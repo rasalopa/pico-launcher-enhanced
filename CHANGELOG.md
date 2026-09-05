@@ -15,6 +15,11 @@
 - The cheats sheet shows `X: all off` next to the cheat description while cheats are
   listed. Disabling every cheat with X was already supported, it was just invisible.
 
+#### Changed
+- Launching a random game is now SELECT + A instead of SELECT on its own. On the DSi,
+  SELECT + volume adjusts the brightness, so a bare SELECT kept launching games by
+  accident while browsing (fixes #11).
+
 ### [enhanced-v1.5.0]
 
 #### Fixed
