@@ -10,13 +10,13 @@ These controls are available in the rom browser, on top of the standard ones (se
 | X (short press) | Toggle favorite for the highlighted game |
 | X (hold ~half a second) | Toggle completed for the highlighted game |
 | SELECT + A | Launch a random game from the current folder |
-| START | Open the statistics panel |
 | Heart button (app bar) | Toggle the favorites filter (the heart turns red while active) |
 | Heart button (hold ~half a second) | Open the favorites panel: all favorites from every folder |
 | Check button (app bar) | Toggle the completed filter (the check turns green while active) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 | Clock button (app bar) | Open the recently played panel |
+| Clock button (hold ~half a second) | Open the statistics panel |
 | Trash button (app bar) | Delete the highlighted game (X confirms, A or B cancels) |
 
 ## Jumping by initial
@@ -72,7 +72,7 @@ Play time is approximate: a session starts when a game is launched and ends the 
 The clock button in the app bar opens a list of up to 20 recently played games, most recent first, each with the date and time it was last played. Tap an entry (or highlight it and press A) to jump to that game's folder with the game preselected. Press B to close the panel.
 
 ## Statistics
-Press START to open a summary panel: how many games you have played, favorited and completed, total launches and total play time, your top 3 most launched games, and the last game you played. Press B or START to close it.
+Hold the clock button in the app bar for about half a second to open a summary panel: how many games you have played, favorited and completed, total launches and total play time, your top 3 most launched games, and the last game you played. Press B to close it. A short tap on the clock opens the recently played panel instead.
 
 ## Deleting games
 The trash button in the app bar deletes the highlighted game. A confirmation sheet opens first: press **X** to confirm, or A or B to cancel. Only games can be deleted, not folders.

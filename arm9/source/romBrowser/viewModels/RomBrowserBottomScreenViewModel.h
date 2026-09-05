@@ -48,11 +48,6 @@ public:
         _romBrowserController->LaunchRandomGame();
     }
 
-    void ShowStatistics()
-    {
-        _romBrowserController->ShowStatistics();
-    }
-
 private:
     IRomBrowserController* _romBrowserController;
     RomBrowserAppBarViewModel _romBrowserAppBarViewModel;

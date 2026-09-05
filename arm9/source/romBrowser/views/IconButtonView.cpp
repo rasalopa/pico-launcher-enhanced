@@ -37,8 +37,8 @@ bool IconButtonView::HandleInput(const InputProvider& inputProvider, FocusManage
             _longAction(this, _actionArg);
             return true;
         }
-        // still deciding: bubble so B/START stay responsive under a hold
-        // that may yet turn out to be a short press
+        // still deciding: bubble so B stays responsive under a hold that
+        // may yet turn out to be a short press
         return View::HandleInput(inputProvider, focusManager);
     }
     else if (_heldFrames > 0 && inputProvider.Released(InputKey::A))

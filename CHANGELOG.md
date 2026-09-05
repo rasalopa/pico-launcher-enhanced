@@ -19,6 +19,9 @@
 - Launching a random game is now SELECT + A instead of SELECT on its own. On the DSi,
   SELECT + volume adjusts the brightness, so a bare SELECT kept launching games by
   accident while browsing (fixes #11).
+- The statistics panel moved from START to the clock button: hold it for about half a
+  second, the same way holding the heart opens the favorites panel. A short tap still opens
+  the recently played list.
 
 ### [enhanced-v1.5.0]
 

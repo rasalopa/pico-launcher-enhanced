@@ -33,6 +33,12 @@ RomBrowserAppBarView::RomBrowserAppBarView(
     {
         ((RomBrowserAppBarViewModel*)arg)->ShowRecents();
     }, _viewModel);
+    // holding the clock opens the statistics panel, the same gesture the
+    // heart uses for the favorites panel
+    _appBarView->SetButtonLongAction(APP_BAR_BUTTON_RECENT, [] (IconButtonView* sender, void* arg)
+    {
+        ((RomBrowserAppBarViewModel*)arg)->ShowStatistics();
+    });
     _appBarView->SetButtonAction(APP_BAR_BUTTON_FAVORITE, [] (IconButtonView* sender, void* arg)
     {
         ((RomBrowserAppBarViewModel*)arg)->ToggleFavoritesFilter();

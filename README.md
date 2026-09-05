@@ -22,7 +22,7 @@ Everything upstream Pico Launcher offers (display modes, [custom icons, banners 
 - **Favorites and completed filters** — heart and check buttons in the app bar, tinted while active
 - **Favorites panel** — hold the heart button to see every favorite across all folders; tapping one jumps to it
 - **Recently played panel** — clock button in the app bar; tapping an entry jumps to the game
-- **Statistics panel** — press START for totals and most-played games
+- **Statistics panel** — hold the clock button for totals and most-played games
 - **Per-game launch tracking** — launch count and last-played date on the top screen
 - **Approximate play time** — per game and in the statistics panel
 - **Game deletion** — trash button with confirmation; removes the ROM and its save

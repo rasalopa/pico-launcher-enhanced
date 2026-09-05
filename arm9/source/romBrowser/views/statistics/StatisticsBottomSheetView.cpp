@@ -127,7 +127,7 @@ void StatisticsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 
 bool StatisticsBottomSheetView::HandleInput(const InputProvider& inputProvider, FocusManager& focusManager)
 {
-    if (inputProvider.Triggered(InputKey::B) || inputProvider.Triggered(InputKey::Start))
+    if (inputProvider.Triggered(InputKey::B))
     {
         _viewModel->Close();
         return true;
@@ -139,7 +139,7 @@ void StatisticsBottomSheetView::Focus(FocusManager& focusManager)
 {
     // focus a CHILD of the sheet: FocusManager::Update skips parent-less
     // focused views, so focusing the sheet itself would never deliver keys.
-    // Input bubbles from the label up to this sheet's HandleInput (B/START).
+    // Input bubbles from the label up to this sheet's HandleInput (B).
     focusManager.Focus(_titleLabel->SharedFromThis());
 }
 
