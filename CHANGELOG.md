@@ -14,6 +14,9 @@
   press up from the top. A sub-category's back button still comes first.
 - The cheats sheet shows `X: all off` next to the cheat description while cheats are
   listed. Disabling every cheat with X was already supported, it was just invisible.
+- Hold START for about half a second to save a screenshot of both screens to
+  `/_pico/screenshots`, as two BMP files that share a number. A short message on the lower
+  screen confirms the write, or tells you it could not save. Sent upstream as PR #85.
 
 #### Changed
 - Launching a random game is now SELECT + A instead of SELECT on its own. On the DSi,

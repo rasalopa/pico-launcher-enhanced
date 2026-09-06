@@ -10,6 +10,7 @@ These controls are available in the rom browser, on top of the standard ones (se
 | X (short press) | Toggle favorite for the highlighted game |
 | X (hold ~half a second) | Toggle completed for the highlighted game |
 | SELECT + A | Launch a random game from the current folder |
+| START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
 | Heart button (app bar) | Toggle the favorites filter (the heart turns red while active) |
 | Heart button (hold ~half a second) | Open the favorites panel: all favorites from every folder |
 | Check button (app bar) | Toggle the completed filter (the check turns green while active) |
@@ -73,6 +74,19 @@ The clock button in the app bar opens a list of up to 20 recently played games, 
 
 ## Statistics
 Hold the clock button in the app bar for about half a second to open a summary panel: how many games you have played, favorited and completed, total launches and total play time, your top 3 most launched games, and the last game you played. Press B to close it. A short tap on the clock opens the recently played panel instead.
+
+## Screenshots
+Hold START for about half a second to save both screens to `/_pico/screenshots` on your SD card, as BMP files.
+
+Each hold writes two files that share a number: `shotNNN_bot.bmp` for the bottom screen and `shotNNN_top.bmp` for the top one. The number is the lowest one neither screen has taken yet, so a pair is always the two halves of one press. Up to 1000 pairs fit in the folder.
+
+A short message appears at the bottom of the lower screen once the files are on the card. It confirms the write rather than the button press, so if something goes wrong (a full folder, a card that cannot be written to) it tells you it could not save instead; the reason only goes to the log. Holding START again while the previous pair is still being written shows `Still saving the last one`; wait a moment and try again.
+
+A few things worth knowing:
+- The two screens are recorded a couple of frames apart. The console can only capture one screen at a time, so during a fast animation the two halves of a pair will not match exactly.
+- The screen flashes while the picture is taken. That is the capture, not a fault.
+- The shortcut works in the file browser and in every panel that opens over it (display settings, cheats, favorites, recently played, statistics, delete confirmation). It does not work in the theme selector, which is a separate screen with its own input handling.
+- The hold has to begin while the launcher is running, so a button that was already held down when it started is not read as a request.
 
 ## Deleting games
 The trash button in the app bar deletes the highlighted game. A confirmation sheet opens first: press **X** to confirm, or A or B to cancel. Only games can be deleted, not folders.
