@@ -23,10 +23,11 @@ python3 tools/img2cover.py input.png output.bmp
 ```
 
 ## fetch_covers_gba.py
-Downloads missing GBA covers from libretro-thumbnails: reads the game code from each `.gba` in `<SD>/Games/gba`, finds the matching boxart, converts it and installs it as `<SD>/_pico/covers/gba/<CODE>.bmp`. The SD path defaults to `/Volumes/DSPICO`; `--dry-run` shows what would be downloaded without writing anything.
+Downloads missing GBA covers from libretro-thumbnails: reads the game code from each `.gba` in `<SD>/Games/gba`, finds the matching boxart, converts it and installs it as `<SD>/_pico/covers/gba/<CODE>.bmp`. The SD path defaults to `/Volumes/DSPICO`; pass it as the first argument or with `--sd`, which is the form to use on Windows and Linux. `--dry-run` shows what would be downloaded without writing anything.
 
 ```
 python3 tools/fetch_covers_gba.py [/Volumes/DSPICO] [--dry-run]
+python3 tools/fetch_covers_gba.py --sd E:\ [--dry-run]
 ```
 
 ## fetch_covers.py

@@ -5,6 +5,34 @@
 ### [Unreleased]
 
 #### Added
+- Hold START for about half a second to save a screenshot of both screens to
+  `/_pico/screenshots`, as two BMP files that share a number. A short message on the lower
+  screen confirms the write, or tells you it could not save. Sent upstream as PR #85.
+- Folders can have their own cover: a `cover.bmp` placed inside a folder is used as that
+  folder's cover. Merged from upstream, where tasken built it.
+
+#### Changed
+- Launching a random game is now SELECT + A instead of SELECT on its own. On the DSi,
+  SELECT + volume adjusts the brightness, so a bare SELECT kept launching games by
+  accident while browsing (fixes #11).
+- The statistics panel moved from START to the clock button: hold it for about half a
+  second, the same way holding the heart opens the favorites panel. A short tap still opens
+  the recently played list.
+
+#### Fixed
+- Leaving an empty folder no longer strands the highlight on the app bar's back arrow; the
+  focus lands on the folder you just left, as it does everywhere else (fixes #10).
+- A stale sprite no longer flashes at the top left of the top screen during the boot splash
+  and on slow theme loads.
+- The cover tools work off a Mac: `--sd` is parsed properly in both fetchers (the documented
+  flag used to print the usage and exit), a card that never had covers no longer ends in a
+  traceback, a mistyped option is refused instead of installing for real, and flat box art
+  with few colours converts. On Windows, downloading a cover no longer fails with a
+  permission error (fixes #12).
+
+### [enhanced-v1.6.0]
+
+#### Added
 - L and R jump to the previous or next initial in the game list, so a folder with hundreds
   of games can be crossed in a few presses. They keep paging in the cheats, favorites and
   recently played lists.
@@ -14,17 +42,12 @@
   press up from the top. A sub-category's back button still comes first.
 - The cheats sheet shows `X: all off` next to the cheat description while cheats are
   listed. Disabling every cheat with X was already supported, it was just invisible.
-- Hold START for about half a second to save a screenshot of both screens to
-  `/_pico/screenshots`, as two BMP files that share a number. A short message on the lower
-  screen confirms the write, or tells you it could not save. Sent upstream as PR #85.
+- The cartridge banner reads `Enhanced` under the title, so companion tools can tell the
+  fork from stock Pico Launcher by reading the ROM's banner.
 
-#### Changed
-- Launching a random game is now SELECT + A instead of SELECT on its own. On the DSi,
-  SELECT + volume adjusts the brightness, so a bare SELECT kept launching games by
-  accident while browsing (fixes #11).
-- The statistics panel moved from START to the clock button: hold it for about half a
-  second, the same way holding the heart opens the favorites panel. A short tap still opens
-  the recently played list.
+#### Fixed
+- Picking a game from the recently played, favorites or delete panel now lands the focus on
+  the game, so the next press acts on the list instead of reopening the panel.
 
 ### [enhanced-v1.5.0]
 
