@@ -6,9 +6,13 @@
 
 A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by the LNH team, adding library features inspired by modern consoles — favorites, play stats, recently played, and more — while staying fully compatible with stock SD cards: it is a drop-in `_picoboot.nds` replacement, and all upstream features remain intact.
 
-![Horizontal display mode with custom theme](docs/images/HorizontalCustom.png)
-![Banner list display mode](docs/images/List.png)
-![Coverflow display mode](docs/images/Coverflow.png)
+![Cover flow in the Material theme: a favorite, completed game, with the jump-by-initial letter in the top-left chip](docs/images/enhanced/Coverflow.png)
+![Icon grid in the Material theme, with the highlighted game's cover on the top screen](docs/images/enhanced/Grid.png)
+![A custom theme: the game count and launch info stay readable on their own backdrop](docs/images/enhanced/CustomTheme.png)
+![The favorites panel, every favorite across all folders with its play time](docs/images/enhanced/Favorites.png)
+![The statistics panel: totals, most launched games and the last one played](docs/images/enhanced/Statistics.png)
+
+*Taken on the console with the launcher's own screenshot key (hold START).*
 
 ## Features
 
