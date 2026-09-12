@@ -85,6 +85,18 @@ public:
 
     void SetBacklightLevel(int level) override;
 
+    const char* GetLauncher() const override
+    {
+        return _appSettingsService->GetAppSettings().launcher.GetString();
+    }
+
+    void SetLauncher(const char* launcher) override;
+    const char* GetLanguage() const override
+    {
+        return _appSettingsService->GetAppSettings().language.GetString();
+    }
+    void SetLanguage(const char* language) override;
+
     const RomBrowserDisplaySettings& GetRomBrowserDisplaySettings() const override
     {
         return _appSettingsService->GetAppSettings().romBrowserDisplaySettings;

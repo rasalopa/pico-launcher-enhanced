@@ -31,6 +31,7 @@
 #include "themes/ThemeFactory.h"
 #include "gui/Gx.h"
 #include "splashTop.h"
+#include "services/settings/Localization.h"
 #include "App.h"
 
 #define SPLASH_FRAMES       44
@@ -54,7 +55,10 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, IGame
     , _romBrowserController(&appSettingsService, &gameDataService, &bgmService, &_ioTaskQueue, &_bgTaskQueue)
     , _displaySettingsBottomSheetViewModel(&_romBrowserController)
     , _romBrowserBottomScreenViewModel(&_romBrowserController)
-    , _dialogPresenter(&_focusManager, &_mainObjDialogVram) { }
+    , _dialogPresenter(&_focusManager, &_mainObjDialogVram)
+{
+    Localization::SetLanguage(_appSettingsService.GetAppSettings().language.GetString());
+}
 
 void App::InitVramMapping() const
 {
@@ -545,13 +549,13 @@ void App::Update()
         switch (Screenshot::TakeResult())
         {
             case Screenshot::Result::Saved:
-                _toast->Show("Screenshot saved");
+                _toast->Show(Localization::ScreenshotSaved());
                 break;
             case Screenshot::Result::Failed:
-                _toast->Show("Couldn't save the screenshot");
+                _toast->Show(Localization::ScreenshotSaveFailed());
                 break;
             case Screenshot::Result::Busy:
-                _toast->Show("Still saving the last one");
+                _toast->Show(Localization::ScreenshotStillSaving());
                 break;
             case Screenshot::Result::None:
                 break;

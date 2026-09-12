@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include <libtwl/dma/dmaNitro.h>
 #include <libtwl/gfx/gfx.h>
 #include <libtwl/gfx/gfxBackground.h>
@@ -13,7 +14,7 @@ ThemeListTopView::ThemeListTopView(SharedPtr<ThemeListViewModel> viewModel, cons
     , _noPreviewLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Medium11)))
 {
     _noPreviewLabel->SetHorizontalAlignment(Alignment::Center);
-    _noPreviewLabel->SetText("No preview");
+    _noPreviewLabel->SetText(Localization::NoPreview());
     _noPreviewLabel->SetPosition(128 - 32, 96 - 8);
     _noPreviewLabel->SetBackgroundColor(materialColorScheme->inverseOnSurface);
     _noPreviewLabel->SetForegroundColor(materialColorScheme->onSurfaceVariant);

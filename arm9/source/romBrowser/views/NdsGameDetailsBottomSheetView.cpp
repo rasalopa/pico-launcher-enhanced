@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include <libtwl/dma/dmaNitro.h>
 #include "gui/IVramManager.h"
 #include "gui/VramContext.h"
@@ -16,10 +17,10 @@ NdsGameDetailsBottomSheetView::NdsGameDetailsBottomSheetView(
     , _cheatsChip(ChipView::CreateShared(md::sys::color::surfaceContainerLow, materialColorScheme, fontRepository))
     , _favoriteChip(ChipView::CreateShared(md::sys::color::surfaceContainerLow, materialColorScheme, fontRepository))
 {
-    _cheatsChip->SetText(u"Cheats");
+    _cheatsChip->SetText(Localization::Cheats());
     _cheatsChip->SetSelected(false);
     AddChildTail(_cheatsChip.GetPointer());
-    _favoriteChip->SetText(u"Favorite");
+    _favoriteChip->SetText(Localization::Favorite());
     _favoriteChip->SetSelected(true);
     AddChildTail(_favoriteChip.GetPointer());
 }

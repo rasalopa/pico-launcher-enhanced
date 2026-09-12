@@ -152,3 +152,17 @@
 
 ## [v1.0.0] - 25 Nov 2025
 - Initial release
+## Launcher selector
+
+- Added a launcher selector to the Pico Launcher display/settings sheet.
+- Choose between `Pico` (original Pico Loader path) and `Bootstrap` (nds-bootstrap/B4DS for `.nds` files).
+- The selected launcher is stored in `/_pico/settings.json` as `"launcher": "pico"` or `"launcher": "bootstrap"`.
+- Added localized launcher labels for all supported UI languages.
+- Bootstrap detection keeps the known-working fixed path `/_nds/nds-bootstrap-release.nds` for DSpico/DS Lite.
+
+
+Cheat compatibility fix: when launching NDS through nds-bootstrap/B4DS, enabled cheats are now written to nds-bootstrap's cheatData.bin format; Pico Loader mode keeps its original cheat path.
+
+
+### Bootstrap game language
+When launching through nds-bootstrap, the launcher now maps Pico Launcher's selected language to nds-bootstrap's `LANGUAGE` value. Spanish uses `LANGUAGE = 5`, which fixes game-language selection on 2DS/3DS SD where `LANGUAGE = -1` did not resolve the console language through this frontend. The bootstrap GUI language remains controlled separately by `GUI_LANGUAGE`.

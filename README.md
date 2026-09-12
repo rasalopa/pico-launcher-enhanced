@@ -130,3 +130,7 @@ Additional licenses may apply to the project. For details, see the `license` dir
 - [@lifehackerhansol](https://github.com/lifehackerhansol)
 
 All credit for the launcher's foundation goes to the LNH team — this fork only builds on their excellent work.
+
+
+### Bootstrap game language
+When launching through nds-bootstrap, the launcher now maps Pico Launcher's selected language to nds-bootstrap's `LANGUAGE` value. Spanish uses `LANGUAGE = 5`, which fixes game-language selection on 2DS/3DS SD where `LANGUAGE = -1` did not resolve the console language through this frontend. The bootstrap GUI language remains controlled separately by `GUI_LANGUAGE`.

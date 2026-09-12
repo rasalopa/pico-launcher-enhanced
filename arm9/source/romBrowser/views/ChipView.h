@@ -31,6 +31,7 @@ public:
 
     void InitVram(const VramContext& vramContext) override { _label->InitVram(vramContext); }
 
+    void SetText(const char* text) { _label->SetText(text); }
     void SetText(const char16_t* text) { _label->SetText(text); }
     void SetText(const char16_t* text, u32 length) { _label->SetText(text, length); }
     QueueTask<void> SetTextAsync(TaskQueueBase* taskQueue, const char16_t* text) { return _label->SetTextAsync(taskQueue, text); }

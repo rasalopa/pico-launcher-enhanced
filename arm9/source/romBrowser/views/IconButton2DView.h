@@ -29,7 +29,7 @@ public:
     static VramToken UploadGraphics(IVramManager& vramManager);
 
 private:
-    u32 _selectorVramOffset;
+    u32 _selectorVramOffset = 0;
 
     IconButton2DView(Type type, State state,
         md::sys::color backgroundColor, const MaterialColorScheme* materialColorScheme)

@@ -13,9 +13,12 @@
 #include "services/gamedata/IGameDataService.h"
 #include "bgm/IBgmService.h"
 #include "core/mini-printf.h"
+#include "core/Environment.h"
+#include "fat/File.h"
 #include "rtcIpc.h"
 #include "backlightIpc.h"
 #include "RomBrowserController.h"
+#include "services/settings/Localization.h"
 
 RomBrowserController::RomBrowserController(
     IAppSettingsService* appSettingsService, IGameDataService* gameDataService,
@@ -300,6 +303,35 @@ void RomBrowserController::SetBacklightLevel(int level)
     }
     // apply immediately; no browser rebuild is needed for this
     backlight_setLevel(level);
+}
+
+void RomBrowserController::SetLauncher(const char* launcher)
+{
+    if (!launcher || strcasecmp(launcher, "bootstrap") != 0)
+        _appSettingsService->GetAppSettings().launcher = "pico";
+    else
+        _appSettingsService->GetAppSettings().launcher = "bootstrap";
+
+    _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+    {
+        _appSettingsService->Save();
+        return TaskResult<void>::Completed();
+    });
+}
+
+void RomBrowserController::SetLanguage(const char* language)
+{
+    if (!language || !*language)
+        return;
+
+    _appSettingsService->GetAppSettings().language = language;
+    Localization::SetLanguage(language);
+
+    _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+    {
+        _appSettingsService->Save();
+        return TaskResult<void>::Completed();
+    });
 }
 
 void RomBrowserController::Update()
@@ -609,12 +641,171 @@ void RomBrowserController::UpdateLastUsedFilepath()
     _appSettingsService->Save();
 }
 
+static const char* BootstrapDrivePrefix()
+{
+    const char* launcherPath = pload_getLauncherPath();
+    if (launcherPath && launcherPath[0] == 's' && launcherPath[1] == 'd' && launcherPath[2] == ':')
+        return "sd:";
+    return "fat:";
+}
+
+static void BootstrapMakeDrivePath(char* output, u32 outputSize, const char* drive, const char* path)
+{
+    if (path && path[0] == 'f' && path[1] == 'a' && path[2] == 't' && path[3] == ':')
+    {
+        StringUtil::Copy(output, path, outputSize);
+    }
+    else if (path && path[0] == 's' && path[1] == 'd' && path[2] == ':')
+    {
+        StringUtil::Copy(output, path, outputSize);
+    }
+    else
+    {
+        mini_snprintf(output, outputSize, "%s%s", drive, path ? path : "");
+    }
+}
+
+static bool FindNdsBootstrapPath(char* output, u32 outputSize)
+{
+    // On DSpico/DS Lite the DLDI-mounted FAT filesystem is the active drive.
+    // The release bootstrap is kept at this fixed path. Avoid f_stat(): on
+    // real hardware it can fail before the config is written even though the
+    // file is present and can be launched directly.
+    mini_snprintf(output, outputSize, "/_nds/nds-bootstrap-release.nds");
+    return true;
+}
+
+static bool WriteNdsBootstrapConfig(const char* romPath, const char* appLanguage)
+{
+    const char* drive = BootstrapDrivePrefix();
+    char bootstrapPath[256];
+    char configPath[256];
+    char romDrivePath[256];
+    char saveDrivePath[256];
+    char savePath[256];
+    const char* launcherPath = pload_getLauncherPath();
+
+    if (!FindNdsBootstrapPath(bootstrapPath, sizeof(bootstrapPath)))
+        return false;
+
+    // configPath is opened through FatFs, so it must use the mounted
+    // filesystem path rather than nds-bootstrap's fat:/ or sd:/ notation.
+    mini_snprintf(configPath, sizeof(configPath), "/_nds/nds-bootstrap.ini");
+    BootstrapMakeDrivePath(romDrivePath, sizeof(romDrivePath), drive, romPath);
+
+    StringUtil::Copy(savePath, romPath, sizeof(savePath));
+    char* dot = strrchr(savePath, '.');
+    if (dot)
+        *dot = 0;
+    strlcat(savePath, ".sav", sizeof(savePath));
+    BootstrapMakeDrivePath(saveDrivePath, sizeof(saveDrivePath), drive, savePath);
+
+    char quitPath[256];
+    BootstrapMakeDrivePath(quitPath, sizeof(quitPath), drive, launcherPath ? launcherPath : "");
+
+    const bool dsiMode = Environment::IsDsiMode();
+
+    // nds-bootstrap uses separate settings for its own GUI language and the
+    // language requested by the game. On 2DS/3DS SD, LANGUAGE=-1 may not
+    // resolve the console language when launched through our frontend.
+    // Map Pico Launcher's language setting to nds-bootstrap's game-language
+    // values so the selected language is passed explicitly.
+    int bootstrapLanguage = -1;
+    const char* guiLanguage = "en";
+    if (!strcasecmp(appLanguage, "spanish"))
+    {
+        bootstrapLanguage = 5;
+        guiLanguage = "es";
+    }
+    else if (!strcasecmp(appLanguage, "french"))
+    {
+        bootstrapLanguage = 2;
+        guiLanguage = "fr";
+    }
+    else if (!strcasecmp(appLanguage, "german"))
+    {
+        bootstrapLanguage = 3;
+        guiLanguage = "de";
+    }
+    else if (!strcasecmp(appLanguage, "italian"))
+    {
+        bootstrapLanguage = 4;
+        guiLanguage = "it";
+    }
+    else if (!strcasecmp(appLanguage, "english"))
+    {
+        bootstrapLanguage = 1;
+        guiLanguage = "en";
+    }
+    else if (!strcasecmp(appLanguage, "portuguese"))
+    {
+        // nds-bootstrap's LANGUAGE field does not have a Portuguese value in
+        // this configuration, so keep automatic selection rather than
+        // incorrectly mapping Portuguese to another language.
+        guiLanguage = "pt-BR";
+    }
+
+    char config[1536];
+    mini_snprintf(config, sizeof(config),
+        "[NDS-BOOTSTRAP]\n"
+        "NDS_PATH = %s\n"
+        "SAV_PATH = %s\n"
+        "QUIT_PATH = %s\n"
+        "BOOST_CPU = 0\n"
+        "BOOST_VRAM = 0\n"
+        "CARD_READ_DMA = 1\n"
+        "ASYNC_CARD_READ = 0\n"
+        "LANGUAGE = %d\n"
+        "REGION = -1\n"
+        "USE_ROM_REGION = 1\n"
+        "DSI_MODE = %d\n"
+        "B4DS_MODE = %d\n"
+        "GUI_LANGUAGE = %s\n"
+        "HOTKEY = 284\n"
+        "LOGGING = 1\n",
+        romDrivePath, saveDrivePath, quitPath, bootstrapLanguage,
+        dsiMode ? 1 : 0, dsiMode ? 0 : 1, guiLanguage);
+
+    File file;
+    if (file.Open(configPath, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK)
+    {
+        LOG_ERROR("Couldn't open nds-bootstrap.ini for writing\n");
+        return false;
+    }
+
+    u32 bytesWritten = 0;
+    const u32 configLength = (u32)strlen(config);
+    if (file.Write(config, configLength, bytesWritten) != FR_OK || bytesWritten != configLength)
+    {
+        LOG_ERROR("Couldn't write nds-bootstrap.ini\n");
+        return false;
+    }
+    return true;
+}
+
 void RomBrowserController::SetPicoLoaderParams() const
 {
     auto loadParams = pload_getLoadParams();
     loadParams->savePath[0] = 0;
     loadParams->arguments[0] = 0;
     loadParams->argumentsLength = 0;
+
+    const auto& appSettings = _appSettingsService->GetAppSettings();
+    const bool useBootstrap = !strcasecmp(appSettings.launcher.GetString(), "bootstrap")
+        && _triggerFileInfo.GetFileType()->GetShortName()
+        && !strcasecmp(_triggerFileInfo.GetFileType()->GetShortName(), "nds");
+
+    if (useBootstrap)
+    {
+        if (WriteNdsBootstrapConfig(_navigatePath, _appSettingsService->GetAppSettings().language.GetString()))
+        {
+            FindNdsBootstrapPath(loadParams->romPath, sizeof(loadParams->romPath));
+            gProcessManager.Goto<PicoLoaderProcess>();
+            return;
+        }
+        LOG_ERROR("Bootstrap launch failed; falling back to Pico Loader.\n");
+    }
+
     if (_triggerFileInfo.GetFileType()->TrySetLaunchParameters(loadParams, _navigatePath))
     {
         gProcessManager.Goto<PicoLoaderProcess>();
@@ -625,9 +816,133 @@ void RomBrowserController::SetPicoLoaderParams() const
     }
 }
 
+static u32 GetBootstrapCheatDataSize(const CheatEntry* cheatEntry)
+{
+    u32 size = 0;
+    if (cheatEntry->IsCheatCategory())
+    {
+        u32 numberOfSubEntries = 0;
+        auto subEntries = cheatEntry->GetSubEntries(numberOfSubEntries);
+        for (u32 i = 0; i < numberOfSubEntries; i++)
+        {
+            size += GetBootstrapCheatDataSize(&subEntries[i]);
+        }
+    }
+    else if (cheatEntry->GetIsCheatActive())
+    {
+        u32 cheatDataLength = 0;
+        cheatEntry->GetCheatData(cheatDataLength);
+        size += cheatDataLength;
+    }
+    return size;
+}
+
+static bool WriteBootstrapCheatData(const CheatEntry* cheatEntry, File& file)
+{
+    if (cheatEntry->IsCheatCategory())
+    {
+        u32 numberOfSubEntries = 0;
+        auto subEntries = cheatEntry->GetSubEntries(numberOfSubEntries);
+        for (u32 i = 0; i < numberOfSubEntries; i++)
+        {
+            if (!WriteBootstrapCheatData(&subEntries[i], file))
+                return false;
+        }
+    }
+    else if (cheatEntry->GetIsCheatActive())
+    {
+        u32 cheatDataLength = 0;
+        auto cheatData = cheatEntry->GetCheatData(cheatDataLength);
+
+        if (!cheatData || cheatDataLength == 0)
+            return true;
+
+        u32 bytesWritten = 0;
+        if (file.Write(cheatData, cheatDataLength, bytesWritten) != FR_OK ||
+            bytesWritten != cheatDataLength)
+        {
+            LOG_ERROR("Couldn't write nds-bootstrap cheat data\n");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool WriteNdsBootstrapCheatData(const std::unique_ptr<GameCheats>& cheats)
+{
+    const char* cheatPath = "/_nds/nds-bootstrap/cheatData.bin";
+
+    // Remove stale cheats first. Otherwise nds-bootstrap could reuse the
+    // previous game's cheatData.bin when the current game has no cheats.
+    f_unlink(cheatPath);
+
+    if (!cheats)
+        return true;
+
+    const u32 cheatCodeBytes = GetBootstrapCheatDataSize(cheats.get());
+    if (cheatCodeBytes == 0)
+        return true;
+
+    // nds-bootstrap expects raw Action Replay code words followed by
+    // 0xCF000000. It disables cheats when the file is larger than 0x4000.
+    if (cheatCodeBytes + sizeof(u32) > 0x4000)
+    {
+        LOG_ERROR("Cheat data is too large for nds-bootstrap: %u bytes\n", cheatCodeBytes);
+        return false;
+    }
+
+    File file;
+    if (file.Open(cheatPath, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK)
+    {
+        LOG_ERROR("Couldn't open nds-bootstrap cheatData.bin for writing\n");
+        return false;
+    }
+
+    if (!WriteBootstrapCheatData(cheats.get(), file))
+        return false;
+
+    const u32 terminator = 0xCF000000;
+    u32 bytesWritten = 0;
+    if (file.Write(&terminator, sizeof(terminator), bytesWritten) != FR_OK ||
+        bytesWritten != sizeof(terminator))
+    {
+        LOG_ERROR("Couldn't write nds-bootstrap cheatData.bin terminator\n");
+        return false;
+    }
+
+    if (file.Sync() != FR_OK)
+    {
+        LOG_ERROR("Couldn't flush nds-bootstrap cheatData.bin\n");
+        return false;
+    }
+
+    return true;
+}
+
 void RomBrowserController::LoadCheats() const
 {
     auto cheats = _cheatRepository->GetCheatsForGame(_triggerFileInfo.GetFastFileRef());
+
+    const auto& appSettings = _appSettingsService->GetAppSettings();
+    const bool useBootstrap = !strcasecmp(appSettings.launcher.GetString(), "bootstrap")
+        && _triggerFileInfo.GetFileType()->GetShortName()
+        && !strcasecmp(_triggerFileInfo.GetFileType()->GetShortName(), "nds");
+
+    if (useBootstrap)
+    {
+        // nds-bootstrap does not consume Pico Loader's in-memory cheat API.
+        // It reads the selected Action Replay words from cheatData.bin.
+        if (!WriteNdsBootstrapCheatData(cheats))
+        {
+            LOG_ERROR("Failed to prepare nds-bootstrap cheat data.\n");
+        }
+
+        // Prevent Pico Loader from receiving a stale cheat buffer.
+        pload_setCheatData(nullptr);
+        return;
+    }
+
     auto cheatData = PicoLoaderCheatDataFactory().CreateCheatData(cheats);
     pload_setCheatData(cheatData);
 }
