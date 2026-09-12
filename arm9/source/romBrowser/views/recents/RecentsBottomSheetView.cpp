@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include "gui/GraphicsContext.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
@@ -35,13 +36,13 @@ RecentsBottomSheetView::RecentsBottomSheetView(SharedPtr<RecentsViewModel> viewM
 {
     if (_viewModel->GetKind() == GameListKind::Recents)
     {
-        _titleLabel->SetText(u"Recent games");
-        _emptyLabel->SetText(u"Nothing played yet.");
+        _titleLabel->SetText(Localization::RecentGames());
+        _emptyLabel->SetText(Localization::NothingPlayedYet());
     }
     else
     {
-        _titleLabel->SetText(u"Favorite games");
-        _emptyLabel->SetText(u"No favorites yet. Press X on a game.");
+        _titleLabel->SetText(Localization::FavoriteGames());
+        _emptyLabel->SetText(Localization::NoFavoritesYet());
     }
     AddChildTail(_titleLabel.GetPointer());
     if (_viewModel->GetItemCount() == 0)

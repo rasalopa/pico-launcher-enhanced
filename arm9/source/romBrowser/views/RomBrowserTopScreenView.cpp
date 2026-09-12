@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
@@ -56,7 +57,7 @@ RomBrowserTopScreenView::RomBrowserTopScreenView(
     u32 gameCount = _viewModel->GetFileInfoManager().GetGameCount();
     if (gameCount > 0 && !_gameCountHidden)
     {
-        mini_snprintf(_gameCountText, sizeof(_gameCountText), "%u game%s", gameCount, gameCount == 1 ? "" : "s");
+        mini_snprintf(_gameCountText, sizeof(_gameCountText), Localization::GameCountFormat(), gameCount, Localization::GameWord(gameCount));
         _gameCountLabel = Label2DView::CreateShared(96, 16, 15, fontRepository->GetFont(FontType::Medium10));
         _gameCountLabel->SetText(_gameCountText);
         // Draw() puts a chip behind each strip cluster so the strip stays readable
@@ -197,15 +198,13 @@ void RomBrowserTopScreenView::Update()
                         // stored as "YYYY-MM-DD HH:MM", shown as "3x · 16 Jul" (a bare
                         // "16/07" reads like a fraction to new users). The separator is
                         // the middle dot U+00B7, which the Medium10 font provides.
-                        static const char* const sMonthNames[12] = { "Jan", "Feb", "Mar", "Apr",
-                            "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
                         const char* lastPlayed = entry->lastPlayed.GetString();
                         u32 month = (lastPlayed[5] - '0') * 10 + (lastPlayed[6] - '0');
                         u32 day = (lastPlayed[8] - '0') * 10 + (lastPlayed[9] - '0');
                         if (month >= 1 && month <= 12)
                         {
                             mini_snprintf(info, sizeof(info), "%ux · %u %s", entry->launchCount,
-                                day, sMonthNames[month - 1]);
+                                day, Localization::Month(month));
                         }
                         else
                         {

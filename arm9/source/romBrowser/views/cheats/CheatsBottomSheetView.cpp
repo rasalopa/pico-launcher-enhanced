@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include "gui/GraphicsContext.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
@@ -61,12 +62,12 @@ CheatsBottomSheetView::CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewMode
     , _fontRepository(fontRepository)
     , _focusManager(focusManager)
 {
-    _titleLabel->SetText(u"Cheats");
-    _secondaryLabel->SetText(u"No cheats found.");
+    _titleLabel->SetText(Localization::Cheats());
+    _secondaryLabel->SetText(Localization::NoCheatsFound());
     _secondaryLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
     _descriptionLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Marquee);
     _descriptionLabel->SetText(u"");
-    _promptsLabel->SetText(u"X: all off");
+    _promptsLabel->SetText(Localization::CheatsAllOff());
     AddChildTail(_titleLabel.GetPointer());
     AddChildTail(_secondaryLabel.GetPointer());
     AddChildTail(_descriptionLabel.GetPointer());

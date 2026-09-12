@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include "gui/GraphicsContext.h"
 #include "gui/VramContext.h"
 #include "gui/IVramManager.h"
@@ -20,6 +21,13 @@
 #include "unknownIcon.h"
 #include "coverflowIcon.h"
 #include "themeIcon.h"
+#include "gamesIcon.h"
+#include "languageENIcon.h"
+#include "languageESIcon.h"
+#include "languageFRIcon.h"
+#include "languageDEIcon.h"
+#include "languageITIcon.h"
+#include "languagePTIcon.h"
 #include "hideEmptyFoldersIcon.h"
 #include "../IRomBrowserController.h"
 #include "gui/input/InputProvider.h"
@@ -46,6 +54,20 @@
 
 #define BRIGHTNESS_LABEL_X  20
 #define BRIGHTNESS_LABEL_Y  110
+#define LAUNCHER_LABEL_X    20
+#define LAUNCHER_LABEL_Y    134
+#define LAUNCHER_PICO_X     92
+#define LAUNCHER_BOOTSTRAP_X 148
+#define LAUNCHER_BUTTON_Y   126
+#define LAUNCHER_PICO_LABEL_X  86
+#define LAUNCHER_BOOTSTRAP_LABEL_X 136
+#define LAUNCHER_LABEL_Y_TEXT 158
+#define LANGUAGE_LABEL_X    20
+#define LANGUAGE_LABEL_Y    182
+#define LANGUAGE_BUTTON_X   84
+#define LANGUAGE_BUTTON_Y   174
+#define LANGUAGE_BUTTON_STEP 28
+#define LANGUAGE_MAX_SCROLL 46
 
 #define FILTERS_LABEL_X     20
 #define FILTERS_LABEL_Y     112
@@ -57,6 +79,8 @@ static RomBrowserLayout sRomBrowserDisplayModes[4] =
     [2] = RomBrowserLayout::BannerList,
     [3] = RomBrowserLayout::CoverFlow
 };
+
+static const char* sLanguages[6] = { "english", "spanish", "french", "german", "italian", "portuguese" };
 
 static RomBrowserSortMode sRomBrowserSortModes[4] =
 {
@@ -83,9 +107,13 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _brightnessLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _launcherLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _picoLauncherLabel(Label2DView::CreateShared(48, 16, 16, fontRepository->GetFont(FontType::Medium7_5)))
+    , _bootstrapLauncherLabel(Label2DView::CreateShared(72, 16, 16, fontRepository->GetFont(FontType::Medium7_5)))
+    , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
 {
-    _titleLabel->SetText(u"Display Settings");
+    _titleLabel->SetText(Localization::DisplaySettings());
     AddChildTail(_titleLabel.GetPointer());
 
     _themeButton->SetAction([] (IconButtonView*, void* arg)
@@ -101,12 +129,20 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     }, this);
     AddChildTail(_hideEmptyFoldersButton.GetPointer());
 
-    _layoutLabel->SetText(u"Layout");
+    _layoutLabel->SetText(Localization::Layout());
     AddChildTail(_layoutLabel.GetPointer());
-    _sortingLabel->SetText(u"Sorting");
+    _sortingLabel->SetText(Localization::Sorting());
     AddChildTail(_sortingLabel.GetPointer());
-    _brightnessLabel->SetText(u"Light");
+    _brightnessLabel->SetText(Localization::Light());
     AddChildTail(_brightnessLabel.GetPointer());
+    _launcherLabel->SetText(Localization::Launcher());
+    AddChildTail(_launcherLabel.GetPointer());
+    _picoLauncherLabel->SetText(Localization::PicoLauncher());
+    AddChildTail(_picoLauncherLabel.GetPointer());
+    _bootstrapLauncherLabel->SetText(Localization::BootstrapLauncher());
+    AddChildTail(_bootstrapLauncherLabel.GetPointer());
+    _languageLabel->SetText(Localization::Language());
+    AddChildTail(_languageLabel.GetPointer());
 
     for (auto& layoutOption : _layoutOptions)
     {
@@ -125,6 +161,18 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
         brightnessOption = CreateBrightnessOptionIconButton();
         AddChildTail(brightnessOption.GetPointer());
     }
+
+    for (auto& launcherOption : _launcherOptions)
+    {
+        launcherOption = CreateLauncherOptionIconButton();
+        AddChildTail(launcherOption.GetPointer());
+    }
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+    {
+        _languageOptions[i] = CreateLanguageOptionIconButton();
+        AddChildTail(_languageOptions[i].GetPointer());
+    }
+
 }
 
 SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLayoutOptionIconButton()
@@ -196,6 +244,52 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateBrightnessOpti
     return brightnessOption;
 }
 
+SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLauncherOptionIconButton()
+{
+    auto launcherOption = IconButton2DView::CreateShared(
+        IconButtonView::Type::Tonal,
+        IconButtonView::State::ToggleUnselected,
+        md::sys::color::surfaceContainerLow,
+        _materialColorScheme
+    );
+    launcherOption->SetAction([] (IconButtonView* sender, void* arg)
+    {
+        auto self = reinterpret_cast<DisplaySettingsBottomSheetView*>(arg);
+        for (u32 i = 0; i < self->_launcherOptions.size(); i++)
+        {
+            if (self->_launcherOptions[i].GetPointer() == sender)
+            {
+                self->_viewModel->SetLauncher(i == 0 ? "pico" : "bootstrap");
+                break;
+            }
+        }
+    }, this);
+    return launcherOption;
+}
+
+SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLanguageOptionIconButton()
+{
+    auto languageOption = IconButton2DView::CreateShared(
+        IconButtonView::Type::Tonal,
+        IconButtonView::State::ToggleUnselected,
+        md::sys::color::surfaceContainerLow,
+        _materialColorScheme
+    );
+    languageOption->SetAction([] (IconButtonView* sender, void* arg)
+    {
+        auto self = reinterpret_cast<DisplaySettingsBottomSheetView*>(arg);
+        for (u32 i = 0; i < self->_languageOptions.size(); i++)
+        {
+            if (self->_languageOptions[i].GetPointer() == sender)
+            {
+                self->_viewModel->SetLanguage(sLanguages[i]);
+                break;
+            }
+        }
+    }, this);
+    return languageOption;
+}
+
 void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
 {
     BottomSheetView::InitVram(vramContext);
@@ -221,15 +315,66 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _brightnessOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, brightness2IconTiles, brightness2IconTilesLen));
         _brightnessOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, brightness3IconTiles, brightness3IconTilesLen));
         _brightnessOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, brightness4IconTiles, brightness4IconTilesLen));
+
+        _launcherOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
+        _launcherOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
+
+        _languageOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, languageENIconTiles, languageENIconTilesLen));
+        _languageOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, languageESIconTiles, languageESIconTilesLen));
+        _languageOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, languageFRIconTiles, languageFRIconTilesLen));
+        _languageOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, languageDEIconTiles, languageDEIconTilesLen));
+        _languageOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, languageITIconTiles, languageITIconTilesLen));
+        _languageOptions[5]->SetIconVramOffset(LoadIcon(*objVramManager, languagePTIconTiles, languagePTIconTilesLen));
     }
 }
 
 void DisplaySettingsBottomSheetView::UpdateLabels()
 {
-    _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
-    _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
-    _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
-    _brightnessLabel->SetPosition(BRIGHTNESS_LABEL_X, _position.y + BRIGHTNESS_LABEL_Y);
+    _titleLabel->SetText(Localization::DisplaySettings());
+    _layoutLabel->SetText(Localization::Layout());
+    _sortingLabel->SetText(Localization::Sorting());
+    _brightnessLabel->SetText(Localization::Light());
+    _launcherLabel->SetText(Localization::Launcher());
+    _languageLabel->SetText(Localization::Language());
+
+    _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y - _scrollOffset);
+    _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y - _scrollOffset);
+    _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y - _scrollOffset);
+    _brightnessLabel->SetPosition(BRIGHTNESS_LABEL_X, _position.y + BRIGHTNESS_LABEL_Y - _scrollOffset);
+    _launcherLabel->SetPosition(LAUNCHER_LABEL_X, _position.y + LAUNCHER_LABEL_Y - _scrollOffset);
+    _picoLauncherLabel->SetPosition(LAUNCHER_PICO_LABEL_X, _position.y + LAUNCHER_LABEL_Y_TEXT - _scrollOffset);
+    _bootstrapLauncherLabel->SetPosition(LAUNCHER_BOOTSTRAP_LABEL_X, _position.y + LAUNCHER_LABEL_Y_TEXT - _scrollOffset);
+    _languageLabel->SetPosition(LANGUAGE_LABEL_X, _position.y + LANGUAGE_LABEL_Y - _scrollOffset);
+}
+
+void DisplaySettingsBottomSheetView::UpdateScroll()
+{
+    const int maxScroll = LANGUAGE_MAX_SCROLL;
+    if (_scrollOffset < 0) _scrollOffset = 0;
+    if (_scrollOffset > maxScroll) _scrollOffset = maxScroll;
+
+    int x = 70;
+    for (auto& layoutOption : _layoutOptions)
+    {
+        layoutOption->SetPosition(x, _position.y + 38 - _scrollOffset);
+        x += 32;
+    }
+    x = 70;
+    for (auto& sortOption : _sortOptions)
+    {
+        sortOption->SetPosition(x, _position.y + 70 - _scrollOffset);
+        x += 32;
+    }
+    x = 70;
+    for (auto& brightnessOption : _brightnessOptions)
+    {
+        brightnessOption->SetPosition(x, _position.y + 102 - _scrollOffset);
+        x += 32;
+    }
+    _launcherOptions[0]->SetPosition(LAUNCHER_PICO_X, _position.y + LAUNCHER_BUTTON_Y - _scrollOffset);
+    _launcherOptions[1]->SetPosition(LAUNCHER_BOOTSTRAP_X, _position.y + LAUNCHER_BUTTON_Y - _scrollOffset);
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+        _languageOptions[i]->SetPosition(LANGUAGE_BUTTON_X + i * LANGUAGE_BUTTON_STEP, _position.y + LANGUAGE_BUTTON_Y - _scrollOffset);
 }
 
 void DisplaySettingsBottomSheetView::Update()
@@ -240,43 +385,48 @@ void DisplaySettingsBottomSheetView::Update()
     _hideEmptyFoldersButton->SetState(_viewModel->GetHideEmptyFolders()
         ? IconButtonView::State::ToggleSelected
         : IconButtonView::State::ToggleUnselected);
+
+    UpdateScroll();
     UpdateLabels();
+
     auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
-    int x = 70;
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(x, _position.y + 38);
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
-        x += 32;
         idx++;
     }
     auto selectedSortMode = _viewModel->GetRomBrowserSortMode();
-    x = 70;
     idx = 0;
     for (auto& sortOption : _sortOptions)
     {
-        sortOption->SetPosition(x, _position.y + 70);
         sortOption->SetState(sRomBrowserSortModes[idx] == selectedSortMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
-        x += 32;
         idx++;
     }
-    // no option lights up while the level is -1 (firmware level untouched)
     int backlightLevel = _viewModel->GetBacklightLevel();
-    x = 70;
     idx = 0;
     for (auto& brightnessOption : _brightnessOptions)
     {
-        brightnessOption->SetPosition(x, _position.y + 102);
         brightnessOption->SetState((int)idx == backlightLevel
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
-        x += 32;
         idx++;
+    }
+
+    const bool useBootstrap = !strcasecmp(_viewModel->GetLauncher(), "bootstrap");
+    _launcherOptions[0]->SetState(!useBootstrap ? IconButtonView::State::ToggleSelected : IconButtonView::State::ToggleUnselected);
+    _launcherOptions[1]->SetState(useBootstrap ? IconButtonView::State::ToggleSelected : IconButtonView::State::ToggleUnselected);
+
+    const char* currentLanguage = _viewModel->GetLanguage();
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+    {
+        _languageOptions[i]->SetState(!strcasecmp(currentLanguage, sLanguages[i])
+            ? IconButtonView::State::ToggleSelected
+            : IconButtonView::State::ToggleUnselected);
     }
 }
 
@@ -293,10 +443,55 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _sortingLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         _brightnessLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _brightnessLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _launcherLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _launcherLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _picoLauncherLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _picoLauncherLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _bootstrapLauncherLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _bootstrapLauncherLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _languageLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _languageLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         BottomSheetView::Draw(graphicsContext);
     }
     graphicsContext.SetPriority(oldPrio);
     graphicsContext.ResetClipArea();
+}
+
+void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
+{
+    _penDownY = touchPoint.y;
+    _touchScrolling = false;
+    BottomSheetView::HandlePenDown(touchPoint, focusManager);
+}
+
+void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
+{
+    const int dy = _penDownY - touchPoint.y;
+    if (std::abs(dy) >= 4 && GetBounds().Contains(touchPoint))
+        _touchScrolling = true;
+
+    if (_touchScrolling)
+    {
+        _scrollOffset += dy;
+        _penDownY = touchPoint.y;
+        if (_scrollOffset < 0) _scrollOffset = 0;
+        if (_scrollOffset > LANGUAGE_MAX_SCROLL) _scrollOffset = LANGUAGE_MAX_SCROLL;
+        UpdateScroll();
+        UpdateLabels();
+        return;
+    }
+
+    BottomSheetView::HandlePenMove(touchPoint, focusManager);
+}
+
+void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
+{
+    if (_touchScrolling)
+    {
+        _touchScrolling = false;
+        return;
+    }
+    BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
 }
 
 bool DisplaySettingsBottomSheetView::HandleInput(
@@ -408,6 +603,42 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
         idx++;
     }
     idx = 0;
+    for (auto& launcherOption : _launcherOptions)
+    {
+        if (currentFocus.GetPointer() == launcherOption.GetPointer())
+        {
+            if (direction == FocusMoveDirection::Left || direction == FocusMoveDirection::Right)
+                return _launcherOptions[idx == 0 ? 1 : 0];
+            else if (direction == FocusMoveDirection::Up)
+                return _brightnessOptions[0];
+            else if (direction == FocusMoveDirection::Down)
+                return _languageOptions[0];
+        }
+        idx++;
+    }
+
+    idx = 0;
+    for (auto& languageOption : _languageOptions)
+    {
+        if (currentFocus.GetPointer() == languageOption.GetPointer())
+        {
+            if (direction == FocusMoveDirection::Left)
+            {
+                if (--idx < 0) idx += _languageOptions.size();
+                return _languageOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Right)
+            {
+                if (++idx >= (int)_languageOptions.size()) idx = 0;
+                return _languageOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Up)
+                return _launcherOptions[0];
+        }
+        idx++;
+    }
+
+    idx = 0;
     for (auto& brightnessOption : _brightnessOptions)
     {
         if (currentFocus.GetPointer() == brightnessOption.GetPointer())
@@ -429,6 +660,10 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
                 if (idx >= (int)_sortOptions.size())
                     idx = _sortOptions.size() - 1;
                 return _sortOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Down)
+            {
+                return _launcherOptions[0];
             }
         }
         idx++;
@@ -452,6 +687,14 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     for (auto& brightnessOption : _brightnessOptions)
     {
         brightnessOption->SetGraphics(iconButtonVramToken);
+    }
+    for (auto& launcherOption : _launcherOptions)
+    {
+        launcherOption->SetGraphics(iconButtonVramToken);
+    }
+    for (auto& languageOption : _languageOptions)
+    {
+        languageOption->SetGraphics(iconButtonVramToken);
     }
 }
 

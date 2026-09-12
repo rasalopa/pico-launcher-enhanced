@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include <string.h>
 #include "core/mini-printf.h"
 #include "gui/GraphicsContext.h"
@@ -24,43 +25,40 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _materialColorScheme(materialColorScheme)
 {
-    _titleLabel->SetText(u"Statistics");
+    _titleLabel->SetText(Localization::Statistics());
     AddChildTail(_titleLabel.GetPointer());
 
     char text[144];
     if (_viewModel->GetPlayedCount() == 0 && _viewModel->GetFavoriteCount() == 0 &&
         _viewModel->GetCompletedCount() == 0)
     {
-        AddLine(fontRepository, FontType::Regular10, "Nothing played yet.");
+        AddLine(fontRepository, FontType::Regular10, Localization::NothingPlayedYet());
     }
     else
     {
         if (_viewModel->GetCompletedCount() > 0)
         {
-            mini_snprintf(text, sizeof(text), "%u game%s played, %u favorite%s, %u completed",
-                _viewModel->GetPlayedCount(), _viewModel->GetPlayedCount() == 1 ? "" : "s",
-                _viewModel->GetFavoriteCount(), _viewModel->GetFavoriteCount() == 1 ? "" : "s",
+            mini_snprintf(text, sizeof(text), Localization::PlayedFavoritesCompletedFormat(),
+                _viewModel->GetPlayedCount(), _viewModel->GetFavoriteCount(),
                 _viewModel->GetCompletedCount());
         }
         else
         {
-            mini_snprintf(text, sizeof(text), "%u game%s played, %u favorite%s",
-                _viewModel->GetPlayedCount(), _viewModel->GetPlayedCount() == 1 ? "" : "s",
-                _viewModel->GetFavoriteCount(), _viewModel->GetFavoriteCount() == 1 ? "" : "s");
+            mini_snprintf(text, sizeof(text), Localization::PlayedFavoritesFormat(),
+                _viewModel->GetPlayedCount(), _viewModel->GetFavoriteCount());
         }
         AddLine(fontRepository, FontType::Regular10, text);
 
         u32 playMinutes = _viewModel->GetTotalPlayMinutes();
         if (playMinutes > 0)
         {
-            mini_snprintf(text, sizeof(text), "%u launch%s, %uh %02um played",
-                _viewModel->GetTotalLaunches(), _viewModel->GetTotalLaunches() == 1 ? "" : "es",
-                playMinutes / 60, playMinutes % 60);
+            mini_snprintf(text, sizeof(text), Localization::LaunchesPlayedFormat(),
+                _viewModel->GetTotalLaunches(), playMinutes / 60, playMinutes % 60);
         }
         else
         {
-            mini_snprintf(text, sizeof(text), "%u launch%s in total",
-                _viewModel->GetTotalLaunches(), _viewModel->GetTotalLaunches() == 1 ? "" : "es");
+            mini_snprintf(text, sizeof(text), Localization::LaunchesTotalFormat(),
+                _viewModel->GetTotalLaunches());
         }
         AddLine(fontRepository, FontType::Regular10, text);
 
@@ -75,7 +73,7 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
         const char* lastPlayed = _viewModel->GetLastPlayed().lastPlayed.GetString();
         if (strlen(lastPlayed) >= 16)
         {
-            mini_snprintf(text, sizeof(text), "Last: %s (%c%c/%c%c %c%c:%c%c)",
+            mini_snprintf(text, sizeof(text), Localization::LastPlayedFormat(),
                 _viewModel->GetLastPlayed().fileName.GetString(),
                 lastPlayed[8], lastPlayed[9], lastPlayed[5], lastPlayed[6],
                 lastPlayed[11], lastPlayed[12], lastPlayed[14], lastPlayed[15]);
