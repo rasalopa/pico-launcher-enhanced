@@ -46,6 +46,14 @@
 
 #define BRIGHTNESS_LABEL_X  20
 #define BRIGHTNESS_LABEL_Y  110
+#define LAUNCHER_LABEL_X    20
+#define LAUNCHER_LABEL_Y    142
+#define LAUNCHER_PICO_X     92
+#define LAUNCHER_BOOTSTRAP_X 148
+#define LAUNCHER_BUTTON_Y   134
+#define LAUNCHER_PICO_LABEL_X 86
+#define LAUNCHER_BOOTSTRAP_LABEL_X 136
+#define LAUNCHER_LABEL_Y_TEXT 166
 
 #define FILTERS_LABEL_X     20
 #define FILTERS_LABEL_Y     112
@@ -83,6 +91,9 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _brightnessLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _launcherLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _picoLauncherLabel(Label2DView::CreateShared(48, 16, 16, fontRepository->GetFont(FontType::Medium7_5)))
+    , _bootstrapLauncherLabel(Label2DView::CreateShared(72, 16, 16, fontRepository->GetFont(FontType::Medium7_5)))
     , _materialColorScheme(materialColorScheme)
 {
     _titleLabel->SetText(u"Display Settings");
@@ -124,6 +135,19 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     {
         brightnessOption = CreateBrightnessOptionIconButton();
         AddChildTail(brightnessOption.GetPointer());
+    }
+
+    _launcherLabel->SetText("Launcher");
+    AddChildTail(_launcherLabel.GetPointer());
+    _picoLauncherLabel->SetText("Pico");
+    AddChildTail(_picoLauncherLabel.GetPointer());
+    _bootstrapLauncherLabel->SetText("Bootstrap");
+    AddChildTail(_bootstrapLauncherLabel.GetPointer());
+
+    for (auto& launcherOption : _launcherOptions)
+    {
+        launcherOption = CreateLauncherOptionIconButton();
+        AddChildTail(launcherOption.GetPointer());
     }
 }
 
@@ -196,6 +220,29 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateBrightnessOpti
     return brightnessOption;
 }
 
+SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLauncherOptionIconButton()
+{
+    auto launcherOption = IconButton2DView::CreateShared(
+        IconButtonView::Type::Tonal,
+        IconButtonView::State::ToggleUnselected,
+        md::sys::color::surfaceContainerLow,
+        _materialColorScheme
+    );
+    launcherOption->SetAction([] (IconButtonView* sender, void* arg)
+    {
+        auto self = reinterpret_cast<DisplaySettingsBottomSheetView*>(arg);
+        for (u32 i = 0; i < self->_launcherOptions.size(); i++)
+        {
+            if (self->_launcherOptions[i].GetPointer() == sender)
+            {
+                self->_viewModel->SetLauncher(i == 0 ? "pico" : "bootstrap");
+                break;
+            }
+        }
+    }, this);
+    return launcherOption;
+}
+
 void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
 {
     BottomSheetView::InitVram(vramContext);
@@ -221,6 +268,9 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _brightnessOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, brightness2IconTiles, brightness2IconTilesLen));
         _brightnessOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, brightness3IconTiles, brightness3IconTilesLen));
         _brightnessOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, brightness4IconTiles, brightness4IconTilesLen));
+
+        _launcherOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
+        _launcherOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
     }
 }
 
@@ -230,6 +280,9 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
     _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
     _brightnessLabel->SetPosition(BRIGHTNESS_LABEL_X, _position.y + BRIGHTNESS_LABEL_Y);
+    _launcherLabel->SetPosition(LAUNCHER_LABEL_X, _position.y + LAUNCHER_LABEL_Y);
+    _picoLauncherLabel->SetPosition(LAUNCHER_PICO_LABEL_X, _position.y + LAUNCHER_LABEL_Y_TEXT);
+    _bootstrapLauncherLabel->SetPosition(LAUNCHER_BOOTSTRAP_LABEL_X, _position.y + LAUNCHER_LABEL_Y_TEXT);
 }
 
 void DisplaySettingsBottomSheetView::Update()
@@ -278,6 +331,13 @@ void DisplaySettingsBottomSheetView::Update()
         x += 32;
         idx++;
     }
+
+    _launcherOptions[0]->SetPosition(LAUNCHER_PICO_X, _position.y + LAUNCHER_BUTTON_Y);
+    _launcherOptions[1]->SetPosition(LAUNCHER_BOOTSTRAP_X, _position.y + LAUNCHER_BUTTON_Y);
+
+    const bool useBootstrap = !strcasecmp(_viewModel->GetLauncher(), "bootstrap");
+    _launcherOptions[0]->SetState(!useBootstrap ? IconButtonView::State::ToggleSelected : IconButtonView::State::ToggleUnselected);
+    _launcherOptions[1]->SetState(useBootstrap ? IconButtonView::State::ToggleSelected : IconButtonView::State::ToggleUnselected);
 }
 
 void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
@@ -293,6 +353,12 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _sortingLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         _brightnessLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _brightnessLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _launcherLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _launcherLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _picoLauncherLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _picoLauncherLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _bootstrapLauncherLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _bootstrapLauncherLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         BottomSheetView::Draw(graphicsContext);
     }
     graphicsContext.SetPriority(oldPrio);
@@ -430,6 +496,23 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
                     idx = _sortOptions.size() - 1;
                 return _sortOptions[idx];
             }
+            else if (direction == FocusMoveDirection::Down)
+            {
+                return _launcherOptions[0];
+            }
+        }
+        idx++;
+    }
+
+    idx = 0;
+    for (auto& launcherOption : _launcherOptions)
+    {
+        if (currentFocus.GetPointer() == launcherOption.GetPointer())
+        {
+            if (direction == FocusMoveDirection::Left || direction == FocusMoveDirection::Right)
+                return _launcherOptions[idx == 0 ? 1 : 0];
+            else if (direction == FocusMoveDirection::Up)
+                return _brightnessOptions[0];
         }
         idx++;
     }
@@ -452,6 +535,10 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     for (auto& brightnessOption : _brightnessOptions)
     {
         brightnessOption->SetGraphics(iconButtonVramToken);
+    }
+    for (auto& launcherOption : _launcherOptions)
+    {
+        launcherOption->SetGraphics(iconButtonVramToken);
     }
 }
 
