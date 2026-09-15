@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include "gui/GraphicsContext.h"
 #include "gui/VramContext.h"
 #include "gui/IVramManager.h"
@@ -21,6 +22,12 @@
 #include "coverflowIcon.h"
 #include "themeIcon.h"
 #include "hideEmptyFoldersIcon.h"
+#include "languagePTIcon.h"
+#include "languageITIcon.h"
+#include "languageDEIcon.h"
+#include "languageFRIcon.h"
+#include "languageESIcon.h"
+#include "languageENIcon.h"
 #include "../IRomBrowserController.h"
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
@@ -39,13 +46,18 @@
 #define HIDE_EMPTY_FOLDERS_BUTTON_Y     (TITLE_LABEL_Y - 7)
 
 #define LAYOUT_LABEL_X      20
-#define LAYOUT_LABEL_Y      46
+#define LAYOUT_LABEL_Y      40
 
 #define SORTING_LABEL_X     20
-#define SORTING_LABEL_Y     78
+#define SORTING_LABEL_Y     68
 
 #define BRIGHTNESS_LABEL_X  20
-#define BRIGHTNESS_LABEL_Y  110
+#define BRIGHTNESS_LABEL_Y  96
+#define LANGUAGE_LABEL_X    20
+#define LANGUAGE_LABEL_Y    124
+#define LANGUAGE_BUTTON_X   64
+#define LANGUAGE_BUTTON_Y   116
+#define LANGUAGE_BUTTON_STEP 32
 
 #define FILTERS_LABEL_X     20
 #define FILTERS_LABEL_Y     112
@@ -65,6 +77,8 @@ static RomBrowserSortMode sRomBrowserSortModes[4] =
     [2] = RomBrowserSortMode::LastModified
 };
 
+static const char* sLanguages[6] = { "english", "spanish", "french", "german", "italian", "portuguese" };
+
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     DisplaySettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
     const IFontRepository* fontRepository)
@@ -83,9 +97,10 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _brightnessLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
 {
-    _titleLabel->SetText(u"Display Settings");
+    _titleLabel->SetText(Localization::DisplaySettings());
     AddChildTail(_titleLabel.GetPointer());
 
     _themeButton->SetAction([] (IconButtonView*, void* arg)
@@ -101,12 +116,14 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     }, this);
     AddChildTail(_hideEmptyFoldersButton.GetPointer());
 
-    _layoutLabel->SetText(u"Layout");
+    _layoutLabel->SetText(Localization::Layout());
     AddChildTail(_layoutLabel.GetPointer());
-    _sortingLabel->SetText(u"Sorting");
+    _sortingLabel->SetText(Localization::Sorting());
     AddChildTail(_sortingLabel.GetPointer());
-    _brightnessLabel->SetText(u"Light");
+    _brightnessLabel->SetText(Localization::Light());
     AddChildTail(_brightnessLabel.GetPointer());
+    _languageLabel->SetText(Localization::Language());
+    AddChildTail(_languageLabel.GetPointer());
 
     for (auto& layoutOption : _layoutOptions)
     {
@@ -124,6 +141,12 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     {
         brightnessOption = CreateBrightnessOptionIconButton();
         AddChildTail(brightnessOption.GetPointer());
+    }
+
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+    {
+        _languageOptions[i] = CreateLanguageOptionIconButton();
+        AddChildTail(_languageOptions[i].GetPointer());
     }
 }
 
@@ -196,6 +219,29 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateBrightnessOpti
     return brightnessOption;
 }
 
+SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLanguageOptionIconButton()
+{
+    auto languageOption = IconButton2DView::CreateShared(
+        IconButtonView::Type::Tonal,
+        IconButtonView::State::ToggleUnselected,
+        md::sys::color::surfaceContainerLow,
+        _materialColorScheme
+    );
+    languageOption->SetAction([] (IconButtonView* sender, void* arg)
+    {
+        auto self = reinterpret_cast<DisplaySettingsBottomSheetView*>(arg);
+        for (u32 i = 0; i < self->_languageOptions.size(); i++)
+        {
+            if (self->_languageOptions[i].GetPointer() == sender)
+            {
+                self->_viewModel->SetLanguage(sLanguages[i]);
+                break;
+            }
+        }
+    }, this);
+    return languageOption;
+}
+
 void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
 {
     BottomSheetView::InitVram(vramContext);
@@ -221,6 +267,13 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _brightnessOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, brightness2IconTiles, brightness2IconTilesLen));
         _brightnessOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, brightness3IconTiles, brightness3IconTilesLen));
         _brightnessOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, brightness4IconTiles, brightness4IconTilesLen));
+
+        _languageOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, languageENIconTiles, languageENIconTilesLen));
+        _languageOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, languageESIconTiles, languageESIconTilesLen));
+        _languageOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, languageFRIconTiles, languageFRIconTilesLen));
+        _languageOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, languageDEIconTiles, languageDEIconTilesLen));
+        _languageOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, languageITIconTiles, languageITIconTilesLen));
+        _languageOptions[5]->SetIconVramOffset(LoadIcon(*objVramManager, languagePTIconTiles, languagePTIconTilesLen));
     }
 }
 
@@ -230,6 +283,7 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
     _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
     _brightnessLabel->SetPosition(BRIGHTNESS_LABEL_X, _position.y + BRIGHTNESS_LABEL_Y);
+    _languageLabel->SetPosition(LANGUAGE_LABEL_X, _position.y + LANGUAGE_LABEL_Y);
 }
 
 void DisplaySettingsBottomSheetView::Update()
@@ -246,7 +300,7 @@ void DisplaySettingsBottomSheetView::Update()
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(x, _position.y + 38);
+        layoutOption->SetPosition(x, _position.y + 32);
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -258,7 +312,7 @@ void DisplaySettingsBottomSheetView::Update()
     idx = 0;
     for (auto& sortOption : _sortOptions)
     {
-        sortOption->SetPosition(x, _position.y + 70);
+        sortOption->SetPosition(x, _position.y + 60);
         sortOption->SetState(sRomBrowserSortModes[idx] == selectedSortMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -271,12 +325,23 @@ void DisplaySettingsBottomSheetView::Update()
     idx = 0;
     for (auto& brightnessOption : _brightnessOptions)
     {
-        brightnessOption->SetPosition(x, _position.y + 102);
+        brightnessOption->SetPosition(x, _position.y + 88);
         brightnessOption->SetState((int)idx == backlightLevel
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
         x += 32;
         idx++;
+    }
+
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+        _languageOptions[i]->SetPosition(LANGUAGE_BUTTON_X + i * LANGUAGE_BUTTON_STEP, _position.y + LANGUAGE_BUTTON_Y);
+
+    const char* currentLanguage = _viewModel->GetLanguage();
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+    {
+        _languageOptions[i]->SetState(!strcasecmp(currentLanguage, sLanguages[i])
+            ? IconButtonView::State::ToggleSelected
+            : IconButtonView::State::ToggleUnselected);
     }
 }
 
@@ -293,6 +358,8 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _sortingLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         _brightnessLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _brightnessLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _languageLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _languageLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         BottomSheetView::Draw(graphicsContext);
     }
     graphicsContext.SetPriority(oldPrio);
@@ -430,6 +497,36 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
                     idx = _sortOptions.size() - 1;
                 return _sortOptions[idx];
             }
+            else if (direction == FocusMoveDirection::Down)
+            {
+                return _languageOptions[idx];
+            }
+        }
+        idx++;
+    }
+
+    idx = 0;
+    for (auto& languageOption : _languageOptions)
+    {
+        if (currentFocus.GetPointer() == languageOption.GetPointer())
+        {
+            if (direction == FocusMoveDirection::Left)
+            {
+                if (--idx < 0)
+                    idx += _languageOptions.size();
+                return _languageOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Right)
+            {
+                if (++idx >= (int)_languageOptions.size())
+                    idx = 0;
+                return _languageOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Up)
+            {
+                return _brightnessOptions[idx >= (int)_brightnessOptions.size()
+                    ? _brightnessOptions.size() - 1 : idx];
+            }
         }
         idx++;
     }
@@ -452,6 +549,10 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     for (auto& brightnessOption : _brightnessOptions)
     {
         brightnessOption->SetGraphics(iconButtonVramToken);
+    }
+    for (auto& languageOption : _languageOptions)
+    {
+        languageOption->SetGraphics(iconButtonVramToken);
     }
 }
 

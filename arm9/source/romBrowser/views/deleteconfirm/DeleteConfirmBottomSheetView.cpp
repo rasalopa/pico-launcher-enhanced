@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include <string.h>
 #include "core/mini-printf.h"
 #include "gui/GraphicsContext.h"
@@ -27,17 +28,17 @@ DeleteConfirmBottomSheetView::DeleteConfirmBottomSheetView(SharedPtr<DeleteConfi
     , _hintLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 40, fontRepository->GetFont(FontType::Medium7_5)))
     , _materialColorScheme(materialColorScheme)
 {
-    _titleLabel->SetText(u"Delete game?");
+    _titleLabel->SetText(Localization::DeleteGame());
     _fileNameLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Marquee);
     _fileNameLabel->SetText(_viewModel->GetFileName());
     if (_viewModel->HasSave())
     {
         char text[280];
-        mini_snprintf(text, sizeof(text), "The save %s is also deleted", _viewModel->GetSaveFileName());
+        mini_snprintf(text, sizeof(text), Localization::SaveAlsoDeleted(), _viewModel->GetSaveFileName());
         _saveLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
         _saveLabel->SetText(text);
     }
-    _hintLabel->SetText("X: delete    A/B: cancel");
+    _hintLabel->SetText(Localization::DeleteHint());
     AddChildTail(_titleLabel.GetPointer());
     AddChildTail(_fileNameLabel.GetPointer());
     if (_viewModel->HasSave())

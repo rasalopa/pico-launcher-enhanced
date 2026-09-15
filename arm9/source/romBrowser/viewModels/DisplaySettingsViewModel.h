@@ -62,6 +62,16 @@ public:
         _romBrowserController->SetBacklightLevel(level);
     }
 
+    const char* GetLanguage() const
+    {
+        return _romBrowserController->GetLanguage();
+    }
+
+    void SetLanguage(const char* language)
+    {
+        _romBrowserController->SetLanguage(language);
+    }
+
     void Close()
     {
         _romBrowserController->HideDisplaySettings();

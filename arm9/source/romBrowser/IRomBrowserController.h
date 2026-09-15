@@ -89,6 +89,8 @@ public:
     ///        picked one (the firmware's level is left untouched then).
     virtual int GetBacklightLevel() const = 0;
     virtual void SetBacklightLevel(int level) = 0;
+    virtual const char* GetLanguage() const = 0;
+    virtual void SetLanguage(const char* language) = 0;
 
     virtual const FileInfo& GetTriggerFileInfo() const = 0;
 };
