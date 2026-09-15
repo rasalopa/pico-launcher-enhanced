@@ -1,5 +1,6 @@
 #include "common.h"
 #include <nds/system.h>
+#include <nds/bios.h>
 #include <libtwl/sound/sound.h>
 #include <libtwl/sound/soundChannel.h>
 #include <libtwl/sound/soundCapture.h>
@@ -52,6 +53,101 @@ static volatile u8 sMcuIrqFlag = false;
 ///        from the IPC handler, consumed on the main thread: the PMIC shares
 ///        the SPI bus with the touch screen, so all SPI stays on one thread.
 static volatile u8 sPendingBacklight = 0;
+
+// The custom ARM7 binary does not use libnds' default PM loop, so closing
+// the DS/DSi lid must be handled here. RCNT0_H bit 7 is the hinge sensor:
+// 0 = open, 1 = closed. We debounce it for a few VCount frames before
+// entering BIOS sleep. swiSleep() wakes when the lid is opened again.
+static u8 sLidClosedFrames = 0;
+static bool sLidWasClosed = false;
+
+// BIOS sleep turns the DS Lite backlight off. Keep the level that was active
+// before sleeping so it can be restored immediately after the lid wakes the
+// console. On the original DS this register mirrors the control register, so
+// it is only written when the DS Lite signature is present.
+static u8 sSleepBacklightLevel = 0;
+static bool sSleepBacklightValid = false;
+
+static void restoreBacklightAfterSleep()
+{
+    // BIOS sleep does not restore the DS Lite PMIC display state for us.
+    // Explicitly restore the LED and both backlight enable bits after wake.
+    pmic_setPowerLedBlink(PMIC_CONTROL_POWER_LED_BLINK_NONE);
+    pmic_setTopBacklightEnable(true);
+    pmic_setBottomBacklightEnable(true);
+
+    if (sSleepBacklightValid)
+    {
+        const u8 backlight = pmic_readRegister(PMIC_REG_BACKLIGHT);
+        if ((backlight & 0xF0) == 0x40)
+        {
+            pmic_writeRegister(
+                PMIC_REG_BACKLIGHT,
+                (backlight & ~PMIC_BACKLIGHT_MASK) | (sSleepBacklightLevel & PMIC_BACKLIGHT_MASK)
+            );
+        }
+    }
+
+    sSleepBacklightValid = false;
+}
+
+// The RTOS IRQ table uses bit 22 for the ARM7 hinge/PMIC interrupt.
+// On this project the default IRQ mask has it disabled, so BIOS sleep
+// would have no enabled wake source when the lid is opened. Keep a
+// dedicated handler installed and enable the interrupt explicitly.
+static void lidIrq(u32 irqMask)
+{
+    (void)irqMask;
+}
+
+static void checkLidSleep()
+{
+    const bool lidClosed = (REG_RCNT0_H & RCNT0_H_DATA_LID) != 0;
+
+    if (!lidClosed)
+    {
+        sLidClosedFrames = 0;
+
+        // If swiSleep() returned because the lid was opened, restore the
+        // backlight before the next frame is processed.
+        if (sLidWasClosed)
+        {
+            sLidWasClosed = false;
+            restoreBacklightAfterSleep();
+        }
+
+        return;
+    }
+
+    if (sLidClosedFrames < 8)
+        sLidClosedFrames++;
+
+    if (!sLidWasClosed && sLidClosedFrames >= 4)
+    {
+        sLidWasClosed = true;
+
+        // Capture the current DS Lite backlight level before BIOS sleep
+        // powers the display down.
+        const u8 backlight = pmic_readRegister(PMIC_REG_BACKLIGHT);
+        if ((backlight & 0xF0) == 0x40)
+        {
+            sSleepBacklightLevel = backlight & PMIC_BACKLIGHT_MASK;
+            sSleepBacklightValid = true;
+        }
+
+        // Enter the same low-power display state used by normal DS Lite
+        // lid sleep: disable both LCD backlights and make the power LED
+        // blink slowly. The hinge IRQ must remain enabled because BIOS
+        // sleep wakes the ARM7 from the lid-open interrupt.
+        pmic_setTopBacklightEnable(false);
+        pmic_setBottomBacklightEnable(false);
+        pmic_setPowerLedBlink(PMIC_CONTROL_POWER_LED_BLINK_SLOW);
+
+        rtos_disableIrqMask(RTOS_IRQ_VCOUNT);
+        swiSleep();
+        rtos_enableIrqMask(RTOS_IRQ_VCOUNT);
+    }
+}
 
 static void vcountIrq(u32 irqMask)
 {
@@ -173,6 +269,11 @@ static void initializeArm7()
 
     initializeVCountIrq();
 
+    // RTOS_IRQ_PMIC (bit 22) is the ARM7 hinge interrupt on NDS.
+    // Enable it explicitly so BIOS swiSleep() can wake when the lid opens.
+    rtos_setIrqFunc(RTOS_IRQ_PMIC, lidIrq);
+    rtos_enableIrqMask(RTOS_IRQ_PMIC);
+
     if (isDSiMode())
     {
         rtos_setIrq2Func(RTOS_IRQ2_MCU, mcuIrq);
@@ -267,6 +368,7 @@ int main()
         }
         SHARED_KEY_XY = keys;
         applyPendingBacklight();
+        checkLidSleep();
         updateArm7();
     }
 
