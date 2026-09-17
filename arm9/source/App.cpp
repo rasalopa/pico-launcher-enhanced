@@ -561,6 +561,8 @@ void App::Update()
 
     const auto& stateMachine = _romBrowserController.GetStateMachine();
     _romBrowserController.Update();
+    if (_romBrowserController.ConsumeBootstrapSelectionError() && _toast)
+        _toast->Show("Bootstrap not installed or not found");
     auto curState = stateMachine.GetCurrentState();
     if (_changeDisplayMode)
     {
