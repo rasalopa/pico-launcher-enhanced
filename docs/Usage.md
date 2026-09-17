@@ -42,7 +42,7 @@ Currently, the only settings available are the display mode, and the sorting mod
 
 ## Settings
 Settings are stored on your SD card in `/_pico/settings.json`. They can be edited with any text editor. The following settings are available:
-- `language` - Display language for Pico Launcher. Currently, only `english` is supported. Other languages may be supported later.
+- `language` - Display language for Pico Launcher. Supported languages are `english`, `spanish`, `french`, `german`, `italian`, and `portuguese`.
 - `romBrowserLayout` - Specified how folder contents are displayed. This setting can be changed in Pico Launcher directly.
 - `romBrowserSortMode` - Specified if folder contents should be sorted from A to Z (`NameAscending`), or from Z to A (`NameDescending`). This setting can be changed from within Pico Launcher.
 - `romBrowserHideEmptyFolders` - When `true`, folders with no visible content of their own are hidden from the browser. This setting can be changed in Pico Launcher directly.

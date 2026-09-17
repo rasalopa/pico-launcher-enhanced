@@ -1,4 +1,5 @@
 #include "common.h"
+#include "services/settings/Localization.h"
 #include <array>
 #include "picoLoaderBootstrap.h"
 #include "PicoLoaderProcess.h"
@@ -300,6 +301,21 @@ void RomBrowserController::SetBacklightLevel(int level)
     }
     // apply immediately; no browser rebuild is needed for this
     backlight_setLevel(level);
+}
+
+void RomBrowserController::SetLanguage(const char* language)
+{
+    if (!language || !*language)
+        return;
+
+    _appSettingsService->GetAppSettings().language = language;
+    Localization::SetLanguage(language);
+
+    _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+    {
+        _appSettingsService->Save();
+        return TaskResult<void>::Completed();
+    });
 }
 
 void RomBrowserController::Update()
