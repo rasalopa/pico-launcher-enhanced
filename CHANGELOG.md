@@ -4,6 +4,10 @@
 
 ### [Unreleased]
 
+#### Added
+- Closing the lid puts the console to sleep, and opening it wakes it where it was. From
+  marlooonxdd (#23).
+
 #### Changed
 - The icon buttons' selector VRAM offset starts at zero instead of whatever was in memory. Nothing
   drew before it was set, so nothing changes on screen; it is an uninitialised member less. From
