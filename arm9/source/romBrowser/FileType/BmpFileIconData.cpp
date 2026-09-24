@@ -14,33 +14,32 @@ BmpFileIconData::BmpFileIconData(const FastFileRef& iconFileRef)
 
     memset(_iconGfx, 0, sizeof(_iconGfx));
     memset(_iconPltt, 0, sizeof(_iconPltt));
-    Load(std::move(file));
+    _isLoaded = Load(std::move(file));
     DC_FlushRange(_iconGfx, sizeof(_iconGfx));
     DC_FlushRange(_iconPltt, sizeof(_iconPltt));
 }
 
-void BmpFileIconData::Load(std::unique_ptr<File> file)
+bool BmpFileIconData::Load(std::unique_ptr<File> file)
 {
-    // BMP file header (14) + DIB header (40) + 16-color palette (64)
-    u8 headerAndPalette[118];
-    if (!file->ReadExact(headerAndPalette, sizeof(headerAndPalette)) ||
-        !BmpHeader::Validate(headerAndPalette, 32, 32, 4))
+    // Heap-allocate the staging buffer so it doesn't live on the task thread stack. It holds the
+    // header and the color table first, then the pixels. A valid icon file is always longer than both.
+    constexpr u32 headerAndPaletteSize = BmpHeader::MaxHeaderSize + 16 * 4;
+    static_assert(headerAndPaletteSize <= GfxSize);
+
+    auto rawPixelData = std::make_unique<u8[]>(GfxSize);
+    BmpHeader header;
+    if (!rawPixelData ||
+        !file->ReadExact(rawPixelData.get(), headerAndPaletteSize) ||
+        !BmpHeader::Parse(rawPixelData.get(), 32, 32, 4, header))
     {
-        return;
+        return false;
     }
 
-    u32 dataOffset = headerAndPalette[0xA] | (headerAndPalette[0xB] << 8) |
-        (headerAndPalette[0xC] << 16) | (headerAndPalette[0xD] << 24);
+    const bool topDown = header.topDown;
 
-    if (dataOffset < sizeof(headerAndPalette))
-    {
-        return;
-    }
-
-    const bool topDown = BmpHeader::IsTopDown(headerAndPalette);
-
-    const u8* paletteData = &headerAndPalette[0x36];
-    for (u32 i = 0; i < 16; i++)
+    // Entries missing from a short color table stay black.
+    const u8* paletteData = &rawPixelData[header.paletteOffset];
+    for (u32 i = 0; i < header.paletteCount; i++)
     {
         u32 b = *paletteData++;
         u32 g = *paletteData++;
@@ -49,14 +48,11 @@ void BmpFileIconData::Load(std::unique_ptr<File> file)
         _iconPltt[i] = ColorConverter::ToGBGR565(Rgb<8, 8, 8>(r, g, b));
     }
 
-    // Heap-allocate the staging buffer so it doesn't live on the task thread stack.
-    auto rawPixelData = std::make_unique<u8[]>(GfxSize);
-    if (!rawPixelData ||
-        file->Seek(dataOffset) != FR_OK ||
+    if (file->Seek(header.dataOffset) != FR_OK ||
         !file->ReadExact(rawPixelData.get(), GfxSize))
     {
         memset(_iconPltt, 0, sizeof(_iconPltt));
-        return;
+        return false;
     }
 
     // Convert BMP rows (bottom-up or top-down) to the DS tiled 4 bpp sprite format.
@@ -80,4 +76,6 @@ void BmpFileIconData::Load(std::unique_ptr<File> file)
             memcpy(&_iconGfx[(ty * 4 + tx) * 32 + py * 4], &val, 4);
         }
     }
+
+    return true;
 }

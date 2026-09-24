@@ -13,6 +13,12 @@
   drew before it was set, so nothing changes on screen; it is an uninitialised member less. From
   marlooonxdd (#24).
 
+#### Fixed
+- Custom covers with fewer than 256 colors, or saved with a newer BMP header as GIMP does, are
+  drawn as they are instead of as colored noise, and covers saved top to bottom are no longer
+  upside down. A cover or icon the launcher can't read gives way to the next one in line, so it
+  no longer draws garbage or blanks out the game's own icon. Reported by shin on Discord.
+
 ### [enhanced-v1.8.0]
 
 #### Added

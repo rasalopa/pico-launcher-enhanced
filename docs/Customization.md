@@ -26,7 +26,7 @@ User icon (`/_pico/icons/user/`) > game code based icon (`/_pico/icons/nds/` or 
 Folder icons are looked up independently and do not participate in the above priority chain: `banner.bnr` > `icon.bmp` > theme default.
 
 ### Icon format
-Icons must be **32×32 pixels, 4 bpp (16 colors), uncompressed `.bmp`** files, with the first palette color treated as transparent.
+Icons must be **32×32 pixels, 4 bpp (up to 16 colors), uncompressed `.bmp`** files, with the first palette color treated as transparent. An icon in another format is ignored, and the next one in the priority chain is shown.
 
 ## Banners
 Custom banners are `.bnr` files containing custom game titles, subtitles and (animated) icons. This is especially useful for adding custom titles and (animated) icons to GBA ROMs or other systems.
@@ -72,7 +72,7 @@ User cover (`/_pico/covers/user/`) > game code based cover (`/_pico/covers/nds/`
 Folder covers (`cover.bmp`) are looked up independently and do not participate in the above priority chain.
 
 ### Cover format
-Covers should be 8 bpp (256 colors) `.bmp` files of 128x96 pixels.
+Covers should be 8 bpp (up to 256 colors) uncompressed `.bmp` files of 128x96 pixels. A cover in another format is ignored, and the next one in the priority chain is shown.
 Only the top-left 106x96 pixels are used. The remaining part on the right is padding and is ignored.
 
 #### Example

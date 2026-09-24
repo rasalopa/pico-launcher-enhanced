@@ -1,52 +1,85 @@
 #pragma once
-#include <cstdlib>
 #include <nds/ndstypes.h>
 
-/// @brief Static helpers for reading and validating BITMAPFILEHEADER + BITMAPINFOHEADER
-///        fields from a raw BMP buffer.
+/// @brief Layout of an uncompressed palettized BMP, read from its BITMAPFILEHEADER and DIB header.
 struct BmpHeader
 {
-    /// @brief Reads the (possibly negative) biHeight field of a BMP's DIB header.
-    /// @param bmpHeader Buffer containing BMP data. Must be at least 50 bytes.
-    /// @return The image height. Negative when the BMP is stored top-down.
-    static s32 GetHeight(const u8* bmpHeader)
-    {
-        return (s32)(bmpHeader[0x16] | (bmpHeader[0x17] << 8) | (bmpHeader[0x18] << 16) | (bmpHeader[0x19] << 24));
-    }
+    /// @brief Size of the BITMAPFILEHEADER plus the largest DIB header (BITMAPV5HEADER).
+    static constexpr u32 MaxHeaderSize = 14 + 124;
 
-    /// @brief Validates BITMAPFILEHEADER + BITMAPINFOHEADER fields from a raw BMP buffer.
-    /// @param bmpHeader Buffer containing BMP data. Must be at least 50 bytes.
+    /// @brief File offset of the color table.
+    u32 paletteOffset;
+
+    /// @brief Number of entries in the color table, at least 1.
+    u32 paletteCount;
+
+    /// @brief File offset of the pixel data.
+    u32 dataOffset;
+
+    /// @brief \c true when the rows are stored top to bottom (negative biHeight).
+    bool topDown;
+
+    /// @brief Parses and validates the header of an uncompressed palettized BMP. Any DIB header from
+    ///        BITMAPINFOHEADER to BITMAPV5HEADER is accepted, and so is a color table with fewer entries
+    ///        than the bit depth allows, which image editors write for images with few colors.
+    /// @param buffer The start of the BMP file. Must be at least MaxHeaderSize bytes.
     /// @param expectedWidth Expected width of the image.
     /// @param expectedHeight Expected height of the image.
     /// @param expectedBpp Expected bits per pixel.
+    /// @param header Receives the layout of the file when it is valid.
     /// @return \c true when valid, or \c false otherwise.
-    static bool Validate(const u8* bmpHeader, u32 expectedWidth, u32 expectedHeight, u32 expectedBpp)
+    static bool Parse(const u8* buffer, u32 expectedWidth, u32 expectedHeight, u32 expectedBpp, BmpHeader& header)
     {
-        if (bmpHeader[0] != 'B' || bmpHeader[1] != 'M')
+        if (buffer[0] != 'B' || buffer[1] != 'M')
         {
             return false;
         }
 
-        u32 dibSize = bmpHeader[0x0E] | (bmpHeader[0x0F] << 8) | (bmpHeader[0x10] << 16) | (bmpHeader[0x11] << 24);
-        u32 width   = bmpHeader[0x12] | (bmpHeader[0x13] << 8) | (bmpHeader[0x14] << 16) | (bmpHeader[0x15] << 24);
-        u32 bpp     = bmpHeader[0x1C] | (bmpHeader[0x1D] << 8);
-        u32 comp    = bmpHeader[0x1E] | (bmpHeader[0x1F] << 8) | (bmpHeader[0x20] << 16) | (bmpHeader[0x21] << 24);
-        u32 clrUsed = bmpHeader[0x2E] | (bmpHeader[0x2F] << 8) | (bmpHeader[0x30] << 16) | (bmpHeader[0x31] << 24);
+        u32 dataOffset = ReadU32(&buffer[0x0A]);
+        u32 dibSize    = ReadU32(&buffer[0x0E]);
+        u32 width      = ReadU32(&buffer[0x12]);
+        s32 height     = (s32)ReadU32(&buffer[0x16]);
+        u32 bpp        = buffer[0x1C] | (buffer[0x1D] << 8);
+        u32 comp       = ReadU32(&buffer[0x1E]);
+        u32 clrUsed    = ReadU32(&buffer[0x2E]);
 
-        return dibSize == 40
-            && width == expectedWidth
-            && (u32)std::abs(GetHeight(bmpHeader)) == expectedHeight
-            && bpp == expectedBpp
-            && comp == 0
-            && (clrUsed == 0 || clrUsed == (1u << expectedBpp));
+        u32 maxColors = 1u << expectedBpp;
+        u32 paletteOffset = 14 + dibSize;
+        if (dibSize < 40 || dibSize > MaxHeaderSize - 14
+            || width != expectedWidth
+            || (height != (s32)expectedHeight && height != -(s32)expectedHeight)
+            || bpp != expectedBpp
+            || comp != 0
+            || clrUsed > maxColors
+            || dataOffset < paletteOffset)
+        {
+            return false;
+        }
+
+        // A clrUsed of 0 means a full table, but some writers store a shorter one anyway,
+        // so the table also ends where the pixel data starts.
+        u32 paletteCount = clrUsed == 0 ? maxColors : clrUsed;
+        u32 paletteRoom = (dataOffset - paletteOffset) / 4;
+        if (paletteCount > paletteRoom)
+        {
+            paletteCount = paletteRoom;
+        }
+
+        if (paletteCount == 0)
+        {
+            return false;
+        }
+
+        header.paletteOffset = paletteOffset;
+        header.paletteCount = paletteCount;
+        header.dataOffset = dataOffset;
+        header.topDown = height < 0;
+        return true;
     }
 
-    /// @brief Returns \c true if the BMP stores rows top-to-bottom (negative biHeight).
-    /// @param bmpHeader The raw BMP buffer.
-    /// @return \c true when top-down, or \c false otherwise.
-    /// @note Call only after Validate() succeeds.
-    static bool IsTopDown(const u8* bmpHeader)
+private:
+    static u32 ReadU32(const u8* data)
     {
-        return GetHeight(bmpHeader) < 0;
+        return data[0] | (data[1] << 8) | (data[2] << 16) | ((u32)data[3] << 24);
     }
 };

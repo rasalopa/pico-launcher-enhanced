@@ -16,9 +16,14 @@ public:
     const u8* GetGfx() const { return _iconGfx; }
     const u16* GetPltt() const { return _iconPltt; }
 
+    /// @brief Returns whether the file was read as a 32x32 4 bpp BMP.
+    /// @return \c true when the icon was loaded, or \c false when it should not be shown.
+    bool IsLoaded() const { return _isLoaded; }
+
 private:
     u8 _iconGfx[GfxSize] alignas(32);
     u16 _iconPltt[16] alignas(32);
+    bool _isLoaded = false;
 
-    void Load(std::unique_ptr<File> file);
+    bool Load(std::unique_ptr<File> file);
 };

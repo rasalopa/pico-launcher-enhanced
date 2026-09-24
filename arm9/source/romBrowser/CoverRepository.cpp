@@ -8,6 +8,14 @@
 #include "SdFolderFactory.h"
 #include "CoverRepository.h"
 
+/// @brief Loads a BMP cover.
+/// @return The cover, or \c nullptr when the file is not a valid cover, so the caller can fall back.
+static FileCover* LoadBmpCover(const FastFileRef& coverFileRef)
+{
+    auto cover = std::make_unique<BmpFileCover>(coverFileRef);
+    return cover->IsLoaded() ? cover.release() : nullptr;
+}
+
 void CoverRepository::Initialize()
 {
     InitializeFolders("/_pico/covers/");
@@ -31,7 +39,13 @@ FileCover* CoverRepository::GetCoverForFile(const FileInfo& fileInfo, const Inte
             {
                 if (!(folderFileInfo.fattrib & AM_DIR) && !strcasecmp(folderFileInfo.fname, "cover.bmp"))
                 {
-                    return new BmpFileCover(FastFileRef(folderDir->GetFatFsDirectory(), &folderFileInfo));
+                    auto cover = LoadBmpCover(FastFileRef(folderDir->GetFatFsDirectory(), &folderFileInfo));
+                    if (cover)
+                    {
+                        return cover;
+                    }
+
+                    break;
                 }
             }
         }
@@ -39,17 +53,23 @@ FileCover* CoverRepository::GetCoverForFile(const FileInfo& fileInfo, const Inte
         return fileType->CreateFileCover(fileInfo.GetFileName());
     }
 
-    const FileInfo* coverFile = nullptr;
-
     // Try to get a cover based on the filename in the user folder
     if (_userFolder)
     {
         mini_snprintf(nameBuffer, sizeof(nameBuffer), "%s.bmp", fileInfo.GetFileName());
-        coverFile = _userFolder->BinarySearch(nameBuffer);
+        const auto* coverFile = _userFolder->BinarySearch(nameBuffer);
+        if (coverFile)
+        {
+            auto cover = LoadBmpCover(coverFile->GetFastFileRef());
+            if (cover)
+            {
+                return cover;
+            }
+        }
     }
 
     // Try to get a cover based on an internal game code
-    if (!coverFile && internalFileInfo)
+    if (internalFileInfo)
     {
         const auto* coverFolder = GetFileTypeFolder(fileType->GetShortName());
         if (coverFolder)
@@ -58,14 +78,17 @@ FileCover* CoverRepository::GetCoverForFile(const FileInfo& fileInfo, const Inte
             if (gameCode)
             {
                 mini_snprintf(nameBuffer, sizeof(nameBuffer), "%s.bmp", gameCode);
-                coverFile = coverFolder->BinarySearch(nameBuffer);
+                const auto* coverFile = coverFolder->BinarySearch(nameBuffer);
+                if (coverFile)
+                {
+                    auto cover = LoadBmpCover(coverFile->GetFastFileRef());
+                    if (cover)
+                    {
+                        return cover;
+                    }
+                }
             }
         }
-    }
-
-    if (coverFile)
-    {
-        return new BmpFileCover(coverFile->GetFastFileRef());
     }
 
     if (internalFileInfo)
