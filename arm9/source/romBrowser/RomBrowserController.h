@@ -88,6 +88,14 @@ public:
     }
 
     void SetBacklightLevel(int level) override;
+    const char* GetLauncher() const override
+    {
+        return _appSettingsService->GetAppSettings().launcher.GetString();
+    }
+
+    void SetLauncher(const char* launcher) override;
+
+    bool ConsumeBootstrapSelectionError();
 
     const RomBrowserDisplaySettings& GetRomBrowserDisplaySettings() const override
     {
@@ -105,6 +113,7 @@ private:
     bool _favoritesFilter = false;
     bool _completedFilter = false;
     bool _bigStepJumpPending = false;
+    volatile bool _bootstrapSelectionError = false;
     TCHAR _triggerGameCode[8];
 
     void FormatNowDateTime(TCHAR* buffer, u32 bufferLength) const;

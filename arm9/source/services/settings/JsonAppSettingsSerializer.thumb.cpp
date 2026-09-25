@@ -10,6 +10,7 @@
 #define JSON_RESERVED_SIZE  2048
 
 #define KEY_LANGUAGE                 "language"
+#define KEY_LAUNCHER                 "launcher"
 #define KEY_ROM_BROWSER_LAYOUT       "romBrowserLayout"
 #define KEY_ROM_BROWSER_SORT_MODE    "romBrowserSortMode"
 #define KEY_ROM_BROWSER_HIDE_EMPTY_FOLDERS  "romBrowserHideEmptyFolders"
@@ -127,6 +128,7 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
 {
     DynamicJsonDocument json(JSON_RESERVED_SIZE);
     json[KEY_LANGUAGE] = appSettings->language.GetString();
+    json[KEY_LAUNCHER] = appSettings->launcher.GetString();
     json[KEY_ROM_BROWSER_LAYOUT] = serializeRomBrowserLayout(appSettings->romBrowserDisplaySettings.layout);
     json[KEY_ROM_BROWSER_SORT_MODE] = serializeRomBrowserSortMode(appSettings->romBrowserDisplaySettings.sortMode);
     json[KEY_ROM_BROWSER_HIDE_EMPTY_FOLDERS] = appSettings->romBrowserDisplaySettings.hideEmptyFolders;
@@ -171,6 +173,7 @@ void JsonAppSettingsSerializer::Serialize(const AppSettings* appSettings, const 
 static void readJson(AppSettings* appSettings, const JsonDocument& json)
 {
     appSettings->language = json[KEY_LANGUAGE] | appSettings->language.GetString();
+    appSettings->launcher = json[KEY_LAUNCHER] | appSettings->launcher.GetString();
     appSettings->theme = json[KEY_THEME] | appSettings->theme.GetString();
     appSettings->lastUsedFilePath = json[KEY_LAST_USED_FILE_PATH] | appSettings->lastUsedFilePath.GetString();
 

@@ -62,6 +62,16 @@ public:
         _romBrowserController->SetBacklightLevel(level);
     }
 
+    const char* GetLauncher() const
+    {
+        return _romBrowserController->GetLauncher();
+    }
+
+    void SetLauncher(const char* launcher)
+    {
+        _romBrowserController->SetLauncher(launcher);
+    }
+
     void Close()
     {
         _romBrowserController->HideDisplaySettings();

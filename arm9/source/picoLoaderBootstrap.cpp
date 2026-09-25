@@ -38,6 +38,11 @@ void pload_setLauncherPath(const char* launcherPath)
     StringUtil::Copy(sLauncherPath, launcherPath, sizeof(sLauncherPath));
 }
 
+const char* pload_getLauncherPath()
+{
+    return sLauncherPath;
+}
+
 void pload_setCheatData(const pload_cheats_t* cheatData)
 {
     sCheatData = cheatData;
