@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Download missing covers from libretro-thumbnails (No-Intro) for the systems
 WITHOUT a gamecode (GB, GBC, Mega Drive, etc.) and install them into
-<SD>/_pico/covers/user/<file>.bmp — the folder Pico Launcher checks by
+<SD>/_pico/covers/user/<file>.bmp, the folder Pico Launcher checks by
 filename for any associated type.
 
 (For GBA use fetch_covers_gba.py, which leverages the gamecode in the header.)
@@ -83,6 +83,10 @@ def pick(title: str, by_norm: dict[str, list[str]]) -> str | None:
 
 
 def main() -> None:
+    # Piped or redirected on windows, stdout takes the locale encoding, which
+    # cannot spell every game name. Print what it can rather than end in a
+    # traceback after the covers are already on the card (issue #13).
+    sys.stdout.reconfigure(errors="replace")
     # --sd takes a value, so it cannot be filtered by prefix: doing that left
     # the path itself in the system list and the next check rejected it, which
     # made the documented option always print the usage and exit. Since the
@@ -177,11 +181,11 @@ def main() -> None:
             except Exception as e:  # noqa: BLE001 — report and keep going
                 fail.append((system, f, str(e)))
 
-    print(f"\n✓ {len(ok)} covers{' (dry-run)' if dry else ' installed'}:")
+    print(f"\n{len(ok)} covers{' (dry-run)' if dry else ' installed'}:")
     for s, f, m in ok:
-        print(f"  [{s}] {f}  ←  {m}")
+        print(f"  [{s}] {f}  <-  {m}")
     if fail:
-        print(f"\n✗ {len(fail)} unresolved:")
+        print(f"\n{len(fail)} unresolved:")
         for s, f, why in fail:
             print(f"  [{s}] {f}: {why}")
 

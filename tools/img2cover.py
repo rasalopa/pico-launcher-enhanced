@@ -52,5 +52,6 @@ def convert(src_path: str, dst_path: str) -> None:
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         sys.exit(__doc__)
+    sys.stdout.reconfigure(errors="replace")  # see fetch_covers.py, issue #13
     convert(sys.argv[1], sys.argv[2])
     print(f"{sys.argv[2]}: {W}x{H}, 8bpp, 256 colors")

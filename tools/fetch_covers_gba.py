@@ -82,6 +82,10 @@ def pick(title: str, code: str, catalog: list[str], by_norm: dict[str, list[str]
 
 
 def main() -> None:
+    # Piped or redirected on windows, stdout takes the locale encoding, which
+    # cannot spell every game name. Print what it can rather than end in a
+    # traceback after the covers are already on the card (issue #13).
+    sys.stdout.reconfigure(errors="replace")
     # --sd is accepted here too. It used to be ignored, so someone who learned
     # the flag from the other script silently wrote to whatever the default
     # happened to be instead of the card they named.
@@ -186,11 +190,11 @@ def main() -> None:
         except Exception as e:  # noqa: BLE001 — report and keep going with the rest
             fail.append((f, code, str(e)))
 
-    print(f"\n✓ {len(ok)} covers{' (dry-run)' if dry else ' installed'}:")
+    print(f"\n{len(ok)} covers{' (dry-run)' if dry else ' installed'}:")
     for f, code, m in ok:
-        print(f"  [{code or '----'}] {f}  ←  {m}")
+        print(f"  [{code or '----'}] {f}  <-  {m}")
     if fail:
-        print(f"\n✗ {len(fail)} unresolved:")
+        print(f"\n{len(fail)} unresolved:")
         for f, code, why in fail:
             print(f"  [{code or '----'}] {f}: {why}")
 
