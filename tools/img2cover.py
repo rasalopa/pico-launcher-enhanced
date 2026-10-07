@@ -10,6 +10,7 @@ black bars; the slight distortion is unnoticeable on screen) and columns
 
 Usage: python3 tools/img2cover.py input.png output.bmp
 """
+import os
 import struct
 import sys
 
@@ -45,8 +46,16 @@ def convert(src_path: str, dst_path: str) -> None:
     header = struct.pack("<2sIHHI", b"BM", pixel_offset + len(pixel_data), 0, 0, pixel_offset)
     dib = struct.pack("<IiiHHIIiiII", 40, W, H, 1, 8, 0, len(pixel_data), 2835, 2835, 256, 0)
 
-    with open(dst_path, "wb") as f:
+    # Written beside the destination and renamed into place, so a write cut
+    # short (the card pulled out or full) cannot leave a partial cover under
+    # its real name, which both fetch scripts would then skip for good
+    # (issue #14). A leftover .tmp is ignored by them and by the launcher.
+    tmp_path = dst_path + ".tmp"
+    with open(tmp_path, "wb") as f:
         f.write(header + dib + pal_bytes + pixel_data)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, dst_path)
 
 
 if __name__ == "__main__":
