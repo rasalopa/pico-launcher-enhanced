@@ -121,6 +121,8 @@ The fork stores per-game data (favorites, launch counts, play time) in `/_pico/g
 
 Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Every change the fork makes on top of upstream is mapped in [The fork against upstream](docs/Upstream.md), with its commits and the upstream files it touches, so any of it can be taken on its own.
+
 ## License
 
 Icons by [icons8](https://icons8.com/)
