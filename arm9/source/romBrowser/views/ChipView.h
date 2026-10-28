@@ -16,6 +16,8 @@ class ChipView : public View
     SHARED_ONLY(ChipView)
 
 public:
+    typedef void (*chip_action_t)(ChipView* sender, void* arg);
+
     class VramToken
     {
         u32 _vramOffset;
@@ -55,6 +57,18 @@ public:
         _iconVramOffset = enabled ? vramOffset : 0xFFFFFFFF;
     }
 
+    /// @brief Runs \p action on A or a tap. Without an action, input goes to the parent as before.
+    void SetAction(chip_action_t action, void* arg)
+    {
+        _action = action;
+        _actionArg = arg;
+    }
+
+    bool HandleInput(const InputProvider& inputProvider, FocusManager& focusManager) override;
+    void HandlePenDown(const Point& touchPoint, FocusManager& focusManager) override;
+    void HandlePenMove(const Point& touchPoint, FocusManager& focusManager) override;
+    void HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager) override;
+
     int GetWidth() const
     {
         int width;
@@ -86,6 +100,9 @@ private:
     SharedPtr<Label2DView> _label;
     u32 _iconVramOffset;
     const MaterialColorScheme* _materialColorScheme;
+    chip_action_t _action = nullptr;
+    void* _actionArg = nullptr;
+    bool _penDown = false;
 
     ChipView(md::sys::color backgroundColor, const MaterialColorScheme* materialColorScheme,
         const IFontRepository* fontRepository)

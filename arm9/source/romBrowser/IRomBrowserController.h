@@ -31,8 +31,15 @@ public:
     virtual bool IsFavoritesFilterEnabled() const = 0;
     virtual void ToggleCompletedFilter() = 0;
     virtual bool IsCompletedFilterEnabled() const = 0;
+    /// @brief Stores the save slot the loader uses for the game from now on, see
+    ///        IGameDataService::SetSaveSlot.
+    virtual void SetSaveSlot(const FileInfo& fileInfo, u32 saveSlot) = 0;
+    /// @brief The game details sheet (Y): save slot and the way to the cheats.
     virtual void ShowGameInfo(const FileInfo& fileInfo) = 0;
     virtual void HideGameInfo() = 0;
+    /// @brief Swaps the game details sheet for the cheats sheet of the same game.
+    ///        Closing that one goes back to the browser through HideGameInfo.
+    virtual void ShowCheats() = 0;
     virtual void ShowDisplaySettings() = 0;
     virtual void HideDisplaySettings() = 0;
     virtual void ShowRecents() = 0;
@@ -65,6 +72,10 @@ public:
     /// @brief Whether deleting the game leaves its save alone, as for a rom an
     ///        emulator runs. Valid while the delete confirmation is shown.
     virtual bool DeleteKeepsSave() const = 0;
+    /// @brief How many save slot files (.sav1 to .sav9) go with the game, on top of
+    ///        the save GetDeleteSaveFileName names. Valid while the delete
+    ///        confirmation is shown.
+    virtual u32 GetDeleteExtraSaveCount() const = 0;
     virtual void GotoSettingsScreen() = 0;
 
     virtual void Update() = 0;

@@ -1,5 +1,5 @@
 # Game Data File
-Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
+Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time, save slots; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
 
 Regular users never need to edit this file. Deleting it simply resets all favorites and statistics.
 
@@ -14,7 +14,8 @@ Regular users never need to edit this file. Deleting it simply resets all favori
       "launchCount": 12,
       "playMinutes": 340,
       "lastPlayed": "2026-07-16 21:03",
-      "path": "/Games/nds/Some Game.nds"
+      "path": "/Games/nds/Some Game.nds",
+      "saveSlot": 2
     },
     "tetris.gb": {
       "launchCount": 2,
@@ -40,8 +41,9 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `playMinutes` | number | > 0 | Accumulated play time in minutes (approximate, see below). |
 | `lastPlayed` | string | non-empty | `"YYYY-MM-DD HH:MM"`, 24-hour clock. Lexicographic order equals chronological order, so tools can sort these as plain strings. |
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
+| `saveSlot` | number | 1 to 9 | Save slot picked in the game details sheet. The loader then uses `<game name>.sav<N>` instead of `<game name>.sav` (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
 
-An entry whose `favorite` and `completed` are both false and whose `launchCount` and `playMinutes` are both 0 is pruned on the next write. Deleting a game through the launcher also removes its entry.
+An entry whose `favorite` and `completed` are both false, whose `launchCount` and `playMinutes` are both 0 and that has no `saveSlot` is pruned on the next write. Deleting a game through the launcher also removes its entry.
 
 ## Session keys (root level)
 While a play session is open, the root object holds:
@@ -54,7 +56,7 @@ While a play session is open, the root object holds:
 
 A session opens when a game is launched and closes at the next launcher boot. On boot, the elapsed time since `sessionStart` is added to the game's `playMinutes` if it is between 1 minute and 6 hours (longer means the console was powered off, not playing), and the session keys are removed.
 
-With `launchTracking` set to `false` in `settings.json`, a launch writes nothing here, and a session still open from before the switch is removed on the next boot without being credited.
+With `launchTracking` set to `false` in `settings.json`, a launch writes nothing here, and a session still open from before the switch is removed on the next boot without being credited. A picked save slot is still written: it is a choice, not a statistic.
 
 ## Identity
 **An entry belongs to one ROM file, and the file name is its identity.** Favorites, completed marks

@@ -39,6 +39,7 @@ Everything upstream Pico Launcher offers (display modes, [custom icons, banners 
 - **ROMs run by an emulator count as games**: GB, SNES or any ROM opened through a file association can be marked, deleted and picked at random; see [FileAssociations.md](docs/FileAssociations.md)
 - **Theme deletion**: from the theme selector, with confirmation; the theme in use and the two that come with the launcher are kept
 - **A saves folder**: set `"saveLocation": "saves"` in `settings.json` and DS saves live in a `saves` folder next to the games, the layout TWiLight Menu++ uses, so both launchers can share one card; see [Usage.md](docs/Usage.md#settings)
+- **Save slots**: up to ten saves per DS game, picked with L and R in the sheet Y opens; slot 0 is the regular `.sav`, the others are `.sav1` to `.sav9`; see [Enhanced.md](docs/Enhanced.md#save-slots)
 - **Brightness control**: set the DS Lite's backlight level from display settings
 - **Hide empty folders**: optional; folders with nothing playable inside are left out of the listing
 - **Cheats list that reads better**: the list wraps around at both ends, and X turns every cheat off at once

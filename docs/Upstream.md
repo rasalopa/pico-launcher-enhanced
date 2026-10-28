@@ -506,6 +506,42 @@ New files:
 
 </details>
 
+### Save slots
+
+Up to ten saves per DS game. Y opens a game details sheet, upstream's unused `NdsGameDetailsBottomSheetView` brought to life, where L and R pick the slot; its **Cheats** chip opens the cheats panel. Slot 0 is the regular `.sav`, slots 1 to 9 are `.sav1` to `.sav9`, in the folder `saveLocation` says. Deleting a game deletes its slot saves too.
+
+- **Commits:** not committed yet
+- **Upstream:** Open as [LNH-team/pico-launcher#92](https://github.com/LNH-team/pico-launcher/pull/92), with the same save names and sheet. Upstream keeps the picked slot in its own `/_pico/saveslots.txt`, keyed by full path; here it is `saveSlot` in `gamedata.json`, keyed by file name like every other mark, and it follows the saves folder. Merging #92 conflicts with this entry in every upstream file below; keep this side's storage and save path code.
+- **Settings and data:** `saveSlot` per game in `gamedata.json`, 1 to 9, absent for slot 0.
+- **Notes:** The cheats sheet guards a list rebuild that ran before it had vram when its cheats finished loading before it was shown, which the hand-over from the details sheet made happen every time. Homebrew and DSiWare get no slots.
+
+<details><summary>Files: 14 upstream, 3 new</summary>
+
+Upstream files touched:
+
+- `arm9/source/App.cpp`
+- `arm9/source/App.h`
+- `arm9/source/romBrowser/IRomBrowserController.h`
+- `arm9/source/romBrowser/RomBrowserController.cpp`
+- `arm9/source/romBrowser/RomBrowserController.h`
+- `arm9/source/romBrowser/RomBrowserState.h`
+- `arm9/source/romBrowser/RomBrowserStateMachine.cpp`
+- `arm9/source/romBrowser/RomBrowserStateTrigger.h`
+- `arm9/source/romBrowser/viewModels/RomBrowserBottomScreenViewModel.h`
+- `arm9/source/romBrowser/views/ChipView.cpp`
+- `arm9/source/romBrowser/views/ChipView.h`
+- `arm9/source/romBrowser/views/NdsGameDetailsBottomSheetView.cpp`
+- `arm9/source/romBrowser/views/NdsGameDetailsBottomSheetView.h`
+- `arm9/source/romBrowser/views/cheats/CheatsBottomSheetView.cpp`
+
+New files:
+
+- `arm9/source/romBrowser/SaveFileName.h`
+- `arm9/source/romBrowser/viewModels/NdsGameDetailsViewModel.cpp`
+- `arm9/source/romBrowser/viewModels/NdsGameDetailsViewModel.h`
+
+</details>
+
 ## Menu and panels
 
 ### Three-dot menu and a three-button app bar

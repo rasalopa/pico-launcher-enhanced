@@ -18,6 +18,7 @@
 #include "core/mini-printf.h"
 #include "rtcIpc.h"
 #include "backlightIpc.h"
+#include "SaveFileName.h"
 #include "RomBrowserController.h"
 
 RomBrowserController::RomBrowserController(
@@ -140,6 +141,17 @@ void RomBrowserController::ToggleCompletedFilter()
     _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
 }
 
+void RomBrowserController::SetSaveSlot(const FileInfo& fileInfo, u32 saveSlot)
+{
+    _gameDataService->SetSaveSlot(fileInfo.GetFileName(), saveSlot);
+    _gameDataService->SaveAsync(_ioTaskQueue);
+}
+
+void RomBrowserController::ShowCheats()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowCheats);
+}
+
 void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
 {
     _triggerFileInfo = FileInfo(fileInfo);
@@ -237,6 +249,26 @@ void RomBrowserController::RequestDeleteSelected()
     _deleteSaveInFolder = _deleteFolderSaveFileName[0] != 0 &&
         f_stat(_deleteFolderSaveFileName, &fileInfo) == FR_OK;
     _deleteHasSave = _deleteSaveInFolder || f_stat(_deleteSaveFileName, &fileInfo) == FR_OK;
+    // The slot saves hold the game's progress just like the regular one, and nothing else
+    // would ever clean them up. Only a game the loader keeps the save of has slots: for an
+    // emulator's rom, a "<name>.sav1" next to it would belong to a DS game.
+    _deleteSaveSlots = !_deleteKeepsSave && item.GetFileType()->UsesLoaderSave();
+    _deleteExtraSaveCount = 0;
+    if (_deleteSaveSlots)
+    {
+        // "saves/<name>.savN", with the name alone at +6 for the save next to the game
+        TCHAR slotPath[6 + 256];
+        strcpy(slotPath, "saves/");
+        for (u32 slot = 1; slot <= IGameDataService::kMaxSaveSlot; slot++)
+        {
+            if (BuildSaveFileName(_deleteRomFileName, slot, &slotPath[6], sizeof(slotPath) - 6) &&
+                ((_deleteFolderSaveFileName[0] != 0 && f_stat(slotPath, &fileInfo) == FR_OK) ||
+                    f_stat(&slotPath[6], &fileInfo) == FR_OK))
+            {
+                _deleteExtraSaveCount++;
+            }
+        }
+    }
 
     _stateMachine.Fire(RomBrowserStateTrigger::ShowDeleteConfirm);
 }
@@ -267,28 +299,47 @@ void RomBrowserController::ConfirmDelete()
         }
         else if (!_deleteKeepsSave)
         {
-            // delete the save without checking it is there: its name is derived from the
-            // rom and f_unlink harmlessly returns FR_NO_FILE when there is
-            // none. Do NOT gate on a main-thread existence check — SD access
-            // from that thread is unreliable and used to skip this. The saves
-            // folder goes first; only when it has nothing does the save next
-            // to the rom go, as before. Any other failure leaves both alone:
-            // the dialog named the folder save, so no other file may go.
-            FRESULT saveResult = _deleteFolderSaveFileName[0] == 0
-                ? FR_NO_PATH
-                : f_unlink(_deleteFolderSaveFileName);
-            if (saveResult == FR_NO_FILE || saveResult == FR_NO_PATH)
+            DeleteSave(_deleteFolderSaveFileName, _deleteSaveFileName);
+            if (_deleteSaveSlots)
             {
-                f_unlink(_deleteSaveFileName);
-            }
-            else if (saveResult != FR_OK)
-            {
-                LOG_ERROR("Couldn't delete %s (%d)\n", _deleteFolderSaveFileName, saveResult);
+                // Heap-allocated so it doesn't live on the io task's stack.
+                // "saves/<name>.savN", with the name alone at +6 for the save next to the game
+                const u32 slotPathLength = 6 + 256;
+                auto slotPath = std::make_unique<TCHAR[]>(slotPathLength);
+                strcpy(slotPath.get(), "saves/");
+                for (u32 slot = 1; slot <= IGameDataService::kMaxSaveSlot; slot++)
+                {
+                    if (BuildSaveFileName(_deleteRomFileName, slot, &slotPath[6], slotPathLength - 6))
+                    {
+                        DeleteSave(_deleteFolderSaveFileName[0] != 0 ? slotPath.get() : "", &slotPath[6]);
+                    }
+                }
             }
         }
         _deleteCompleted = true;
         return TaskResult<void>::Completed();
     });
+}
+
+// Deletes the save without checking it is there: its name is derived from the rom and
+// f_unlink harmlessly returns FR_NO_FILE when there is none. Do NOT gate on a main-thread
+// existence check — SD access from that thread is unreliable and used to skip this. The
+// saves folder goes first; only when it has nothing does the save next to the rom go, as
+// before. Any other failure leaves both alone: the dialog named the folder save, so no
+// other file may go.
+void RomBrowserController::DeleteSave(const char* folderSaveFileName, const char* saveFileName)
+{
+    FRESULT saveResult = folderSaveFileName[0] == 0
+        ? FR_NO_PATH
+        : f_unlink(folderSaveFileName);
+    if (saveResult == FR_NO_FILE || saveResult == FR_NO_PATH)
+    {
+        f_unlink(saveFileName);
+    }
+    else if (saveResult != FR_OK)
+    {
+        LOG_ERROR("Couldn't delete %s (%d)\n", folderSaveFileName, saveResult);
+    }
 }
 
 void RomBrowserController::HideStatistics()
@@ -684,6 +735,9 @@ void RomBrowserController::BeginLaunch()
             _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr, fullPath, lastPlayed);
         _gameDataService->SaveAsync(_ioTaskQueue);
     }
+    // read here: the game data belongs to the main thread, the save path is built on the io one
+    const GameDataEntry* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
+    _launchSaveSlot = entry ? entry->saveSlot : 0;
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         UpdateLastUsedFilepath();
@@ -725,10 +779,9 @@ void RomBrowserController::SetPicoLoaderParams() const
     loadParams->argumentsLength = 0;
     if (_triggerFileInfo.GetFileType()->TrySetLaunchParameters(loadParams, _navigatePath))
     {
-        if (_triggerFileInfo.GetFileType()->UsesLoaderSave() &&
-            _appSettingsService->GetAppSettings().saveLocation == SaveLocation::SavesFolder)
+        if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
         {
-            SetSavesFolderPath(loadParams);
+            SetSavePath(loadParams);
         }
         gProcessManager.Goto<PicoLoaderProcess>();
     }
@@ -738,34 +791,72 @@ void RomBrowserController::SetPicoLoaderParams() const
     }
 }
 
-// Points the loader at "<game folder>/saves/<game name>.sav", creating the saves folder.
-// The path stays empty, so the loader keeps the save next to the game as it does on its
-// own, when the folder can't be made or the path would not fit: a truncated path would
-// point the loader at another file, and a save must never end up somewhere unexpected.
-void RomBrowserController::SetSavesFolderPath(pload_params_t* loadParams) const
+// Picks the save the loader uses: the slot picked in the game details sheet, where
+// saveLocation says. When the saves folder can't be used, the save stays next to the game
+// under the same slot's name, so a slot never ends up on another slot's save.
+void RomBrowserController::SetSavePath(pload_params_t* loadParams) const
 {
-    // Homebrew and DSiWare get no card save from the loader, so no folder for them either.
+    // Homebrew and DSiWare get no card save from the loader, so no folder or slot for them either.
     if (!NdsRomHeader::UsesCardSave(_triggerFileInfo.GetFastFileRef()))
     {
         return;
     }
 
+    // Heap-allocated so it doesn't live on the io task's stack.
+    auto saveFileName = std::make_unique<char[]>(sizeof(loadParams->savePath));
+    if (!BuildSaveFileName(_triggerFileInfo.GetFileName(), _launchSaveSlot,
+        saveFileName.get(), sizeof(loadParams->savePath)))
+    {
+        LOG_ERROR("Save name for slot %d too long, using the regular save\n", _launchSaveSlot);
+        return;
+    }
+
     const char* fileName = _triggerFileInfo.GetFileName();
-    const char* extension = strrchr(fileName, '.');
-    u32 baseLength = extension ? extension - fileName : strlen(fileName);
     // _navigatePath is "<game folder>/<file name>", built by UpdateLastUsedFilepath just before
     u32 folderLength = strlen(_navigatePath) - strlen(fileName);
     if (folderLength == 0 || _navigatePath[folderLength - 1] != '/' ||
         strcmp(&_navigatePath[folderLength], fileName) != 0)
     {
-        LOG_ERROR("Unexpected launch path, keeping the save next to the game\n");
+        LOG_ERROR("Unexpected launch path, using the regular save next to the game\n");
         return;
     }
-    // "<game folder>/" + "saves/" + base + ".sav" + terminator
-    if (folderLength + 6 + baseLength + 4 + 1 > sizeof(loadParams->savePath))
+
+    if (_appSettingsService->GetAppSettings().saveLocation == SaveLocation::SavesFolder &&
+        SetSavesFolderPath(loadParams, folderLength, saveFileName.get()))
+    {
+        return;
+    }
+
+    // Slot 0 next to the game is what the loader picks on its own, so the path stays empty
+    // and the loader keeps naming it, exactly as before there were slots.
+    loadParams->savePath[0] = 0;
+    if (_launchSaveSlot == 0)
+    {
+        return;
+    }
+    // "<game folder>/" + save name + terminator
+    if (folderLength + strlen(saveFileName.get()) + 1 > sizeof(loadParams->savePath))
+    {
+        LOG_ERROR("Save path for slot %d too long, using the regular save\n", _launchSaveSlot);
+        return;
+    }
+    memcpy(loadParams->savePath, _navigatePath, folderLength);
+    strcpy(&loadParams->savePath[folderLength], saveFileName.get());
+}
+
+// Points the loader at "<game folder>/saves/<save name>", creating the saves folder.
+// Returns false, so the save stays next to the game as the loader keeps it on its own,
+// when the folder can't be made or the path would not fit: a truncated path would point
+// the loader at another file, and a save must never end up somewhere unexpected.
+bool RomBrowserController::SetSavesFolderPath(pload_params_t* loadParams, u32 folderLength,
+    const char* saveFileName) const
+{
+    u32 saveFileNameLength = strlen(saveFileName);
+    // "<game folder>/" + "saves/" + save name + terminator
+    if (folderLength + 6 + saveFileNameLength + 1 > sizeof(loadParams->savePath))
     {
         LOG_ERROR("Save path too long, keeping the save next to the game\n");
-        return;
+        return false;
     }
 
     char* savePath = loadParams->savePath;
@@ -783,49 +874,46 @@ void RomBrowserController::SetSavesFolderPath(pload_params_t* loadParams) const
         if (f_stat(savePath, &folderInfo) != FR_OK || !(folderInfo.fattrib & AM_DIR))
         {
             LOG_ERROR("%s is not a usable folder, keeping the save next to the game\n", savePath);
-            savePath[0] = 0;
-            return;
+            return false;
         }
     }
     else if (mkdirResult != FR_OK)
     {
         LOG_ERROR("Couldn't create %s (%d), keeping the save next to the game\n", savePath, mkdirResult);
-        savePath[0] = 0;
-        return;
+        return false;
     }
 
     strcat(savePath, "/");
-    strncat(savePath, fileName, baseLength);
-    strcat(savePath, ".sav");
+    strcat(savePath, saveFileName);
 
     // The save that is already there decides. One in the folder is used as it is. One still
     // next to the game is moved in: moved, not copied, so there is a single save to trust,
     // and nothing is ever deleted. If the move fails, the game keeps the save next to it.
+    // Each slot's save goes through this on its own, the first time that slot is launched.
     FILINFO saveInfo;
     if (f_stat(savePath, &saveInfo) == FR_OK)
     {
-        return;
+        return true;
     }
     char oldPath[sizeof(loadParams->savePath)];
     memcpy(oldPath, _navigatePath, folderLength);
-    oldPath[folderLength] = 0;
-    strncat(oldPath, fileName, baseLength);
-    strcat(oldPath, ".sav");
+    strcpy(&oldPath[folderLength], saveFileName);
     if (f_stat(oldPath, &saveInfo) != FR_OK)
     {
-        return; // a new game: the loader creates the save in the folder
+        return true; // a new game: the loader creates the save in the folder
     }
     FRESULT renameResult = f_rename(oldPath, savePath);
     if (renameResult == FR_EXIST)
     {
-        return; // the folder has a save after all: it wins, as above
+        return true; // the folder has a save after all: it wins, as above
     }
     if (renameResult != FR_OK)
     {
         LOG_ERROR("Couldn't move %s into the saves folder (%d), keeping it next to the game\n",
             oldPath, renameResult);
-        savePath[0] = 0;
+        return false;
     }
+    return true;
 }
 
 void RomBrowserController::LoadCheats() const

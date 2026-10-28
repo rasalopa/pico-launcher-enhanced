@@ -16,6 +16,7 @@ public:
     bool HasUnpathedFlaggedEntry() const override;
     void RecordLaunch(const char* fileName, const char* gameCode,
         const char* fullPath, const char* lastPlayedDateTime) override;
+    void SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) override;
     void RemoveEntry(const char* fileName) override;
     bool CloseOpenSession(const char* nowDateTime) override;
     bool DiscardOpenSession() override;

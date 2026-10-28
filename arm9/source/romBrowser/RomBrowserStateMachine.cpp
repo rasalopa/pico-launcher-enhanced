@@ -49,7 +49,12 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
         .In(RomBrowserState::DeleteConfirm)
             .Trigger(RomBrowserStateTrigger::HideDeleteConfirm).GoesTo(RomBrowserState::Browser)
             .Trigger(RomBrowserStateTrigger::Navigate).GoesTo(RomBrowserState::LoadingFolder)
+        // The game details sheet hands over to the cheats sheet, which closes straight
+        // back to the browser.
         .In(RomBrowserState::GameInfo)
+            .Trigger(RomBrowserStateTrigger::HideGameInfo).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::ShowCheats).GoesTo(RomBrowserState::Cheats)
+        .In(RomBrowserState::Cheats)
             .Trigger(RomBrowserStateTrigger::HideGameInfo).GoesTo(RomBrowserState::Browser)
         .In(RomBrowserState::LoadingFolder)
             .Trigger(RomBrowserStateTrigger::FolderLoadDone).GoesTo(RomBrowserState::Browser)

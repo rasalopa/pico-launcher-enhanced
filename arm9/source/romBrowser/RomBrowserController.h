@@ -34,8 +34,10 @@ public:
     bool IsFavoritesFilterEnabled() const override { return _favoritesFilter; }
     void ToggleCompletedFilter() override;
     bool IsCompletedFilterEnabled() const override { return _completedFilter; }
+    void SetSaveSlot(const FileInfo& fileInfo, u32 saveSlot) override;
     void ShowGameInfo(const FileInfo& fileInfo) override;
     void HideGameInfo() override;
+    void ShowCheats() override;
     void ShowDisplaySettings() override;
     void HideDisplaySettings() override;
     void ShowRecents() override;
@@ -58,6 +60,7 @@ public:
         return !_deleteHasSave ? "" : _deleteSaveInFolder ? _deleteFolderSaveFileName : _deleteSaveFileName;
     }
     bool DeleteKeepsSave() const override { return _deleteKeepsSave; }
+    u32 GetDeleteExtraSaveCount() const override { return _deleteExtraSaveCount; }
     void GotoSettingsScreen() override;
 
     void Update() override;
@@ -130,6 +133,11 @@ private:
     bool _deleteSaveInFolder = false;
     /// @brief Whether the save stays when the game goes, see RequestDeleteSelected.
     bool _deleteKeepsSave = false;
+    /// @brief Whether the slot saves (.sav1 to .sav9) go with the game. Only for games
+    ///        the loader keeps the save of, since only those have slots.
+    bool _deleteSaveSlots = false;
+    /// @brief How many slot saves were found, for the dialog's wording only.
+    u32 _deleteExtraSaveCount = 0;
     volatile bool _deleteCompleted = false;
 
     std::unique_ptr<SdFolder> _sdFolder;
@@ -149,6 +157,9 @@ private:
     QueueTask<void> _launchCheckTask;
     /// @brief The answer, written by the task before it completes.
     volatile bool _launchDsiOnly = false;
+    /// @brief Save slot of the game being launched, read from the game data on the
+    ///        main thread before the io task that builds the save path starts.
+    u32 _launchSaveSlot = 0;
     bool _saveSettingsPending = false;
     std::unique_ptr<CoverRepository> _coverRepository;
     std::unique_ptr<IconRepository> _iconRepository;
@@ -167,6 +178,9 @@ private:
     void HandleGotoSettingsScreenTrigger();
     void UpdateLastUsedFilepath();
     void SetPicoLoaderParams() const;
-    void SetSavesFolderPath(pload_params_t* loadParams) const;
+    void SetSavePath(pload_params_t* loadParams) const;
+    bool SetSavesFolderPath(pload_params_t* loadParams, u32 folderLength, const char* saveFileName) const;
+    /// @brief Deletes one save of the game being deleted, the one in the saves folder first.
+    static void DeleteSave(const char* folderSaveFileName, const char* saveFileName);
     void LoadCheats() const;
 };

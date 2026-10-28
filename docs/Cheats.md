@@ -2,7 +2,7 @@
 Pico Launcher supports cheats from a `usrcheat.dat` file placed at `/_pico/usrcheat.dat`. The file stores the cheat codes, as well as which cheats are enabled. When a game is started which has cheats enabled, the enabled cheats are passed to Pico Loader.
 
 ## Usage
-To display the available cheats highlight a game in the rom browser and press Y to access the cheats panel.
+To display the available cheats highlight a game in the rom browser, press Y to open its details sheet, and pick **Cheats** (press A on it, or tap it) to access the cheats panel.
 
 ![Cheats panel](images/Cheats.png)
 

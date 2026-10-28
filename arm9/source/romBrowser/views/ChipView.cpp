@@ -5,6 +5,7 @@
 #include "gui/OamManager.h"
 #include "gui/OamBuilder.h"
 #include "gui/GraphicsContext.h"
+#include "gui/input/InputProvider.h"
 #include "core/math/ColorConverter.h"
 #include "core/math/RgbMixer.h"
 #include "chipFilled.h"
@@ -130,6 +131,43 @@ void ChipView::DrawIcon(GraphicsContext& graphicsContext, const Rgb<8, 8, 8>& fg
         .WithPalette16(iconPaletteRow)
         .WithPriority(graphicsContext.GetPriority())
         .Build(iconOam[0]);
+}
+
+bool ChipView::HandleInput(const InputProvider& inputProvider, FocusManager& focusManager)
+{
+    if (_action && inputProvider.Triggered(InputKey::A))
+    {
+        _action(this, _actionArg);
+        return true;
+    }
+    return View::HandleInput(inputProvider, focusManager);
+}
+
+void ChipView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
+{
+    if (_action && GetBounds().Contains(touchPoint))
+    {
+        _penDown = true;
+    }
+}
+
+void ChipView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
+{
+    if (!GetBounds().Contains(touchPoint))
+    {
+        _penDown = false;
+    }
+}
+
+void ChipView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
+{
+    if (_penDown && GetBounds().Contains(lastTouchPoint))
+    {
+        focusManager.Focus(SharedFromThis());
+        _action(this, _actionArg);
+    }
+
+    _penDown = false;
 }
 
 ChipView::VramToken ChipView::UploadGraphics(IVramManager& vramManager)

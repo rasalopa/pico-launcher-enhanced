@@ -14,9 +14,23 @@ public:
         , _fileName(romBrowserController->GetDeleteRomFileName())
     {
         const char* saveFileName = romBrowserController->GetDeleteSaveFileName();
-        if (saveFileName && saveFileName[0] != 0)
-            mini_snprintf(_detailLine, sizeof(_detailLine), romBrowserController->DeleteKeepsSave()
-                ? "The save %s is kept" : "The save %s is also deleted", saveFileName);
+        // a save kept with an emulator's rom never has slots, see RequestDeleteSelected
+        int extraSaves = (int)romBrowserController->GetDeleteExtraSaveCount();
+        bool hasSave = saveFileName && saveFileName[0] != 0;
+        if (hasSave && romBrowserController->DeleteKeepsSave())
+            mini_snprintf(_detailLine, sizeof(_detailLine), "The save %s is kept", saveFileName);
+        else if (hasSave && extraSaves == 1)
+            mini_snprintf(_detailLine, sizeof(_detailLine), "The save %s and 1 slot save are also deleted",
+                saveFileName);
+        else if (hasSave && extraSaves > 1)
+            mini_snprintf(_detailLine, sizeof(_detailLine), "The save %s and %d slot saves are also deleted",
+                saveFileName, extraSaves);
+        else if (hasSave)
+            mini_snprintf(_detailLine, sizeof(_detailLine), "The save %s is also deleted", saveFileName);
+        else if (extraSaves == 1)
+            mini_snprintf(_detailLine, sizeof(_detailLine), "1 slot save is also deleted");
+        else if (extraSaves > 1)
+            mini_snprintf(_detailLine, sizeof(_detailLine), "%d slot saves are also deleted", extraSaves);
         else
             _detailLine[0] = 0;
     }

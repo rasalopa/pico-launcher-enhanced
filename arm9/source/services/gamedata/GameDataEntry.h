@@ -21,6 +21,10 @@ struct GameDataEntry
     bool favorite = false;
     /// @brief Marked as finished by the user (long-press X in the browser).
     bool completed = false;
+    /// @brief Save slot picked in the game details sheet (Y in the browser).
+    ///        0 is the regular .sav, 1 to IGameDataService::kMaxSaveSlot use
+    ///        .sav1 to .sav9.
+    u8 saveSlot = 0;
     /// @brief "YYYY-MM-DD HH:MM", empty when never launched. Lexicographic
     ///        order equals chronological order.
     String<char, 20> lastPlayed;

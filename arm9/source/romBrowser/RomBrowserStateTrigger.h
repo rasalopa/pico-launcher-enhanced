@@ -7,6 +7,7 @@ enum class RomBrowserStateTrigger
     ChangeDisplayMode,
     ShowGameInfo,
     HideGameInfo,
+    ShowCheats,
     FolderLoadDone,
     Launch,
     LaunchRefused,

@@ -9,6 +9,7 @@ These controls are available in the rom browser, on top of the standard ones (se
 | L / R | Jump to the previous or next initial (see [Jumping by initial](#jumping-by-initial)) |
 | X (short press) | Toggle favorite for the highlighted game |
 | X (hold ~half a second) | Toggle completed for the highlighted game |
+| Y | Open the game details sheet: save slot and cheats (see [Save slots](#save-slots)) |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
 | Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game and the two filters (see [The menu](#the-menu)) |
@@ -96,13 +97,26 @@ A few things worth knowing:
 
 Deleting a DS or GBA game also deletes its save file (same name with a `.sav` extension, next to the ROM) and removes the game's entry from `gamedata.json`. Deleting any other ROM opened through a file association, such as a GB or SNES ROM, removes the ROM and its entry but keeps its save: the emulator may name its save its own way, and a `.sav` with the same name may belong to a DS game. When there is one, the confirmation names it as kept. Note that saves are matched by name without the extension: if `Game.gba` and `Game.nds` sit in the same folder, they share `Game.sav`, and deleting either game deletes it. With `saveLocation` set to `saves` (see [Usage.md](/docs/Usage.md#settings)), deleting a DS game deletes its save in the `saves` folder when there is one, and a save still next to the ROM is then left alone. When the folder has none, because the game was not launched since the setting was turned on, the save next to the ROM is deleted as before. The confirmation names the file that will go.
 
+Deleting a DS game also deletes its [save slots](#save-slots), `.sav1` to `.sav9`, each by the same rule as the regular save: from the `saves` folder when it is there, otherwise next to the ROM. The confirmation says how many slot saves go with it. Only DS games have slots, so deleting a GBA game or any other ROM leaves `.sav1` files with the same name alone.
+
 ## Deleting themes
 
 In the theme selector, the trash button at the bottom of the app bar deletes the highlighted theme's folder, with everything in it. A confirmation sheet opens first, naming the theme and its folder, since two themes can share a name: press **X** to confirm, or A or B to cancel. The selector then starts again without it, on the theme that took its place.
 
 The theme you are using and the two that come with the launcher, `material` and `raspberry`, can't be deleted; the button is faded on them. A folder whose `theme.json` can't be read shows under its folder name and can be deleted too. Nothing is deleted when a file in the folder is read-only, when it has more than four levels of folders or 1024 files and folders, when a name can't be read back, or when the card looks damaged around it; the sheet says why, and the folder can still be deleted on a computer. The theme's `theme.json` goes first, so if a delete is cut short, what is left shows as a folder name and can be deleted again.
 
+## Save slots
+Each DS game can keep up to ten separate saves, so two people can play through the same game, or you can start over without losing a finished file. Press Y on a game to open its details sheet and pick the slot with L and R, or with A or a tap on the **Save slot** chip. The game uses that slot from its next launch on, until you pick another. Under the chips the sheet names the slot's save file and says whether it exists yet: **New save, created on first launch**, highlighted, means the game starts fresh in that slot. The sheet's other chip, **Cheats**, opens the [cheats](#cheats) panel.
+
+Slot 0 is the regular save, `<game name>.sav`, the name Pico Loader and other launchers use too, so a game that stays on slot 0 shares its save with them. Slots 1 to 9 are `<game name>.sav1` to `<game name>.sav9`, the names TWiLight Menu++ gives its extra saves. With `saveLocation` set to `saves` (see [Usage.md](/docs/Usage.md#settings)), slot saves live in the `saves` folder like the regular one, and a slot's save still next to the game is moved in the first time that slot is launched. When the folder can't be used, the slot's save stays next to the game under the same name, so a slot never ends up on another slot's save.
+
+The slot belongs to the ROM file, like a favorite mark, and is stored in `gamedata.json` (see [Data storage](#data-storage)): moving a ROM to another folder keeps its slot, renaming it goes back to slot 0. Picking a slot is saved even with launch tracking off, since it is a choice, not a statistic. Deleting a game deletes all its slot saves (see [Deleting games](#deleting-games)).
+
+Homebrew and DSiWare have no slots, and their sheet says so: the loader keeps no save for homebrew, and builds DSiWare's save files from the ROM's own path. In the unlikely case that a slot's save path would not fit the 255 characters the loader accepts, the game uses its regular save and the launcher logs why.
+
 ## Cheats
+The cheats panel opens from the [game details sheet](#save-slots): press Y on a game and pick its **Cheats** chip. Closing the panel goes straight back to the browser.
+
 The cheat list wraps around at both ends: pressing up on the first entry jumps to the last
 one, and pressing down on the last entry comes back to the first, so the bottom of a long
 cheat database is one press away from the top. Inside a sub-category, pressing up from the
@@ -137,7 +151,7 @@ Custom themes can provide night variants of their backgrounds: place `topbg_nigh
 `tools/make_night_bg.py` can generate night variants from a theme's existing backgrounds; see [Tools.md](Tools.md).
 
 ## Data storage
-Favorites, completed marks, launch counts, play time and the recents list are all stored in a single file, `/_pico/gamedata.json`, written by the launcher itself. Saves are atomic, and if the file ever fails to parse the launcher refuses to overwrite it rather than starting over. Deleting the file resets all favorites and statistics.
+Favorites, completed marks, launch counts, play time, the recents list and each game's save slot are all stored in a single file, `/_pico/gamedata.json`, written by the launcher itself. Saves are atomic, and if the file ever fails to parse the launcher refuses to overwrite it rather than starting over. Deleting the file resets all favorites and statistics.
 
 **Each entry belongs to one ROM file, identified by its file name.** That single rule explains most surprises:
 

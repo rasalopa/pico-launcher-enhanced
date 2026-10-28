@@ -44,6 +44,13 @@ public:
     virtual void RecordLaunch(const char* fileName, const char* gameCode,
         const char* fullPath, const char* lastPlayedDateTime) = 0;
 
+    /// @brief Stores the save slot picked for the given rom file, by file name
+    ///        like the marks. Slot 0 is the regular save, so picking it for a
+    ///        game without an entry creates none, and an entry left holding only
+    ///        defaults is pruned on the next write as usual. Slots above
+    ///        kMaxSaveSlot are ignored.
+    virtual void SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) = 0;
+
     /// @brief Drops the entry for a deleted rom file. By file name, matching how
     ///        marks are stored.
     virtual void RemoveEntry(const char* fileName) = 0;
@@ -78,6 +85,10 @@ public:
     ///        refused outright rather than silently truncated into a key that
     ///        collides with a same-prefixed file.
     static constexpr u32 kMaxFileNameLength = 96;
+
+    /// @brief The highest save slot. One digit after .sav, so the save names
+    ///        stay .sav1 to .sav9.
+    static constexpr u32 kMaxSaveSlot = 9;
 };
 
 inline IGameDataService::~IGameDataService() { }
