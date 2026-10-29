@@ -141,17 +141,6 @@ void RomBrowserController::ToggleCompletedFilter()
     _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
 }
 
-void RomBrowserController::SetSaveSlot(const FileInfo& fileInfo, u32 saveSlot)
-{
-    _gameDataService->SetSaveSlot(fileInfo.GetFileName(), saveSlot);
-    _gameDataService->SaveAsync(_ioTaskQueue);
-}
-
-void RomBrowserController::ShowCheats()
-{
-    _stateMachine.Fire(RomBrowserStateTrigger::ShowCheats);
-}
-
 void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
 {
     _triggerFileInfo = FileInfo(fileInfo);
@@ -735,9 +724,9 @@ void RomBrowserController::BeginLaunch()
             _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr, fullPath, lastPlayed);
         _gameDataService->SaveAsync(_ioTaskQueue);
     }
-    // read here: the game data belongs to the main thread, the save path is built on the io one
-    const GameDataEntry* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
-    _launchSaveSlot = entry ? entry->saveSlot : 0;
+    // no way to pick another save until the save picker exists, so a slot stored by an
+    // earlier build is not used: it would start a save that nothing on screen shows
+    _launchSaveSlot = 0;
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         UpdateLastUsedFilepath();
@@ -791,7 +780,7 @@ void RomBrowserController::SetPicoLoaderParams() const
     }
 }
 
-// Picks the save the loader uses: the slot picked in the game details sheet, where
+// Picks the save the loader uses: the slot in _launchSaveSlot, where
 // saveLocation says. When the saves folder can't be used, the save stays next to the game
 // under the same slot's name, so a slot never ends up on another slot's save.
 void RomBrowserController::SetSavePath(pload_params_t* loadParams) const

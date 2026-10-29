@@ -41,7 +41,7 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `playMinutes` | number | > 0 | Accumulated play time in minutes (approximate, see below). |
 | `lastPlayed` | string | non-empty | `"YYYY-MM-DD HH:MM"`, 24-hour clock. Lexicographic order equals chronological order, so tools can sort these as plain strings. |
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
-| `saveSlot` | number | 1 to 9 | Save slot picked in the game details sheet. The loader then uses `<game name>.sav<N>` instead of `<game name>.sav` (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
+| `saveSlot` | number | 1 to 9 | The game's save slot, `<game name>.sav<N>`. The launcher reads it and writes it back, but every launch uses the regular save for now (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
 
 An entry whose `favorite` and `completed` are both false, whose `launchCount` and `playMinutes` are both 0 and that has no `saveSlot` is pruned on the next write. Deleting a game through the launcher also removes its entry.
 

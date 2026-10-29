@@ -9,7 +9,6 @@ These controls are available in the rom browser, on top of the standard ones (se
 | L / R | Jump to the previous or next initial (see [Jumping by initial](#jumping-by-initial)) |
 | X (short press) | Toggle favorite for the highlighted game |
 | X (hold ~half a second) | Toggle completed for the highlighted game |
-| Y | Open the game details sheet: save slot and cheats (see [Save slots](#save-slots)) |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
 | Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game and the two filters (see [The menu](#the-menu)) |
@@ -106,17 +105,9 @@ In the theme selector, the trash button at the bottom of the app bar deletes the
 The theme you are using and the two that come with the launcher, `material` and `raspberry`, can't be deleted; the button is faded on them. A folder whose `theme.json` can't be read shows under its folder name and can be deleted too. Nothing is deleted when a file in the folder is read-only, when it has more than four levels of folders or 1024 files and folders, when a name can't be read back, or when the card looks damaged around it; the sheet says why, and the folder can still be deleted on a computer. The theme's `theme.json` goes first, so if a delete is cut short, what is left shows as a folder name and can be deleted again.
 
 ## Save slots
-Each DS game can keep up to ten separate saves, so two people can play through the same game, or you can start over without losing a finished file. Press Y on a game to open its details sheet and pick the slot with L and R, or with A or a tap on the **Save slot** chip. The game uses that slot from its next launch on, until you pick another. Under the chips the sheet names the slot's save file and says whether it exists yet: **New save, created on first launch**, highlighted, means the game starts fresh in that slot. The sheet's other chip, **Cheats**, opens the [cheats](#cheats) panel.
-
-Slot 0 is the regular save, `<game name>.sav`, the name Pico Loader and other launchers use too, so a game that stays on slot 0 shares its save with them. Slots 1 to 9 are `<game name>.sav1` to `<game name>.sav9`, the names TWiLight Menu++ gives its extra saves. With `saveLocation` set to `saves` (see [Usage.md](/docs/Usage.md#settings)), slot saves live in the `saves` folder like the regular one, and a slot's save still next to the game is moved in the first time that slot is launched. When the folder can't be used, the slot's save stays next to the game under the same name, so a slot never ends up on another slot's save.
-
-The slot belongs to the ROM file, like a favorite mark, and is stored in `gamedata.json` (see [Data storage](#data-storage)): moving a ROM to another folder keeps its slot, renaming it goes back to slot 0. Picking a slot is saved even with launch tracking off, since it is a choice, not a statistic. Deleting a game deletes all its slot saves (see [Deleting games](#deleting-games)).
-
-Homebrew and DSiWare have no slots, and their sheet says so: the loader keeps no save for homebrew, and builds DSiWare's save files from the ROM's own path. In the unlikely case that a slot's save path would not fit the 255 characters the loader accepts, the game uses its regular save and the launcher logs why.
+A DS game can have up to nine extra saves, `<game name>.sav1` to `<game name>.sav9`, the names TWiLight Menu++ gives them. The launcher starts the game on its regular save, `<game name>.sav`, and deleting the game deletes its extra saves too (see [Deleting games](#deleting-games)).
 
 ## Cheats
-The cheats panel opens from the [game details sheet](#save-slots): press Y on a game and pick its **Cheats** chip. Closing the panel goes straight back to the browser.
-
 The cheat list wraps around at both ends: pressing up on the first entry jumps to the last
 one, and pressing down on the last entry comes back to the first, so the bottom of a long
 cheat database is one press away from the top. Inside a sub-category, pressing up from the

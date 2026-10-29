@@ -34,10 +34,8 @@ public:
     bool IsFavoritesFilterEnabled() const override { return _favoritesFilter; }
     void ToggleCompletedFilter() override;
     bool IsCompletedFilterEnabled() const override { return _completedFilter; }
-    void SetSaveSlot(const FileInfo& fileInfo, u32 saveSlot) override;
     void ShowGameInfo(const FileInfo& fileInfo) override;
     void HideGameInfo() override;
-    void ShowCheats() override;
     void ShowDisplaySettings() override;
     void HideDisplaySettings() override;
     void ShowRecents() override;
@@ -157,8 +155,8 @@ private:
     QueueTask<void> _launchCheckTask;
     /// @brief The answer, written by the task before it completes.
     volatile bool _launchDsiOnly = false;
-    /// @brief Save slot of the game being launched, read from the game data on the
-    ///        main thread before the io task that builds the save path starts.
+    /// @brief Save slot of the game being launched, set on the main thread before the
+    ///        io task that builds the save path starts.
     u32 _launchSaveSlot = 0;
     bool _saveSettingsPending = false;
     std::unique_ptr<CoverRepository> _coverRepository;
