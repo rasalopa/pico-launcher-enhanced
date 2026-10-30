@@ -29,6 +29,8 @@ RomBrowserController::RomBrowserController(
     , _ioTaskQueue(ioTaskQueue), _bgTaskQueue(bgTaskQueue)
     , _fileTypeProvider(appSettingsService->GetAppSettings())
 {
+    _favoritesFilter = appSettingsService->GetAppSettings().favoritesFilterAtStart;
+
     // restore the user's backlight level at boot (harmless to re-apply when
     // this process is re-entered from the settings screen)
     int backlightLevel = appSettingsService->GetAppSettings().backlightLevel;

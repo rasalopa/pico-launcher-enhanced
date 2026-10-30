@@ -20,6 +20,9 @@ public:
     ///        play time, last played). Off, nothing about launches is
     ///        written; favorites and completed marks keep working.
     bool launchTracking = true;
+    /// @brief Whether the "Favorites only" filter is on when the browser
+    ///        starts. Toggling the filter in the menu does not change this.
+    bool favoritesFilterAtStart = false;
     RomBrowserDisplaySettings romBrowserDisplaySettings;
 
     std::unique_ptr<FileAssociation[]> fileAssociations;
