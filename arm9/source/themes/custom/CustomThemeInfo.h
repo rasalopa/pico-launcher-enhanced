@@ -4,6 +4,7 @@
 #include "CustomTopCoverInfo.h"
 #include "CustomTopIconInfo.h"
 #include "CustomTopStripElementInfo.h"
+#include "CustomTopStatusBarInfo.h"
 #include "CustomTextElementInfo.h"
 
 struct CustomThemeInfo
@@ -15,6 +16,7 @@ struct CustomThemeInfo
     CustomTopTextElementInfo topFileNameTextInfo;
     CustomTopCoverInfo topCoverInfo;
     CustomTopStripElementInfo topLaunchInfoInfo;
+    CustomTopStatusBarInfo topStatusBarInfo;
 
     CustomBottomIconInfo gridIconInfo;
 

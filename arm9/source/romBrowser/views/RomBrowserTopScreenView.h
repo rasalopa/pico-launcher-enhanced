@@ -7,6 +7,7 @@
 #include "gui/views/Label2DView.h"
 #include "../FileType/FileIcon.h"
 #include "../DisplayMode/RomBrowserDisplayMode.h"
+#include "../Theme/TopStatusBarStyle.h"
 
 class RomBrowserViewModel;
 class IRomBrowserViewFactory;
@@ -67,6 +68,18 @@ private:
     int _lastGameDataItem = -1;
     u32 _lastGameDataVersion = 0;
     const MaterialColorScheme* _materialColorScheme;
+    // The bar along the top edge: the time at the left, the battery at the right.
+    SharedPtr<Label2DView> _clockLabel;
+    const TopStatusBarStyle* _statusBarStyle;
+    bool _statusBarHidden = false;
+    bool _backgroundHidden = false;
+    bool _clockHidden = false;
+    bool _batteryHidden = false;
+    u32 _statusBarVramOffset = 0;
+    u32 _batteryVramOffset = 0;
+    // frames until the rtc is read again, and the hour and minute on show
+    u32 _clockFramesLeft = 0;
+    u32 _clockShownMinute = 0xFFFF;
 
     RomBrowserTopScreenView(SharedPtr<RomBrowserViewModel> viewModel,
         const RomBrowserDisplayMode* displayMode,
@@ -77,4 +90,6 @@ private:
 
     void DrawChip(GraphicsContext& graphicsContext, int x, int y, int width, u32 paletteRow);
     void RefreshMostPlayed(u32 gameDataVersion);
+    void UpdateClock();
+    void DrawStatusBar(GraphicsContext& graphicsContext);
 };
