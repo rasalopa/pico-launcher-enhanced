@@ -19,6 +19,7 @@
 #include "rtcIpc.h"
 #include "backlightIpc.h"
 #include "SaveFileName.h"
+#include "SaveSlotIndex.h"
 #include "RomBrowserController.h"
 
 RomBrowserController::RomBrowserController(
@@ -243,8 +244,15 @@ void RomBrowserController::RequestDeleteSelected()
     // emulator's rom, a "<name>.sav1" next to it would belong to a DS game.
     _deleteSaveSlots = !_deleteKeepsSave && item.GetFileType()->UsesLoaderSave();
     _deleteExtraSaveCount = 0;
-    if (_deleteSaveSlots)
+    if (_deleteSaveSlots && !item.AreSaveSlotsIncomplete())
     {
+        // noted when the folder was read, in either place, so counting them reads nothing
+        _deleteExtraSaveCount = __builtin_popcount(item.GetSaveSlots() & ~1u);
+    }
+    else if (_deleteSaveSlots)
+    {
+        // The saves folder wasn't read to its end, so look for each one: the dialog
+        // must not name fewer saves than ConfirmDelete deletes.
         // "saves/<name>.savN", with the name alone at +6 for the save next to the game
         TCHAR slotPath[6 + 256];
         strcpy(slotPath, "saves/");
@@ -597,11 +605,26 @@ void RomBrowserController::HandleNavigateTrigger()
             // (photos, DSi system data, ...) could cost their sum instead of
             // a single bounded worst case for the whole navigation.
             int readBudget = SdFolderFactory::kInitialReadBudget;
+            // The saves of each DS game are noted from names this navigation reads anyway:
+            // the folder's own entries and, with the saves folder setting on, the saves
+            // folder, which the probe below would otherwise read for its emptiness.
+            bool savesFolder = _appSettingsService->GetAppSettings().saveLocation == SaveLocation::SavesFolder;
+            SaveSlotIndex saveSlotIndex { *_newSdFolder };
             FileInfo* const* files = _newSdFolder->GetFiles();
             for (int i = 0; i < _newSdFolder->GetFileCount(); i++)
             {
                 FileInfo* file = files[i];
-                if (file->GetFileType()->GetClassification() == FileTypeClassification::Folder)
+                if (file->GetFileType()->GetClassification() != FileTypeClassification::Folder)
+                {
+                    saveSlotIndex.AddSaveFile(file->GetFileName());
+                }
+                else if (savesFolder && !strcasecmp(file->GetFileName(), "saves"))
+                {
+                    // The listing hides it in this mode, so its emptiness is never asked,
+                    // while the loader uses it even when it is marked hidden.
+                    saveSlotIndex.AddSavesFolder(file->GetFileName());
+                }
+                else
                 {
                     // Entries the listing always drops are not worth a single
                     // read: FilterAndSort discards dot-named and hidden ones

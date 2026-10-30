@@ -30,3 +30,30 @@ inline bool BuildSaveFileName(const char* romFileName, u32 saveSlot, char* buffe
     buffer[length] = 0;
     return true;
 }
+
+/// @brief The inverse of BuildSaveFileName: whether \p fileName is a save file name, and of
+///        which slot. The extension is matched in any case, as the card's names are.
+/// @param fileName The file name, without a folder.
+/// @param baseLength Set to the length of the name before the extension when it is a save.
+/// @return The save slot, or -1 when \p fileName is not a save file name.
+inline int ParseSaveFileName(const char* fileName, u32& baseLength)
+{
+    const char* extension = strrchr(fileName, '.');
+    if (!extension || strncasecmp(extension, ".sav", 4) != 0)
+    {
+        return -1;
+    }
+
+    int saveSlot = 0;
+    if (extension[4] != 0)
+    {
+        if (extension[4] < '1' || extension[4] > '0' + (int)IGameDataService::kMaxSaveSlot ||
+            extension[5] != 0)
+        {
+            return -1;
+        }
+        saveSlot = extension[4] - '0';
+    }
+    baseLength = extension - fileName;
+    return saveSlot;
+}
