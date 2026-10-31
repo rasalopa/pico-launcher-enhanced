@@ -114,7 +114,14 @@ void FileRecyclerAdapter::BindView(SharedPtr<View> view, int index) const
             _fileInfoManager->ReleaseFileInfo(index);
             return TaskResult<void>::Canceled();
         }
-        return BindView(view, index, internalFileInfo, cancelRequested);
+        auto result = BindView(view, index, internalFileInfo, cancelRequested);
+        if (cancelRequested)
+        {
+            // ReleaseView left the release to this task because it was running
+            _fileInfoManager->ReleaseFileInfo(index);
+            return TaskResult<void>::Canceled();
+        }
+        return result;
     });
     SetQueueTask(view, std::move(queueTask));
 }

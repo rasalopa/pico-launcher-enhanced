@@ -23,13 +23,19 @@ public:
 
     void Dispose();
 
-    void CancelTask()
+    /// @brief Requests cancellation and gives up the task.
+    /// @return False when the task was already running and may still touch what it
+    ///         captured after this returns; true when it has stopped or never will run.
+    bool CancelTask()
     {
-        if (_task)
+        if (!_task)
         {
-            _task->RequestCancel();
-            Dispose();
+            return true;
         }
+        _task->RequestCancel();
+        bool stopped = _task->GetState() != TaskState::Running;
+        Dispose();
+        return stopped;
     }
 
     constexpr bool IsValid() const { return _task != nullptr; }

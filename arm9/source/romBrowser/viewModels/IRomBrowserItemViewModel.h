@@ -16,7 +16,9 @@ public:
     ///        be revalidated against this after any rebind.
     virtual int GetIndex() const = 0;
     virtual void SetQueueTask(QueueTask<void> queueTask) = 0;
-    virtual void CancelQueueTask() = 0;
+    /// @brief Cancels the bound load task. Returns false when the task is already
+    ///        running on the io thread and may still be using the item's data.
+    virtual bool CancelQueueTask() = 0;
     virtual void DisposeQueueTaskWhenComplete() = 0;
 
 protected:
