@@ -2,6 +2,13 @@
 
 ## Enhanced fork
 
+### Unreleased
+
+#### Added
+- A switch to start with the "Favorites only" filter on. With `"favoritesFilterAtStart": true` in
+  `settings.json` the browser shows only folders and favorites at launch. Turning the filter on
+  or off in the menu still works and is not saved. Off by default.
+
 ### [enhanced-v1.10.0]
 
 #### Added

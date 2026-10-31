@@ -18,6 +18,7 @@
 #define KEY_BACKLIGHT_LEVEL          "backlightLevel"
 #define KEY_SAVE_LOCATION            "saveLocation"
 #define KEY_LAUNCH_TRACKING          "launchTracking"
+#define KEY_FAVORITES_FILTER_AT_START "favoritesFilterAtStart"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
 
@@ -167,6 +168,7 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
         json[KEY_BACKLIGHT_LEVEL] = appSettings->backlightLevel;
     json[KEY_SAVE_LOCATION] = serializeSaveLocation(appSettings->saveLocation);
     json[KEY_LAUNCH_TRACKING] = appSettings->launchTracking;
+    json[KEY_FAVORITES_FILTER_AT_START] = appSettings->favoritesFilterAtStart;
     serializeFileAssociations(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
@@ -231,6 +233,8 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
         appSettings->saveLocation = saveLocation;
     }
     appSettings->launchTracking = json[KEY_LAUNCH_TRACKING] | appSettings->launchTracking;
+    appSettings->favoritesFilterAtStart =
+        json[KEY_FAVORITES_FILTER_AT_START] | appSettings->favoritesFilterAtStart;
 
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }
