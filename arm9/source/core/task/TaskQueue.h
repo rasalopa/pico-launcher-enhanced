@@ -130,7 +130,9 @@ public:
         u32 irqs = rtos_disableIrqs();
         if (task->IsCompleted())
         {
-            if (task->link.prev != nullptr || task->link.next != nullptr)
+            // A lone queued task has no neighbours, so null links do not mean
+            // it is off the list; it may still be the head.
+            if (task->link.prev != nullptr || task->link.next != nullptr || _taskList.GetHead() == task)
             {
                 _taskList.Remove(task);
             }
@@ -185,6 +187,11 @@ private:
         u32 irqs = rtos_disableIrqs();
         {
             slot = _poolOccupation.FindFirstZero();
+            if ((int)slot < 0)
+            {
+                LOG_FATAL("No free task slots left\n");
+                while (true);
+            }
             _poolOccupation.Set(slot, 1);
         }
         rtos_restoreIrqs(irqs);

@@ -2,6 +2,20 @@
 
 ## Enhanced fork
 
+### Unreleased
+
+#### Fixed
+- Blank, wrong, repeated and flickering titles in the file list, after opening the launcher,
+  scrolling fast with L and R, or going to the parent folder (which could show the names of the
+  folder just left). Three causes, all fixed:
+  - A load that was cancelled before it started could corrupt the list of pending loads and
+    make later ones get dropped, leaving their rows without a title. The queue also stops with
+    an error, instead of writing outside its memory, if it ever runs out of slots.
+  - The picture of a title is copied to video memory once per frame, and a title finished while
+    that copy was running could be forgotten, leaving the row with its previous text for good.
+  - A row's title could be built by two threads at once when the focus moved onto it, and a new
+    row showed whatever the previous one had left in video memory until its own title was ready.
+
 ### [enhanced-v1.10.0]
 
 #### Added

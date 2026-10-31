@@ -16,7 +16,7 @@ private:
 
     void UpdateTileBuffer() override;
 
-    bool _tileBufferUpdated = false;
+    volatile bool _tileBufferUpdated = false;
     u32 _vramOffset = 0;
     vu16* _vramAddress = nullptr;
 };

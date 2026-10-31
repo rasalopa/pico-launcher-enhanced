@@ -79,6 +79,10 @@ protected:
     int _paletteRow = -1;
     EllipsisStyle _ellipsisStyle = EllipsisStyle::None;
     bool _a5i3;
+    /// Set while a synchronous SetText() is rebuilding the buffers. The main
+    /// thread preempts the io thread, so its Update() and VBlank() must not
+    /// touch the label until this is clear.
+    volatile bool _ioBusy = false;
 
     LabelView(u32 width, u32 height, u32 maxStringLength, const nft2_header_t* font, bool a5i3);
 

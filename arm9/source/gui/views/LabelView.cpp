@@ -40,6 +40,13 @@ LabelView::LabelView(u32 width, u32 height, u32 maxStringLength, const nft2_head
 
 void LabelView::Update()
 {
+    // A text set is in progress on another thread. Rendering over it here would
+    // blend the two into one garbled tile buffer, so wait: the pending style
+    // change stays flagged and the marquee just skips a frame.
+    if (_ioBusy)
+    {
+        return;
+    }
     if (_ellipsisStyleChanged)
     {
         RestartMarquee();
@@ -116,20 +123,26 @@ QueueTask<void> LabelView::UpdateTileBufferAsync(TaskQueueBase* taskQueue)
 
 void LabelView::SetText(const char* text)
 {
+    _ioBusy = true;
     SetTextBuffer(text);
     UpdateTileBuffer();
+    _ioBusy = false;
 }
 
 void LabelView::SetText(const char16_t* text)
 {
+    _ioBusy = true;
     SetTextBuffer(text);
     UpdateTileBuffer();
+    _ioBusy = false;
 }
 
 void LabelView::SetText(const char16_t* text, u32 length)
 {
+    _ioBusy = true;
     SetTextBuffer(text, length);
     UpdateTileBuffer();
+    _ioBusy = false;
 }
 
 QueueTask<void> LabelView::SetTextAsync(TaskQueueBase* taskQueue, const char* text)

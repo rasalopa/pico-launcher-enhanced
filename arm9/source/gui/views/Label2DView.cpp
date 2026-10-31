@@ -28,8 +28,10 @@ void Label2DView::Draw(GraphicsContext& graphicsContext)
 {
     if (!graphicsContext.IsVisible(GetBounds()))
         return;
-    // nothing to render for an empty label; skip the oam and palette row allocations
-    if (_stringWidth == 0 && _newStringWidth == 0)
+    // Nothing to render for an empty label; skip the oam and palette row allocations.
+    // Only the width of what is already in vram counts: a label whose text is still
+    // being built would otherwise show whatever an earlier view left at its offset.
+    if (_stringWidth == 0)
         return;
 
     u32 hCellCount = _actualWidth >> 5;
@@ -62,10 +64,14 @@ void Label2DView::Draw(GraphicsContext& graphicsContext)
 
 void Label2DView::VBlank()
 {
-    if (_tileBufferUpdated && _vramAddress)
+    if (_tileBufferUpdated && _vramAddress && !_ioBusy)
     {
-        memcpy((void*)_vramAddress, _tileBuffer.get(), _tileBufferSize);
+        // Cleared before the copy, not after: the io thread can preempt this and
+        // finish a whole new text meanwhile, and clearing afterwards would erase
+        // that request, leaving the old (or blank) text on screen for good.
+        // A copy torn by such a preemption is redone next frame.
         _tileBufferUpdated = false;
         _stringWidth = _newStringWidth;
+        memcpy((void*)_vramAddress, _tileBuffer.get(), _tileBufferSize);
     }
 }
