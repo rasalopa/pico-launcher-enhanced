@@ -9,10 +9,20 @@
 class MaterialColorScheme;
 class IFontRepository;
 class IVramManager;
-class MenuBottomSheetView;
+
+/// @brief A sheet made of MenuItemViews, which call it with their index on A or a tap.
+class IMenuItemHost
+{
+public:
+    virtual void Activate(int index) = 0;
+
+protected:
+    ~IMenuItemHost() = default;
+};
 
 /// @brief One entry of the menu: an icon, its name and, for a filter, whether
-///        it is on. A tap or A runs it; the sheet decides what that means.
+///        it is on. A tap or A runs it; the sheet decides what that means. The
+///        save picker lists its saves with these too, without an icon.
 class MenuItemView : public ViewContainer
 {
     SHARED_ONLY(MenuItemView)
@@ -32,7 +42,11 @@ public:
         return Rectangle(_position.x, _position.y, _width, HEIGHT);
     }
 
-    void SetIconVramOffset(u32 vramOffset) { _iconVramOffset = vramOffset; }
+    void SetIconVramOffset(u32 vramOffset)
+    {
+        _iconVramOffset = vramOffset;
+        _hasIcon = true;
+    }
     void SetSelectorVramOffset(u32 vramOffset) { _selectorVramOffset = vramOffset; }
 
     /// @brief A filter that is on draws in its colour and says so at the end.
@@ -47,7 +61,7 @@ public:
     void SetEnabled(bool enabled) { _enabled = enabled; }
 
 private:
-    MenuBottomSheetView* _sheet;
+    IMenuItemHost* _sheet;
     int _index;
     int _width;
     Rgb<8, 8, 8> _activeColor;
@@ -57,13 +71,14 @@ private:
     SharedPtr<Label2DView> _stateLabel;
     u32 _iconVramOffset = 0;
     u32 _selectorVramOffset = 0;
+    bool _hasIcon = false;
     bool _active = false;
     bool _enabled = true;
     bool _penDown = false;
 
     /// @param width A cell of the two-column part or a full row (see the .cpp).
     /// @param hasState Whether this is a filter, with "on" or "off" at the end.
-    MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char* name,
+    MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
         bool hasState, const Rgb<8, 8, 8>& activeColor,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
 };
@@ -76,7 +91,7 @@ private:
 /// replaces this sheet with it; a filter closes the sheet through the display
 /// mode change it triggers; delete is faded while a folder is highlighted. A
 /// small button at the right of the title opens the about sheet.
-class MenuBottomSheetView : public BottomSheetView
+class MenuBottomSheetView : public BottomSheetView, public IMenuItemHost
 {
     SHARED_ONLY(MenuBottomSheetView)
 
@@ -90,7 +105,7 @@ public:
     void Focus(FocusManager& focusManager) override;
 
     /// @brief Runs the entry at index; the items call this on A or a tap.
-    void Activate(int index);
+    void Activate(int index) override;
 
     void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken);
 

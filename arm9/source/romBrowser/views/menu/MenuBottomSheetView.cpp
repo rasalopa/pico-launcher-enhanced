@@ -51,7 +51,7 @@
 // The recents list's highlight sprite: 64 px wide, laid end to end.
 #define SELECTOR_WIDTH      64
 
-MenuItemView::MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char* name,
+MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
     bool hasState, const Rgb<8, 8, 8>& activeColor,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
     : _sheet(sheet), _index(index), _width(width), _activeColor(activeColor)
@@ -127,6 +127,8 @@ void MenuItemView::Draw(GraphicsContext& graphicsContext)
     }
     ViewContainer::Draw(graphicsContext);
 
+    if (!_hasIcon)
+        return;
     int iconY = _position.y + ICON_DY;
     u32 iconRow = graphicsContext.GetPaletteManager().AllocRow(
         GradientPalette(back, tint), iconY, iconY + ICON_SIZE);
