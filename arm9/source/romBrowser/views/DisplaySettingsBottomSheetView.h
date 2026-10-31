@@ -23,10 +23,7 @@ public:
 
     void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken);
 
-    void Focus(FocusManager& focusManager) override
-    {
-        focusManager.Focus(_layoutOptions[0]);
-    }
+    void Focus(FocusManager& focusManager) override;
 
 protected:
     void Close() override;
