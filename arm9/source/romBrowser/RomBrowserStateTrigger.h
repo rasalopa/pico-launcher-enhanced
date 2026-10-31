@@ -24,5 +24,7 @@ enum class RomBrowserStateTrigger
     ShowMenu,
     HideMenu,
     ShowAbout,
-    HideAbout
+    HideAbout,
+    ShowSavePicker,
+    HideSavePicker
 };

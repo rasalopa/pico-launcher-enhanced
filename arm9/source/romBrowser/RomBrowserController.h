@@ -28,6 +28,8 @@ public:
     void NavigateToPath(const TCHAR* name) override;
     void LaunchFile(const FileInfo& fileInfo, const char* gameCode) override;
     void LaunchRandomGame() override;
+    void LaunchSaveSlot(u32 saveSlot) override;
+    void HideSavePicker() override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleFavoritesFilter() override;
@@ -122,6 +124,9 @@ private:
     /// @brief Full path of a file in the current folder (f_getcwd + name).
     void BuildCurrentFolderFilePath(const char* fileName,
         TCHAR* buffer, u32 bufferLength) const;
+    /// @brief Which saves of the rom in the current folder are on the card, bit N for
+    ///        "<name>.savN", looking each one up. Slot 0 is not looked for.
+    u16 FindSaveSlotsOnCard(const char* romFileName) const;
     TCHAR _deleteRomFileName[256];
     TCHAR _deleteSaveFileName[256];
     /// @brief "saves/<name>.sav", or empty when the saves folder setting does not apply.

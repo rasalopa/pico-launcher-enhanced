@@ -54,6 +54,7 @@ public:
     ///        navigate time (see SaveSlotIndex), so asking needs no SD access.
     u16 GetSaveSlots() const { return _saveSlots & ~kSaveSlotsIncomplete; }
     void AddSaveSlot(u32 saveSlot) { _saveSlots |= 1 << saveSlot; }
+    void AddSaveSlots(u16 saveSlots) { _saveSlots |= saveSlots & ~kSaveSlotsIncomplete; }
 
     /// @brief Whether GetSaveSlots may miss some: the saves folder could not be read to
     ///        its end, so only checking each save's name on the card is sure.

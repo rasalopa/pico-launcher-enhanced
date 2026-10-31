@@ -21,8 +21,8 @@ struct GameDataEntry
     bool favorite = false;
     /// @brief Marked as finished by the user (long-press X in the browser).
     bool completed = false;
-    /// @brief Save slot stored for the game; launches don't use it yet, see
-    ///        RomBrowserController::BeginLaunch.
+    /// @brief Save slot stored for the game, not read yet: a launch takes its save
+    ///        from the save picker (see RomBrowserController::LaunchFile).
     ///        0 is the regular .sav, 1 to IGameDataService::kMaxSaveSlot use
     ///        .sav1 to .sav9.
     u8 saveSlot = 0;

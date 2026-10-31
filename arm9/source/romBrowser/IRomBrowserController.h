@@ -22,9 +22,14 @@ public:
     virtual void NavigateUp() = 0;
     virtual void NavigateToPath(const TCHAR* name) = 0;
     /// @brief gameCode is the file's internal game code when the caller has
-    ///        it loaded, or nullptr; it keys the game's persisted data.
+    ///        it loaded, or nullptr; it keys the game's persisted data. A DS game
+    ///        with saves besides its main one opens the save picker instead.
     virtual void LaunchFile(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void LaunchRandomGame() = 0;
+    /// @brief Launches the game the save picker shows with one of its saves: 0 for
+    ///        the main one, 1 to IGameDataService::kMaxSaveSlot for the others.
+    virtual void LaunchSaveSlot(u32 saveSlot) = 0;
+    virtual void HideSavePicker() = 0;
     virtual void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleFavoritesFilter() = 0;

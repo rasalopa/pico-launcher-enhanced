@@ -26,6 +26,10 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
             .Trigger(RomBrowserStateTrigger::ShowStatistics).GoesTo(RomBrowserState::Statistics)
             .Trigger(RomBrowserStateTrigger::ShowDeleteConfirm).GoesTo(RomBrowserState::DeleteConfirm)
             .Trigger(RomBrowserStateTrigger::ShowMenu).GoesTo(RomBrowserState::Menu)
+            .Trigger(RomBrowserStateTrigger::ShowSavePicker).GoesTo(RomBrowserState::SavePicker)
+        .In(RomBrowserState::SavePicker)
+            .Trigger(RomBrowserStateTrigger::HideSavePicker).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::Launch).GoesTo(RomBrowserState::Launching)
         // The menu hands over to whatever is picked from it. A filter toggle
         // fires ChangeDisplayMode, which from here also means "and close the menu".
         .In(RomBrowserState::Menu)

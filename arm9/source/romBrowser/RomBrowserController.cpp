@@ -49,7 +49,30 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
     _triggerFileInfo = FileInfo(fileInfo);
     StringUtil::Copy(_triggerGameCode, gameCode ? gameCode : "",
         sizeof(_triggerGameCode) / sizeof(_triggerGameCode[0]));
+    if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
+    {
+        // the picker must list every save, and the ones noted when the folder was read
+        // can miss some when its saves folder couldn't be read to the end
+        if (_triggerFileInfo.AreSaveSlotsIncomplete())
+            _triggerFileInfo.AddSaveSlots(FindSaveSlotsOnCard(_triggerFileInfo.GetFileName()));
+        if (_triggerFileInfo.GetSaveSlots() & ~1u)
+        {
+            _stateMachine.Fire(RomBrowserStateTrigger::ShowSavePicker);
+            return;
+        }
+    }
+    LaunchSaveSlot(0);
+}
+
+void RomBrowserController::LaunchSaveSlot(u32 saveSlot)
+{
+    _launchSaveSlot = saveSlot;
     _stateMachine.Fire(RomBrowserStateTrigger::Launch);
+}
+
+void RomBrowserController::HideSavePicker()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::HideSavePicker);
 }
 
 void RomBrowserController::LaunchRandomGame()
@@ -98,6 +121,32 @@ void RomBrowserController::BuildCurrentFolderFilePath(const char* fileName,
         buffer[idx - 1] = 0;
     }
     strlcat(buffer, fileName, bufferLength);
+}
+
+u16 RomBrowserController::FindSaveSlotsOnCard(const char* romFileName) const
+{
+    bool savesFolder = GetSaveLocation() == SaveLocation::SavesFolder;
+    FILINFO fileInfo;
+    // Only a plain "not there" counts as missing: after a read error the save may well be
+    // there, and the save picker would then offer it as a new one.
+    auto isOnCard = [&fileInfo] (const TCHAR* path)
+    {
+        FRESULT result = f_stat(path, &fileInfo);
+        return result != FR_NO_FILE && result != FR_NO_PATH;
+    };
+    // "saves/<name>.savN", with the name alone at +6 for the save next to the game
+    TCHAR slotPath[6 + 256];
+    strcpy(slotPath, "saves/");
+    u16 saveSlots = 0;
+    for (u32 slot = 1; slot <= IGameDataService::kMaxSaveSlot; slot++)
+    {
+        if (BuildSaveFileName(romFileName, slot, &slotPath[6], sizeof(slotPath) - 6) &&
+            ((savesFolder && isOnCard(slotPath)) || isOnCard(&slotPath[6])))
+        {
+            saveSlots |= 1 << slot;
+        }
+    }
+    return saveSlots;
 }
 
 void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* gameCode)
@@ -253,18 +302,7 @@ void RomBrowserController::RequestDeleteSelected()
     {
         // The saves folder wasn't read to its end, so look for each one: the dialog
         // must not name fewer saves than ConfirmDelete deletes.
-        // "saves/<name>.savN", with the name alone at +6 for the save next to the game
-        TCHAR slotPath[6 + 256];
-        strcpy(slotPath, "saves/");
-        for (u32 slot = 1; slot <= IGameDataService::kMaxSaveSlot; slot++)
-        {
-            if (BuildSaveFileName(_deleteRomFileName, slot, &slotPath[6], sizeof(slotPath) - 6) &&
-                ((_deleteFolderSaveFileName[0] != 0 && f_stat(slotPath, &fileInfo) == FR_OK) ||
-                    f_stat(&slotPath[6], &fileInfo) == FR_OK))
-            {
-                _deleteExtraSaveCount++;
-            }
-        }
+        _deleteExtraSaveCount = __builtin_popcount(FindSaveSlotsOnCard(_deleteRomFileName));
     }
 
     _stateMachine.Fire(RomBrowserStateTrigger::ShowDeleteConfirm);
@@ -747,9 +785,6 @@ void RomBrowserController::BeginLaunch()
             _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr, fullPath, lastPlayed);
         _gameDataService->SaveAsync(_ioTaskQueue);
     }
-    // no way to pick another save until the save picker exists, so a slot stored by an
-    // earlier build is not used: it would start a save that nothing on screen shows
-    _launchSaveSlot = 0;
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         UpdateLastUsedFilepath();
