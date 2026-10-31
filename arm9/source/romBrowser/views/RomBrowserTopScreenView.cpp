@@ -24,6 +24,8 @@
 #include "checkMarker.h"
 #include "starMarker.h"
 #include "stripChipBg.h"
+#include "batteryIpc.h"
+#include "rtcIpc.h"
 #include "RomBrowserTopScreenView.h"
 
 // The launch info text next to the markers - "3x 1h20", "3x · 16 Jul" - is
@@ -35,6 +37,19 @@
 // Markers are 16 px sprites with 12 px of shape inside, laid 15 apart so that
 // three of them read as one group rather than three things in a row.
 #define MARKER_STRIDE 15
+
+// The status bar: 16 px tall, made of 32 px wide pieces, with the battery in the
+// last 20 px. The battery sheet holds its 16x16 frames as empty, 1 to 4 bars,
+// charging; a frame is 128 bytes of tiles.
+#define STATUS_BAR_HEIGHT 16
+#define STATUS_BAR_PIECES 8
+#define BATTERY_FRAME_CHARGING 5
+#define BATTERY_FRAME_BYTES 128
+
+static Point clampToScreen(const Point& p)
+{
+    return Point(std::clamp(p.x, 0, 240), std::clamp(p.y, 0, 176));
+}
 
 RomBrowserTopScreenView::RomBrowserTopScreenView(
     SharedPtr<RomBrowserViewModel> viewModel,
@@ -77,6 +92,21 @@ RomBrowserTopScreenView::RomBrowserTopScreenView(
     if (!_launchInfoHidden)
         AddChildTail(_launchInfoLabel.GetPointer());
 #endif
+
+    // the bar's look comes from the theme; positions are clamped so that a
+    // malformed theme.json can't place the OBJs at coordinates that wrap in OAM
+    _statusBarStyle = &romBrowserViewFactory->GetTopStatusBarStyle();
+    _statusBarHidden = _statusBarStyle->hidden;
+    _clockHidden = _statusBarHidden || _statusBarStyle->clockHidden;
+    _batteryHidden = _statusBarHidden || _statusBarStyle->batteryHidden;
+    _backgroundHidden = _statusBarHidden || _statusBarStyle->backgroundHidden;
+    _clockLabel = Label2DView::CreateShared(40, 16, 5, fontRepository->GetFont(FontType::Medium10));
+    Point clockPosition = clampToScreen(_statusBarStyle->clockPosition);
+    _clockLabel->SetPosition(clockPosition.x, clockPosition.y);
+    _clockLabel->SetBackgroundColor(_statusBarStyle->clockBlendColor);
+    _clockLabel->SetForegroundColor(_statusBarStyle->clockTextColor);
+    if (!_clockHidden)
+        AddChildTail(_clockLabel.GetPointer());
 }
 
 void RomBrowserTopScreenView::InitVram(const VramContext& vramContext)
@@ -101,6 +131,18 @@ void RomBrowserTopScreenView::InitVram(const VramContext& vramContext)
         _chipVramOffset = objVramManager->Alloc(stripChipBgTilesLen);
         dma_ntrCopy32(3, stripChipBgTiles,
             objVramManager->GetVramAddress(_chipVramOffset), stripChipBgTilesLen);
+        if (!_backgroundHidden)
+        {
+            _statusBarVramOffset = objVramManager->Alloc(TOP_STATUS_BAR_TILES_SIZE);
+            dma_ntrCopy32(3, _statusBarStyle->backgroundTiles,
+                objVramManager->GetVramAddress(_statusBarVramOffset), TOP_STATUS_BAR_TILES_SIZE);
+        }
+        if (!_batteryHidden)
+        {
+            _batteryVramOffset = objVramManager->Alloc(TOP_STATUS_BAR_BATTERY_TILES_SIZE);
+            dma_ntrCopy32(3, _statusBarStyle->batteryTiles,
+                objVramManager->GetVramAddress(_batteryVramOffset), TOP_STATUS_BAR_BATTERY_TILES_SIZE);
+        }
     }
     int tileIndex = 0;
     vu16* mapPtr = (vu16*)((u8*)GFX_BG_SUB + 0x3800);
@@ -115,8 +157,37 @@ void RomBrowserTopScreenView::InitVram(const VramContext& vramContext)
     }
 }
 
+// The rtc is asked over the ipc and the answer is waited for, so it is read
+// about once a second rather than every frame, and the label is only rewritten
+// when the minute changes. The ds keeps its clock in 24 hours, as does this.
+void RomBrowserTopScreenView::UpdateClock()
+{
+    if (_clockFramesLeft > 0)
+    {
+        _clockFramesLeft--;
+        return;
+    }
+    _clockFramesLeft = 59;
+    rtc_datetime_t dateTime;
+    rtc_readDateTime(&dateTime);
+    // the rtc registers hold BCD values
+    u32 hour = ((dateTime.time.hour >> 4) * 10) + (dateTime.time.hour & 0xF);
+    u32 minute = ((dateTime.time.minute >> 4) * 10) + (dateTime.time.minute & 0xF);
+    if (hour > 23 || minute > 59)
+        return;
+    u32 shown = hour * 60 + minute;
+    if (shown == _clockShownMinute)
+        return;
+    _clockShownMinute = shown;
+    char text[8];
+    mini_snprintf(text, sizeof(text), "%02u:%02u", hour, minute);
+    _clockLabel->SetText(text);
+}
+
 void RomBrowserTopScreenView::Update()
 {
+    if (!_clockHidden)
+        UpdateClock();
     int selectedItem = _viewModel->GetSelectedItem();
     if (selectedItem != _lastSelectedItem && selectedItem >= 0)
     {
@@ -258,8 +329,30 @@ void RomBrowserTopScreenView::RefreshMostPlayed(u32 gameDataVersion)
     _mostPlayedKnown = true;
 }
 
+// The bar goes first so that it gets the highest oam indices, which puts it
+// behind the clock label (a child, drawn after) and the battery. It is
+// translucent like the pills, so the theme art shows faintly through.
+void RomBrowserTopScreenView::DrawStatusBar(GraphicsContext& graphicsContext)
+{
+    u32 barPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
+        GradientPalette(_statusBarStyle->backgroundFromColor, _statusBarStyle->backgroundToColor),
+        0, STATUS_BAR_HEIGHT);
+    auto barOams = graphicsContext.GetOamManager().AllocOams(STATUS_BAR_PIECES);
+    for (int i = 0; i < STATUS_BAR_PIECES; i++)
+    {
+        auto oam = OamBuilder::OamWithSize<32, 16>(i * 32, 0, _statusBarVramOffset >> 7)
+            .WithPalette16(barPaletteRow)
+            .WithPriority(graphicsContext.GetPriority());
+        if (_statusBarStyle->backgroundTranslucent)
+            oam.AsTranslucent();
+        oam.Build(barOams[i]);
+    }
+}
+
 void RomBrowserTopScreenView::Draw(GraphicsContext& graphicsContext)
 {
+    if (!_backgroundHidden)
+        DrawStatusBar(graphicsContext);
     // a hidden launch info suppresses its text and all three markers together
     bool hidden = _launchInfoHidden;
 #if SHOW_TOP_LAUNCH_INFO_TEXT
@@ -347,6 +440,29 @@ void RomBrowserTopScreenView::Draw(GraphicsContext& graphicsContext)
     // the labels draw after the chips and therefore get lower oam indices,
     // which puts them in front
     ViewContainer::Draw(graphicsContext);
+    unsigned int batteryLevel = 0;
+    bool batteryCharging = false;
+    bool batteryCoarse = false;
+    if (!_batteryHidden && battery_getState(batteryLevel, batteryCharging, batteryCoarse))
+    {
+        // low is red and charging is green, whatever the theme; otherwise the
+        // text's own color
+        Rgb<8, 8, 8> color = _statusBarStyle->batteryColor;
+        if (batteryCharging)
+            color = _statusBarStyle->batteryChargingColor;
+        else if (batteryLevel <= 1)
+            color = _statusBarStyle->batteryLowColor;
+        u32 frame = batteryCharging ? BATTERY_FRAME_CHARGING : std::min(batteryLevel, 4u);
+        auto batteryOams = graphicsContext.GetOamManager().AllocOams(1);
+        u32 batteryPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
+            GradientPalette(color, color), 0, STATUS_BAR_HEIGHT);
+        Point batteryPosition = clampToScreen(_statusBarStyle->batteryPosition);
+        OamBuilder::OamWithSize<16, 16>(batteryPosition.x, batteryPosition.y,
+            (_batteryVramOffset + frame * BATTERY_FRAME_BYTES) >> 7)
+            .WithPalette16(batteryPaletteRow)
+            .WithPriority(graphicsContext.GetPriority())
+            .Build(batteryOams[0]);
+    }
     for (int i = 0; i < 3; i++)
     {
         if (!markers[i].show)

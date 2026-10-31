@@ -2,11 +2,54 @@
 #include <string.h>
 #include <libtwl/mem/memVram.h>
 #include "themes/ITheme.h"
+#include "themes/custom/CustomTopStatusBarInfo.h"
+#include "themes/material/MaterialColorScheme.h"
 #include "gui/VramContext.h"
 #include "CustomRomBrowserViewFactory.h"
 
+// Reads a whole file of exactly size bytes; a missing or short file leaves the
+// launcher's own art in place.
+static bool readThemeFileExact(const ITheme& theme, const TCHAR* name, void* dst, u32 size)
+{
+    const auto file = std::make_unique<File>();
+    if (!theme.OpenThemeFile(*file, name))
+        return false;
+    u32 bytesRead = 0;
+    bool ok = file->Read(dst, size, bytesRead) == FR_OK && bytesRead == size;
+    file->Close();
+    return ok;
+}
+
+void CustomRomBrowserViewFactory::LoadTopStatusBarStyle(const ITheme& theme)
+{
+    const auto& info = _customThemeInfo->topStatusBarInfo;
+    auto style = MakeDefaultTopStatusBarStyle(*_materialColorScheme);
+
+    if (readThemeFileExact(theme, "statusBar.bin", _statusBarTiles, sizeof(_statusBarTiles)))
+        style.backgroundTiles = _statusBarTiles;
+    if (readThemeFileExact(theme, "statusBarBattery.bin", _statusBarBatteryTiles, sizeof(_statusBarBatteryTiles)))
+        style.batteryTiles = _statusBarBatteryTiles;
+
+    style.hidden = info.hidden;
+    style.backgroundHidden = info.backgroundHidden;
+    style.backgroundFromColor = info.backgroundFromColor.value_or(style.backgroundFromColor);
+    style.backgroundToColor = info.backgroundToColor.value_or(style.backgroundToColor);
+    style.backgroundTranslucent = info.backgroundTranslucent.value_or(style.backgroundTranslucent);
+    style.clockHidden = info.clockHidden;
+    style.clockPosition = info.clockPosition.value_or(style.clockPosition);
+    style.clockTextColor = info.clockTextColor.value_or(style.clockTextColor);
+    style.clockBlendColor = info.clockBlendColor.value_or(style.clockBlendColor);
+    style.batteryHidden = info.batteryHidden;
+    style.batteryPosition = info.batteryPosition.value_or(style.batteryPosition);
+    style.batteryColor = info.batteryColor.value_or(style.batteryColor);
+    style.batteryLowColor = info.batteryLowColor.value_or(style.batteryLowColor);
+    style.batteryChargingColor = info.batteryChargingColor.value_or(style.batteryChargingColor);
+    _topStatusBarStyle = style;
+}
+
 void CustomRomBrowserViewFactory::LoadResources(const ITheme& theme, const VramContext& mainVramContext)
 {
+    LoadTopStatusBarStyle(theme);
     auto tmpBuf = std::unique_ptr<u8[]>(new(cache_align) u8[13 * 1024]);
     const auto file = std::make_unique<File>();
     if (theme.OpenThemeFile(*file, "gridcell.bin"))

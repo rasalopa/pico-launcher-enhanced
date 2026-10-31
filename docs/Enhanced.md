@@ -114,6 +114,11 @@ are listed. Pressing X disables every cheat at once. The launcher supported this
 but nothing on screen said so. Handy to make sure no code is active before going online or
 starting a speedrun.
 
+## Status bar
+A bar along the top of the top screen shows the time at the left and the battery at the right. The time is the console's clock, in 24 hours.
+
+On a DSi or a 3DS in DSi mode the battery has four levels, shown in red at the lowest and in green while charging. The original DS and DS Lite only report whether the battery is low, so there the meter shows full, or a single red bar once the console says it is low. Custom themes only show the bar when they ask for it, and can restyle it, see [Themes](Themes.md).
+
 ## Screen brightness (DS Lite)
 The display settings sheet (gear button in the app bar) has a **Light** row with the DS Lite's four backlight levels. Tapping a level applies it immediately, and the choice is remembered and restored on every boot. It also stays active inside the game you launch, until the console powers off.
 

@@ -85,7 +85,17 @@ public:
         return { Point(icon.x + 16, icon.y - 18), false, true, true };
     }
 
+    const TopStatusBarStyle& GetTopStatusBarStyle() const override
+    {
+        return _topStatusBarStyle;
+    }
+
     void LoadResources(const ITheme& theme, const VramContext& mainVramContext);
+
+private:
+    void LoadTopStatusBarStyle(const ITheme& theme);
+
+public:
 
 private:
     u32 _gridCellTexVramOffset;
@@ -98,6 +108,10 @@ private:
     u32 _bannerListCellSelectedPlttVramOffset;
     u32 _scrimTexVramOffset;
     u32 _scrimPlttVramOffset;
+    // the theme's own art for the top bar, when it ships any
+    alignas(4) u8 _statusBarTiles[TOP_STATUS_BAR_TILES_SIZE];
+    alignas(4) u8 _statusBarBatteryTiles[TOP_STATUS_BAR_BATTERY_TILES_SIZE];
+    TopStatusBarStyle _topStatusBarStyle;
     const CustomThemeInfo* _customThemeInfo;
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;
