@@ -2,6 +2,12 @@
 
 ## Enhanced fork
 
+### [Unreleased]
+
+#### Fixed
+- The display settings sheet opens with focus on the selected layout instead of always the first
+  one, so a second layout no longer looks selected too.
+
 ### [enhanced-v1.10.0]
 
 #### Added
