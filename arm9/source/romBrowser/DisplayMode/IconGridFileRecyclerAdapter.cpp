@@ -68,8 +68,12 @@ void IconGridFileRecyclerAdapter::ReleaseView(SharedPtr<View> view, int index) c
     auto iconGridItemView = static_cast<IconGridItemView*>(view.GetPointer());
     iconGridItemView->SetIcon(nullptr);
     iconGridItemView->GetViewModel().SetIndex(-1);
-    iconGridItemView->GetViewModel().CancelQueueTask();
-    _fileInfoManager->ReleaseFileInfo(index);
+    // A load already running on the io thread releases the info itself when it
+    // sees the cancel; freeing it here would pull it out from under that task.
+    if (iconGridItemView->GetViewModel().CancelQueueTask())
+    {
+        _fileInfoManager->ReleaseFileInfo(index);
+    }
 }
 
 void IconGridFileRecyclerAdapter::InitVram(const VramContext& vramContext)

@@ -81,8 +81,12 @@ void BannerListFileRecyclerAdapter::ReleaseView(SharedPtr<View> view, int index)
     listItemView->SetIcon(nullptr);
     listItemView->SetGameTitle(u"");
     listItemView->GetViewModel().SetIndex(-1);
-    listItemView->GetViewModel().CancelQueueTask();
-    _fileInfoManager->ReleaseFileInfo(index);
+    // A load already running on the io thread releases the info itself when it
+    // sees the cancel; freeing it here would pull it out from under that task.
+    if (listItemView->GetViewModel().CancelQueueTask())
+    {
+        _fileInfoManager->ReleaseFileInfo(index);
+    }
 }
 
 void BannerListFileRecyclerAdapter::InitVram(const VramContext& vramContext)

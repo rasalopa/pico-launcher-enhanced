@@ -2,6 +2,13 @@
 
 ## Enhanced fork
 
+### Unreleased
+
+#### Fixed
+- Rare garbled titles and icons when scrolling fast. The information loaded for a game could be
+  freed while it was still being read to build its row; the row that is loading it now frees it
+  once it is done.
+
 ### [enhanced-v1.10.0]
 
 #### Added

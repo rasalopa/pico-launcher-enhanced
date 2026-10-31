@@ -54,6 +54,10 @@ void MaterialCoverFlowFileRecyclerAdapter::ReleaseView(SharedPtr<View> view, int
     auto coverView = static_cast<MaterialCoverView*>(view.GetPointer());
     coverView->ClearCover();
     coverView->GetViewModel().SetIndex(-1);
-    coverView->GetViewModel().CancelQueueTask();
-    _fileInfoManager->ReleaseFileInfo(index);
+    // A load already running on the io thread releases the info itself when it
+    // sees the cancel; freeing it here would pull it out from under that task.
+    if (coverView->GetViewModel().CancelQueueTask())
+    {
+        _fileInfoManager->ReleaseFileInfo(index);
+    }
 }

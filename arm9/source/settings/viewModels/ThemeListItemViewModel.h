@@ -35,9 +35,9 @@ public:
         _queueTask = std::move(queueTask);
     }
 
-    void CancelQueueTask() override
+    bool CancelQueueTask() override
     {
-        _queueTask.CancelTask();
+        return _queueTask.CancelTask();
     }
 
     void DisposeQueueTaskWhenComplete() override
