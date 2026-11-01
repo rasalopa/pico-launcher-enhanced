@@ -48,8 +48,9 @@ public:
     ///        like the marks. Slot 0 is the regular save, so picking it for a
     ///        game without an entry creates none, and an entry left holding only
     ///        defaults is pruned on the next write as usual. Slots above
-    ///        kMaxSaveSlot are ignored.
-    virtual void SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) = 0;
+    ///        kMaxSaveSlot are ignored, and so are file names too long to
+    ///        store. Returns true when it wrote (the caller should then save).
+    virtual bool SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) = 0;
 
     /// @brief Drops the entry for a deleted rom file. By file name, matching how
     ///        marks are stored.

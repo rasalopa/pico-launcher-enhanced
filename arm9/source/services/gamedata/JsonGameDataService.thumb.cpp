@@ -279,18 +279,19 @@ void JsonGameDataService::ClearSession()
     _version++;
 }
 
-void JsonGameDataService::SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode)
+bool JsonGameDataService::SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode)
 {
     if (saveSlot > kMaxSaveSlot)
-        return;
+        return false;
     // slot 0 is what a game without an entry uses already: nothing to create
     if (saveSlot == 0 && !Find(fileName))
-        return;
+        return false;
     auto* entry = GetOrCreateEntry(fileName, gameCode);
     if (!entry)
-        return;
+        return false;
     entry->saveSlot = (u8)saveSlot;
     _version++;
+    return true;
 }
 
 void JsonGameDataService::RemoveEntry(const char* fileName)

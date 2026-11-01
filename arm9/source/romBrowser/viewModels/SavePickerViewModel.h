@@ -8,6 +8,7 @@
 /// @brief View model for the save picker, which A opens on a DS game with saves besides
 ///        its main one: the main save first, even when its file is missing, then every
 ///        other save found when the folder was read, then a new save while one is free.
+///        It opens on the save the game was started on last time.
 class SavePickerViewModel
 {
 public:
@@ -30,6 +31,16 @@ public:
         if (_newSaveSlot != 0)
             _slots[_entryCount++] = _newSaveSlot;
 
+        // never "+ New save": if the last save is gone, its slot may be the free one
+        const auto* entry = romBrowserController->GetGameDataService()->GetEntry(fileInfo.GetFileName());
+        u32 lastSaveSlot = entry ? entry->saveSlot : 0;
+        u32 existingCount = _newSaveSlot != 0 ? _entryCount - 1 : _entryCount;
+        for (u32 i = 0; i < existingCount; i++)
+        {
+            if (_slots[i] == lastSaveSlot)
+                _initialEntry = i;
+        }
+
         const char* fileName = fileInfo.GetFileName();
         const char* extension = strrchr(fileName, '.');
         u32 nameLength = extension ? extension - fileName : strlen(fileName);
@@ -41,6 +52,10 @@ public:
     const char* GetGameName() const { return _gameName; }
 
     u32 GetEntryCount() const { return _entryCount; }
+
+    /// @brief The entry the sheet opens on: the save started last time, or the main one when
+    ///        that save is gone.
+    u32 GetInitialEntry() const { return _initialEntry; }
 
     /// @brief Writes "Main save", "Save N" or "+ New save" for the entry.
     void FormatEntry(u32 index, char* buffer, u32 bufferLength) const
@@ -69,6 +84,7 @@ private:
     /// @brief The save each entry starts.
     u8 _slots[kMaxEntryCount];
     u32 _entryCount = 0;
+    u32 _initialEntry = 0;
     /// @brief The slot "+ New save" starts, 0 when all of them are taken.
     u32 _newSaveSlot = 0;
     /// @brief Whole, as a file name is never longer than FF_LFN_BUF: cutting it could split a

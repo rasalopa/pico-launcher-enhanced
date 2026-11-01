@@ -134,7 +134,7 @@ SharedPtr<View> SavePickerBottomSheetView::MoveFocus(const SharedPtr<View>& curr
 
 void SavePickerBottomSheetView::Focus(FocusManager& focusManager)
 {
-    focusManager.Focus(_entries[0]);
+    focusManager.Focus(_entries[_viewModel->GetInitialEntry()]);
 }
 
 void SavePickerBottomSheetView::Activate(int index)

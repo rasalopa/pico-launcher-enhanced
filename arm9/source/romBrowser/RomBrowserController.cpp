@@ -772,6 +772,18 @@ void RomBrowserController::HandleLaunchTrigger()
 
 void RomBrowserController::BeginLaunch()
 {
+    // the save picker opens on the save started last time. it is written with launch
+    // tracking off too, since the player picked it, but only when it changed
+    bool gameDataChanged = false;
+    if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
+    {
+        const auto* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
+        if ((entry ? entry->saveSlot : 0) != _launchSaveSlot)
+        {
+            gameDataChanged = _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
+                _launchSaveSlot, _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr);
+        }
+    }
     if (_appSettingsService->GetAppSettings().launchTracking)
     {
         char lastPlayed[20];
@@ -783,8 +795,10 @@ void RomBrowserController::BeginLaunch()
             sizeof(fullPath) / sizeof(fullPath[0]));
         _gameDataService->RecordLaunch(_triggerFileInfo.GetFileName(),
             _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr, fullPath, lastPlayed);
-        _gameDataService->SaveAsync(_ioTaskQueue);
+        gameDataChanged = true;
     }
+    if (gameDataChanged)
+        _gameDataService->SaveAsync(_ioTaskQueue);
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         UpdateLastUsedFilepath();
