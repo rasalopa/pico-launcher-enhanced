@@ -361,7 +361,7 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
         {
             // the browser is back where it was, so say why the game did not start
             if (_toast)
-                _toast->Show("Needs a DSi or 3DS");
+                _toast->Show(_romBrowserController.GetLaunchRefusedText());
             break;
         }
         case RomBrowserStateTrigger::ShowGameInfo:

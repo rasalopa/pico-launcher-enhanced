@@ -512,13 +512,29 @@ void RomBrowserController::Update()
             if (_launchCheckTask.IsValid() && _launchCheckTask.GetTask().IsCompleted())
             {
                 _launchCheckTask.Dispose();
-                if (_launchDsiOnly)
+                LaunchRefusal refusal = _launchRefusal;
+                if (refusal == LaunchRefusal::None)
                 {
-                    _stateMachine.Fire(RomBrowserStateTrigger::LaunchRefused);
+                    BeginLaunch();
                 }
                 else
                 {
-                    BeginLaunch();
+                    if (refusal == LaunchRefusal::DsiOnly)
+                    {
+                        StringUtil::Copy(_launchRefusedText, "Needs a DSi or 3DS", sizeof(_launchRefusedText));
+                    }
+                    else if (refusal == LaunchRefusal::SaveNameTooLong)
+                    {
+                        // the picker calls it Save N, so the toast does too. 117 pixels of
+                        // the toast's 128, which "File name too long" went past
+                        mini_snprintf(_launchRefusedText, sizeof(_launchRefusedText),
+                            "Name too long for Save %d", (int)_launchSaveSlot);
+                    }
+                    else
+                    {
+                        StringUtil::Copy(_launchRefusedText, "Couldn't read the game", sizeof(_launchRefusedText));
+                    }
+                    _stateMachine.Fire(RomBrowserStateTrigger::LaunchRefused);
                 }
             }
             break;
@@ -753,21 +769,30 @@ void RomBrowserController::BackfillFavoritePaths()
 void RomBrowserController::HandleLaunchTrigger()
 {
     LOG_DEBUG("RomBrowserStateTrigger::Launch\n");
-    // On a DS or DS Lite a DSi-only game can only end in a white screen, so it
-    // is turned away before anything about the launch is recorded. The header
-    // is read on the io thread like every other file access; the browser sits
-    // in the Launching state, with input off, until the answer is in.
-    if (!Environment::IsDsiMode() && _triggerFileInfo.GetFileType() == &NdsFileType::sInstance)
+    // A launch that can't go as the player asked is turned away before anything about it
+    // is recorded: on a DS or DS Lite a DSi-only game can only end in a white screen, and
+    // a save other than the main one that the loader can't be pointed at would have it
+    // open the main save. Both need the card, read on the io thread like every other file
+    // access; the browser sits in the Launching state, with input off, until the answer is in.
+    if (!IsDsiOnlyCheckNeeded() && !_triggerFileInfo.GetFileType()->UsesLoaderSave())
     {
-        _launchDsiOnly = false;
-        _launchCheckTask = _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
-        {
-            _launchDsiOnly = NdsRomHeader::IsDsiOnly(_triggerFileInfo.GetFastFileRef());
-            return TaskResult<void>::Completed();
-        });
+        BeginLaunch();
         return;
     }
-    BeginLaunch();
+    _launchRefusal = LaunchRefusal::None;
+    _launchCheckTask = _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+    {
+        if (IsDsiOnlyCheckNeeded() && NdsRomHeader::IsDsiOnly(_triggerFileInfo.GetFastFileRef()))
+            _launchRefusal = LaunchRefusal::DsiOnly;
+        else if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
+            _launchRefusal = ResolveSavePath();
+        return TaskResult<void>::Completed();
+    });
+}
+
+bool RomBrowserController::IsDsiOnlyCheckNeeded() const
+{
+    return !Environment::IsDsiMode() && _triggerFileInfo.GetFileType() == &NdsFileType::sInstance;
 }
 
 void RomBrowserController::BeginLaunch()
@@ -842,7 +867,8 @@ void RomBrowserController::SetPicoLoaderParams() const
     {
         if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
         {
-            SetSavePath(loadParams);
+            // decided by the launch check, before the launch was recorded
+            strcpy(loadParams->savePath, _launchSavePath);
         }
         gProcessManager.Goto<PicoLoaderProcess>();
     }
@@ -854,74 +880,86 @@ void RomBrowserController::SetPicoLoaderParams() const
 
 // Picks the save the loader uses: the slot in _launchSaveSlot, where
 // saveLocation says. When the saves folder can't be used, the save stays next to the game
-// under the same slot's name, so a slot never ends up on another slot's save.
-void RomBrowserController::SetSavePath(pload_params_t* loadParams) const
+// under the same slot's name, so a slot never ends up on another slot's save. The main
+// save can always be left for the loader to name, as before there were slots. Any other
+// save the loader can't be pointed at turns the launch away: it would open the main save.
+RomBrowserController::LaunchRefusal RomBrowserController::ResolveSavePath()
 {
+    _launchSavePath[0] = 0;
+    LaunchRefusal mainSaveInstead = _launchSaveSlot == 0 ? LaunchRefusal::None : LaunchRefusal::SaveNameTooLong;
+
     // Homebrew and DSiWare get no card save from the loader, so no folder or slot for them either.
-    if (!NdsRomHeader::UsesCardSave(_triggerFileInfo.GetFastFileRef()))
+    bool headerUnreadable = false;
+    if (!NdsRomHeader::UsesCardSave(_triggerFileInfo.GetFastFileRef(), &headerUnreadable))
     {
-        return;
+        return headerUnreadable && _launchSaveSlot != 0 ? LaunchRefusal::RomUnreadable : LaunchRefusal::None;
     }
 
-    // Heap-allocated so it doesn't live on the io task's stack.
-    auto saveFileName = std::make_unique<char[]>(sizeof(loadParams->savePath));
+    // Heap-allocated so they don't live on the io task's stack.
+    auto saveFileName = std::make_unique<char[]>(sizeof(_launchSavePath));
     if (!BuildSaveFileName(_triggerFileInfo.GetFileName(), _launchSaveSlot,
-        saveFileName.get(), sizeof(loadParams->savePath)))
+        saveFileName.get(), sizeof(_launchSavePath)))
     {
-        LOG_ERROR("Save name for slot %d too long, using the regular save\n", _launchSaveSlot);
-        return;
+        LOG_ERROR("Save name for slot %d too long\n", _launchSaveSlot);
+        return mainSaveInstead;
     }
 
+    // "<game folder>/<file name>", built the same way UpdateLastUsedFilepath builds the
+    // rom path the loader gets
+    const u32 gamePathLength = sizeof(_navigatePath) / sizeof(_navigatePath[0]);
+    auto gamePath = std::make_unique<TCHAR[]>(gamePathLength);
     const char* fileName = _triggerFileInfo.GetFileName();
-    // _navigatePath is "<game folder>/<file name>", built by UpdateLastUsedFilepath just before
-    u32 folderLength = strlen(_navigatePath) - strlen(fileName);
-    if (folderLength == 0 || _navigatePath[folderLength - 1] != '/' ||
-        strcmp(&_navigatePath[folderLength], fileName) != 0)
+    BuildCurrentFolderFilePath(fileName, gamePath.get(), gamePathLength);
+    u32 pathLength = strlen(gamePath.get());
+    u32 fileNameLength = strlen(fileName);
+    u32 folderLength = pathLength - fileNameLength;
+    if (pathLength <= fileNameLength || gamePath[folderLength - 1] != '/' ||
+        strcmp(&gamePath[folderLength], fileName) != 0)
     {
-        LOG_ERROR("Unexpected launch path, using the regular save next to the game\n");
-        return;
+        LOG_ERROR("Unexpected launch path\n");
+        return mainSaveInstead;
     }
 
     if (_appSettingsService->GetAppSettings().saveLocation == SaveLocation::SavesFolder &&
-        SetSavesFolderPath(loadParams, folderLength, saveFileName.get()))
+        SetSavesFolderPath(_launchSavePath, gamePath.get(), folderLength, saveFileName.get()))
     {
-        return;
+        return LaunchRefusal::None;
     }
 
     // Slot 0 next to the game is what the loader picks on its own, so the path stays empty
     // and the loader keeps naming it, exactly as before there were slots.
-    loadParams->savePath[0] = 0;
+    _launchSavePath[0] = 0;
     if (_launchSaveSlot == 0)
     {
-        return;
+        return LaunchRefusal::None;
     }
     // "<game folder>/" + save name + terminator
-    if (folderLength + strlen(saveFileName.get()) + 1 > sizeof(loadParams->savePath))
+    if (folderLength + strlen(saveFileName.get()) + 1 > sizeof(_launchSavePath))
     {
-        LOG_ERROR("Save path for slot %d too long, using the regular save\n", _launchSaveSlot);
-        return;
+        LOG_ERROR("Save path for slot %d too long\n", _launchSaveSlot);
+        return LaunchRefusal::SaveNameTooLong;
     }
-    memcpy(loadParams->savePath, _navigatePath, folderLength);
-    strcpy(&loadParams->savePath[folderLength], saveFileName.get());
+    memcpy(_launchSavePath, gamePath.get(), folderLength);
+    strcpy(&_launchSavePath[folderLength], saveFileName.get());
+    return LaunchRefusal::None;
 }
 
 // Points the loader at "<game folder>/saves/<save name>", creating the saves folder.
 // Returns false, so the save stays next to the game as the loader keeps it on its own,
 // when the folder can't be made or the path would not fit: a truncated path would point
 // the loader at another file, and a save must never end up somewhere unexpected.
-bool RomBrowserController::SetSavesFolderPath(pload_params_t* loadParams, u32 folderLength,
-    const char* saveFileName) const
+bool RomBrowserController::SetSavesFolderPath(char* savePath, const TCHAR* gamePath,
+    u32 folderLength, const char* saveFileName) const
 {
     u32 saveFileNameLength = strlen(saveFileName);
     // "<game folder>/" + "saves/" + save name + terminator
-    if (folderLength + 6 + saveFileNameLength + 1 > sizeof(loadParams->savePath))
+    if (folderLength + 6 + saveFileNameLength + 1 > sizeof(_launchSavePath))
     {
         LOG_ERROR("Save path too long, keeping the save next to the game\n");
         return false;
     }
 
-    char* savePath = loadParams->savePath;
-    memcpy(savePath, _navigatePath, folderLength);
+    memcpy(savePath, gamePath, folderLength);
     savePath[folderLength] = 0;
     strcat(savePath, "saves");
 
@@ -956,8 +994,8 @@ bool RomBrowserController::SetSavesFolderPath(pload_params_t* loadParams, u32 fo
     {
         return true;
     }
-    char oldPath[sizeof(loadParams->savePath)];
-    memcpy(oldPath, _navigatePath, folderLength);
+    char oldPath[sizeof(_launchSavePath)];
+    memcpy(oldPath, gamePath, folderLength);
     strcpy(&oldPath[folderLength], saveFileName);
     if (f_stat(oldPath, &saveInfo) != FR_OK)
     {

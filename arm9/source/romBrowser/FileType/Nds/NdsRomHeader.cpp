@@ -31,7 +31,7 @@ static bool isHomebrew(const u8* header)
         || readU32(header, HEADER_ARM7_LOAD_ADDRESS) >= 0x03000000;
 }
 
-bool NdsRomHeader::UsesCardSave(const FastFileRef& romFileRef)
+bool NdsRomHeader::UsesCardSave(const FastFileRef& romFileRef, bool* headerUnreadable)
 {
     const auto file = std::make_unique<File>();
     file->Open(romFileRef, FA_READ);
@@ -40,7 +40,9 @@ bool NdsRomHeader::UsesCardSave(const FastFileRef& romFileRef)
     auto header = std::make_unique<u8[]>(HEADER_READ_SIZE);
     if (!header || !file->ReadExact(header.get(), HEADER_READ_SIZE))
     {
-        LOG_ERROR("Couldn't read the rom header, keeping the save next to the game\n");
+        LOG_ERROR("Couldn't read the rom header\n");
+        if (headerUnreadable)
+            *headerUnreadable = true;
         return false;
     }
 

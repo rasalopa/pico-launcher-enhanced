@@ -109,7 +109,22 @@ public:
 
     virtual const FileInfo& GetTriggerFileInfo() const override { return _triggerFileInfo; }
 
+    /// @brief What the toast says when the last launch was turned away.
+    const char* GetLaunchRefusedText() const { return _launchRefusedText; }
+
 private:
+    /// @brief Why the game about to launch is turned away.
+    enum class LaunchRefusal : u8
+    {
+        None,
+        /// @brief A DSi-only game on a DS or DS Lite.
+        DsiOnly,
+        /// @brief The path of the chosen save doesn't fit, so the loader would open the main save.
+        SaveNameTooLong,
+        /// @brief The rom header can't be read, so it isn't known where the chosen save goes.
+        RomUnreadable
+    };
+
     IAppSettingsService* _appSettingsService;
     IGameDataService* _gameDataService;
     IBgmService* _bgmService;
@@ -155,14 +170,18 @@ private:
     TCHAR _navigateSelectName[256];
     FileInfo _triggerFileInfo;
     QueueTask<void> _navigateTask;
-    /// @brief Reads, on the io thread, whether the game about to launch is for
-    ///        the DSi only. Only set on a DS, where such a game cannot run.
+    /// @brief Finds out, on the io thread, whether the game about to launch can start, and
+    ///        where its save goes.
     QueueTask<void> _launchCheckTask;
     /// @brief The answer, written by the task before it completes.
-    volatile bool _launchDsiOnly = false;
+    volatile LaunchRefusal _launchRefusal = LaunchRefusal::None;
     /// @brief Save slot of the game being launched, set on the main thread before the
     ///        io task that builds the save path starts.
     u32 _launchSaveSlot = 0;
+    /// @brief Save path for the loader, written by the launch check. Empty when the loader
+    ///        names the save itself.
+    char _launchSavePath[sizeof(pload_params_t::savePath)];
+    char _launchRefusedText[40] = "";
     bool _saveSettingsPending = false;
     std::unique_ptr<CoverRepository> _coverRepository;
     std::unique_ptr<IconRepository> _iconRepository;
@@ -175,14 +194,18 @@ private:
     void HandleFolderLoadDoneTrigger();
     void BackfillFavoritePaths();
     void HandleLaunchTrigger();
+    /// @brief On a DS or DS Lite, an nds file may be a DSi-only game that can't run there.
+    bool IsDsiOnlyCheckNeeded() const;
     /// @brief Records the launch and hands the game to the loader.
     void BeginLaunch();
     void HandleChangeDisplayModeTrigger();
     void HandleGotoSettingsScreenTrigger();
     void UpdateLastUsedFilepath();
     void SetPicoLoaderParams() const;
-    void SetSavePath(pload_params_t* loadParams) const;
-    bool SetSavesFolderPath(pload_params_t* loadParams, u32 folderLength, const char* saveFileName) const;
+    /// @brief Writes the save path for the game being launched to _launchSavePath.
+    LaunchRefusal ResolveSavePath();
+    bool SetSavesFolderPath(char* savePath, const TCHAR* gamePath, u32 folderLength,
+        const char* saveFileName) const;
     /// @brief Deletes one save of the game being deleted, the one in the saves folder first.
     static void DeleteSave(const char* folderSaveFileName, const char* saveFileName);
     void LoadCheats() const;
