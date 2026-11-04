@@ -108,11 +108,11 @@ void RomBrowserController::LaunchRandomGame()
     }
 }
 
-void RomBrowserController::BuildCurrentFolderFilePath(const char* fileName,
+FRESULT RomBrowserController::BuildCurrentFolderFilePath(const char* fileName,
     TCHAR* buffer, u32 bufferLength) const
 {
     buffer[0] = 0;
-    f_getcwd(buffer, bufferLength);
+    FRESULT folderResult = f_getcwd(buffer, bufferLength);
     int idx = strlcat(buffer, "/", bufferLength);
     // collapse a "//" at the root; guard idx>=2 in case f_getcwd left the
     // buffer empty (then idx==1 and buffer[idx-2] would read out of bounds)
@@ -121,6 +121,7 @@ void RomBrowserController::BuildCurrentFolderFilePath(const char* fileName,
         buffer[idx - 1] = 0;
     }
     strlcat(buffer, fileName, bufferLength);
+    return folderResult;
 }
 
 u16 RomBrowserController::FindSaveSlotsOnCard(const char* romFileName) const
@@ -530,6 +531,10 @@ void RomBrowserController::Update()
                         mini_snprintf(_launchRefusedText, sizeof(_launchRefusedText),
                             "Name too long for Save %d", (int)_launchSaveSlot);
                     }
+                    else if (refusal == LaunchRefusal::FolderPathTooLong)
+                    {
+                        StringUtil::Copy(_launchRefusedText, "Folder path too long", sizeof(_launchRefusedText));
+                    }
                     else
                     {
                         StringUtil::Copy(_launchRefusedText, "Couldn't read the game", sizeof(_launchRefusedText));
@@ -770,10 +775,11 @@ void RomBrowserController::HandleLaunchTrigger()
 {
     LOG_DEBUG("RomBrowserStateTrigger::Launch\n");
     // A launch that can't go as the player asked is turned away before anything about it
-    // is recorded: on a DS or DS Lite a DSi-only game can only end in a white screen, and
-    // a save other than the main one that the loader can't be pointed at would have it
-    // open the main save. Both need the card, read on the io thread like every other file
-    // access; the browser sits in the Launching state, with input off, until the answer is in.
+    // is recorded: on a DS or DS Lite a DSi-only game can only end in a white screen, a
+    // save other than the main one that the loader can't be pointed at would have it open
+    // the main save, and without the game's folder no save can be pointed at. All of it
+    // needs the card, read on the io thread like every other file access; the browser sits
+    // in the Launching state, with input off, until the answer is in.
     if (!IsDsiOnlyCheckNeeded() && !_triggerFileInfo.GetFileType()->UsesLoaderSave())
     {
         BeginLaunch();
@@ -881,8 +887,9 @@ void RomBrowserController::SetPicoLoaderParams() const
 // Picks the save the loader uses: the slot in _launchSaveSlot, where
 // saveLocation says. When the saves folder can't be used, the save stays next to the game
 // under the same slot's name, so a slot never ends up on another slot's save. The main
-// save can always be left for the loader to name, as before there were slots. Any other
-// save the loader can't be pointed at turns the launch away: it would open the main save.
+// save can be left for the loader to name, as before there were slots. Any other save the
+// loader can't be pointed at turns the launch away: it would open the main save. So does
+// a game folder that can't be read, whichever save was picked.
 RomBrowserController::LaunchRefusal RomBrowserController::ResolveSavePath()
 {
     _launchSavePath[0] = 0;
@@ -905,11 +912,21 @@ RomBrowserController::LaunchRefusal RomBrowserController::ResolveSavePath()
     }
 
     // "<game folder>/<file name>", built the same way UpdateLastUsedFilepath builds the
-    // rom path the loader gets
+    // rom path the loader gets. That one reads the folder again, so if this read fails
+    // the save would be pointed at the root while the game starts from its own folder:
+    // the launch is turned away, whichever save was picked
     const u32 gamePathLength = sizeof(_navigatePath) / sizeof(_navigatePath[0]);
     auto gamePath = std::make_unique<TCHAR[]>(gamePathLength);
     const char* fileName = _triggerFileInfo.GetFileName();
-    BuildCurrentFolderFilePath(fileName, gamePath.get(), gamePathLength);
+    FRESULT folderResult = BuildCurrentFolderFilePath(fileName, gamePath.get(), gamePathLength);
+    if (folderResult != FR_OK)
+    {
+        LOG_ERROR("Couldn't read the game's folder (%d)\n", folderResult);
+        // FR_NOT_ENOUGH_CORE: the folder's own path is longer than the buffer, which a
+        // shorter folder name fixes, not a card that failed to read
+        return folderResult == FR_NOT_ENOUGH_CORE ? LaunchRefusal::FolderPathTooLong
+            : LaunchRefusal::RomUnreadable;
+    }
     u32 pathLength = strlen(gamePath.get());
     u32 fileNameLength = strlen(fileName);
     u32 folderLength = pathLength - fileNameLength;

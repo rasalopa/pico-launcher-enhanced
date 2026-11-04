@@ -121,8 +121,12 @@ private:
         DsiOnly,
         /// @brief The path of the chosen save doesn't fit, so the loader would open the main save.
         SaveNameTooLong,
-        /// @brief The rom header can't be read, so it isn't known where the chosen save goes.
-        RomUnreadable
+        /// @brief The rom header or its folder can't be read, so it isn't known where the
+        ///        chosen save goes.
+        RomUnreadable,
+        /// @brief The game's folder path is too long to read back, so no save can be
+        ///        pointed at.
+        FolderPathTooLong
     };
 
     IAppSettingsService* _appSettingsService;
@@ -137,7 +141,8 @@ private:
 
     void FormatNowDateTime(TCHAR* buffer, u32 bufferLength) const;
     /// @brief Full path of a file in the current folder (f_getcwd + name).
-    void BuildCurrentFolderFilePath(const char* fileName,
+    /// @return What f_getcwd returned. When it isn't FR_OK the buffer holds "/" + name.
+    FRESULT BuildCurrentFolderFilePath(const char* fileName,
         TCHAR* buffer, u32 bufferLength) const;
     /// @brief Which saves of the rom in the current folder are on the card, bit N for
     ///        "<name>.savN", looking each one up. Slot 0 is not looked for.
