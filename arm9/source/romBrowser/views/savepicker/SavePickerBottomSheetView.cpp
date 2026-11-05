@@ -42,7 +42,7 @@ SavePickerBottomSheetView::SavePickerBottomSheetView(SharedPtr<SavePickerViewMod
     {
         char name[16];
         _viewModel->FormatEntry(i, name, sizeof(name));
-        _entries[i] = MenuItemView::CreateShared(this, i, CELL_WIDTH, name, false,
+        _entries[i] = MenuItemView::CreateShared(this, i, CELL_WIDTH, name, nullptr,
             materialColorScheme->primary, materialColorScheme, fontRepository);
         AddChildTail(_entries[i].GetPointer());
     }

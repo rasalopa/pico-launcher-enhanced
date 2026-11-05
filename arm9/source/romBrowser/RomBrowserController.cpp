@@ -75,6 +75,55 @@ void RomBrowserController::HideSavePicker()
     _stateMachine.Fire(RomBrowserStateTrigger::HideSavePicker);
 }
 
+u32 RomBrowserController::FindNewSaveSlotOfSelected() const
+{
+    const FileInfo* game = GetSelectedGame();
+    if (!game || !game->GetFileType()->UsesLoaderSave())
+        return 0;
+    u16 saveSlots = game->GetSaveSlots();
+    // the free one must really be free, as with the save picker's "+ New save"
+    if (game->AreSaveSlotsIncomplete())
+        saveSlots |= FindSaveSlotsOnCard(game->GetFileName());
+    for (u32 slot = 1; slot <= IGameDataService::kMaxSaveSlot; slot++)
+    {
+        if (!(saveSlots & (1 << slot)))
+            return slot;
+    }
+    return 0;
+}
+
+void RomBrowserController::LaunchSelectedOnSaveSlot(u32 saveSlot)
+{
+    const FileInfo* game = GetSelectedGame();
+    if (!game)
+        return;
+    _triggerFileInfo = FileInfo(*game);
+    const char* gameCode = FindGameCode(_romBrowserViewModel->GetSelectedItem());
+    StringUtil::Copy(_triggerGameCode, gameCode ? gameCode : "",
+        sizeof(_triggerGameCode) / sizeof(_triggerGameCode[0]));
+    LaunchSaveSlot(saveSlot);
+}
+
+const FileInfo* RomBrowserController::GetSelectedGame() const
+{
+    if (!_romBrowserViewModel.IsValid())
+        return nullptr;
+    int selectedItem = _romBrowserViewModel->GetSelectedItem();
+    if (selectedItem < 0)
+        return nullptr;
+    const auto& item = _romBrowserViewModel->GetFileInfoManager().GetItem(selectedItem);
+    return item.GetFileType()->GetClassification() == FileTypeClassification::Game ? &item : nullptr;
+}
+
+const char* RomBrowserController::FindGameCode(int index) const
+{
+    auto& fileInfoManager = _romBrowserViewModel->GetFileInfoManager();
+    if (!fileInfoManager.IsFileInfoLoaded(index))
+        return nullptr;
+    const auto* info = fileInfoManager.GetInternalFileInfo(index);
+    return info ? info->GetGameCode() : nullptr;
+}
+
 void RomBrowserController::LaunchRandomGame()
 {
     if (!_romBrowserViewModel.IsValid())
@@ -94,14 +143,7 @@ void RomBrowserController::LaunchRandomGame()
             // an off-screen random pick usually has no file info loaded yet, so
             // the code is simply not recorded; it is metadata, and the entry is
             // keyed by file name either way
-            const char* gameCode = nullptr;
-            if (fileInfoManager.IsFileInfoLoaded(i))
-            {
-                const auto* info = fileInfoManager.GetInternalFileInfo(i);
-                if (info)
-                    gameCode = info->GetGameCode();
-            }
-            LaunchFile(item, gameCode);
+            LaunchFile(item, FindGameCode(i));
             return;
         }
         pick--;
@@ -239,13 +281,7 @@ void RomBrowserController::ShowStatistics()
 // the action can never disagree about what is deletable.
 bool RomBrowserController::CanDeleteSelected() const
 {
-    if (!_romBrowserViewModel.IsValid())
-        return false;
-    int selectedItem = _romBrowserViewModel->GetSelectedItem();
-    if (selectedItem < 0)
-        return false;
-    const auto& item = _romBrowserViewModel->GetFileInfoManager().GetItem(selectedItem);
-    return item.GetFileType()->GetClassification() == FileTypeClassification::Game;
+    return GetSelectedGame() != nullptr;
 }
 
 void RomBrowserController::RequestDeleteSelected()

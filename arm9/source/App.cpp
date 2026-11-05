@@ -351,9 +351,10 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
         }
         case RomBrowserStateTrigger::Launch:
         {
-            // the picker goes with the launch: a refused one comes back to the browser,
-            // and the sheet must not stay up over it
-            if (_romBrowserController.GetStateMachine().GetPreviousState() == RomBrowserState::SavePicker)
+            // the picker or the menu goes with the launch: a refused one comes back to the
+            // browser, and the sheet must not stay up over it
+            auto previousState = _romBrowserController.GetStateMachine().GetPreviousState();
+            if (previousState == RomBrowserState::SavePicker || previousState == RomBrowserState::Menu)
                 _dialogPresenter.CloseDialog();
             break;
         }

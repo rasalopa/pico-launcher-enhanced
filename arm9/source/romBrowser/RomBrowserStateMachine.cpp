@@ -32,8 +32,10 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
             .Trigger(RomBrowserStateTrigger::Launch).GoesTo(RomBrowserState::Launching)
         // The menu hands over to whatever is picked from it. A filter toggle
         // fires ChangeDisplayMode, which from here also means "and close the menu".
+        // New save launches the highlighted game straight from it.
         .In(RomBrowserState::Menu)
             .Trigger(RomBrowserStateTrigger::HideMenu).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::Launch).GoesTo(RomBrowserState::Launching)
             .Trigger(RomBrowserStateTrigger::ChangeDisplayMode).GoesTo(RomBrowserState::Browser)
             .Trigger(RomBrowserStateTrigger::ShowRecents).GoesTo(RomBrowserState::Recents)
             .Trigger(RomBrowserStateTrigger::ShowFavorites).GoesTo(RomBrowserState::Favorites)

@@ -30,6 +30,13 @@ public:
     ///        the main one, 1 to IGameDataService::kMaxSaveSlot for the others.
     virtual void LaunchSaveSlot(u32 saveSlot) = 0;
     virtual void HideSavePicker() = 0;
+    /// @brief The save the menu's "New save" would start the highlighted game on: the
+    ///        lowest of 1 to IGameDataService::kMaxSaveSlot not on the card, or 0 when the
+    ///        entry is not a DS game or all of them are taken. Looks on the card when the
+    ///        saves folder wasn't read to its end.
+    virtual u32 FindNewSaveSlotOfSelected() const = 0;
+    /// @brief Launches the highlighted game with that save, as the save picker would.
+    virtual void LaunchSelectedOnSaveSlot(u32 saveSlot) = 0;
     virtual void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleFavoritesFilter() = 0;

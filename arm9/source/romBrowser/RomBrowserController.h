@@ -30,6 +30,8 @@ public:
     void LaunchRandomGame() override;
     void LaunchSaveSlot(u32 saveSlot) override;
     void HideSavePicker() override;
+    u32 FindNewSaveSlotOfSelected() const override;
+    void LaunchSelectedOnSaveSlot(u32 saveSlot) override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleFavoritesFilter() override;
@@ -199,6 +201,10 @@ private:
     void HandleFolderLoadDoneTrigger();
     void BackfillFavoritePaths();
     void HandleLaunchTrigger();
+    /// @brief The highlighted entry when it is a game, which is what the menu acts on.
+    const FileInfo* GetSelectedGame() const;
+    /// @brief The game code of an entry of the folder, when its file info is loaded.
+    const char* FindGameCode(int index) const;
     /// @brief On a DS or DS Lite, an nds file may be a DSi-only game that can't run there.
     bool IsDsiOnlyCheckNeeded() const;
     /// @brief Records the launch and hands the game to the loader.
