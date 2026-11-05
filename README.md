@@ -21,14 +21,14 @@ A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by 
 Everything upstream Pico Launcher offers (display modes, [custom icons, banners & covers](docs/Customization.md) for games *and folders*, [themes](docs/Themes.md), [cheats](docs/Cheats.md), [file associations](docs/FileAssociations.md); see [Usage](docs/Usage.md)), plus:
 
 - **Go back to the launcher from inside a game** (optional): with Pico Loader Enhanced, the second zip in the release, hold L + R + Right + Select for a moment in a DS game; see [Installation](#optional-the-in-game-exit)
-- **A menu instead of a row of icons**: the app bar keeps back and display settings and gains a three-dot button; recently played, favorites, statistics, deletion and the two filters live in the sheet it opens, each with its name
+- **A menu instead of a row of icons**: the app bar keeps back and display settings and gains a three-dot button; recently played, favorites, statistics, deletion, a new save for the highlighted DS game and the two filters live in the sheet it opens, each with its name
 - **About sheet**: from the menu's title row: who made what, the exact build and the repository it came from, and a cheat sheet of the controls that have no button
 - **Jump by initial**: press L or R to jump to the next initial letter in a folder sorted by name; the letter you land on shows for a moment at the bottom of the touch screen
 - **Game count** of the current folder, at the top of the statistics panel
 - **Random game launch** with SELECT + A
 - **Favorites**: press X on a game; a heart shows on the top screen
 - **Completed games**: hold X on a game; a green check shows on the top screen
-- **Favorites and completed filters**: Only favorites and Only completed in the menu, each saying when it is on
+- **Favorites and completed filters**: Only favorites and Only completed in the menu, red or green while on
 - **Favorites panel**: every favorite across all folders, from the menu; tapping one jumps to it
 - **Recently played panel**: from the menu; tapping an entry jumps to the game
 - **Statistics panel**: totals, most-played games and the launcher version, from the menu
