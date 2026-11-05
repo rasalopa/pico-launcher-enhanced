@@ -13,8 +13,11 @@ public:
     ///        change while the menu is open.
     explicit MenuViewModel(IRomBrowserController* romBrowserController)
         : _romBrowserController(romBrowserController)
-        , _newSaveSlot(romBrowserController->FindNewSaveSlotOfSelected()) { }
+        , _showsNewSave(romBrowserController->SelectedHasSaveSlots())
+        , _newSaveSlot(_showsNewSave ? romBrowserController->FindNewSaveSlotOfSelected() : 0) { }
 
+    /// @brief Whether New save is in the menu at all: only for a DS game.
+    bool ShowsNewSave() const { return _showsNewSave; }
     /// @brief The save New save starts, 0 when it can't start one.
     u32 GetNewSaveSlot() const { return _newSaveSlot; }
     void StartNewSave()
@@ -39,5 +42,6 @@ public:
 
 private:
     IRomBrowserController* _romBrowserController;
+    bool _showsNewSave;
     u32 _newSaveSlot;
 };

@@ -75,11 +75,17 @@ void RomBrowserController::HideSavePicker()
     _stateMachine.Fire(RomBrowserStateTrigger::HideSavePicker);
 }
 
-u32 RomBrowserController::FindNewSaveSlotOfSelected() const
+bool RomBrowserController::SelectedHasSaveSlots() const
 {
     const FileInfo* game = GetSelectedGame();
-    if (!game || !game->GetFileType()->UsesLoaderSave())
+    return game && game->GetFileType()->UsesLoaderSave();
+}
+
+u32 RomBrowserController::FindNewSaveSlotOfSelected() const
+{
+    if (!SelectedHasSaveSlots())
         return 0;
+    const FileInfo* game = GetSelectedGame();
     u16 saveSlots = game->GetSaveSlots();
     // the free one must really be free, as with the save picker's "+ New save"
     if (game->AreSaveSlotsIncomplete())

@@ -78,24 +78,6 @@ static constexpr MenuEntry kEntries[] =
     { "Only completed", 3, 1 }
 };
 
-/// @brief The entry of a row in a column, or -1 when the row isn't there. A full row
-///        answers for either column, and a row of cells answers for a full row with its
-///        first cell.
-static int FindEntry(int row, int column)
-{
-    int firstCell = -1;
-    for (int i = 0; i < (int)std::size(kEntries); i++)
-    {
-        if (kEntries[i].row != row)
-            continue;
-        if (kEntries[i].column == column || kEntries[i].column < 0)
-            return i;
-        if (firstCell < 0)
-            firstCell = i;
-    }
-    return firstCell;
-}
-
 MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
     const char* stateText, const Rgb<8, 8, 8>& activeColor,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
@@ -242,6 +224,7 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
 
     static_assert(std::size(kEntries) == ITEM_COUNT, "one entry per item");
     // the highlighted game can't change while the menu is open
+    _newSaveShown = _viewModel->ShowsNewSave();
     u32 newSaveSlot = _viewModel->GetNewSaveSlot();
     char newSaveText[8];
     mini_snprintf(newSaveText, sizeof(newSaveText), "Save %u", newSaveSlot);
@@ -251,7 +234,8 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
         _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].column < 0 ? ROW_WIDTH : CELL_WIDTH,
             kEntries[i].name, stateText, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
             materialColorScheme, fontRepository);
-        AddChildTail(_items[i].GetPointer());
+        if (i != ITEM_NEW_SAVE || _newSaveShown)
+            AddChildTail(_items[i].GetPointer());
     }
     _items[ITEM_NEW_SAVE]->SetEnabled(newSaveSlot != 0);
 }
@@ -285,6 +269,27 @@ u32 MenuBottomSheetView::LoadSprite(IVramManager& vramManager, const unsigned in
     return vramOffset;
 }
 
+int MenuBottomSheetView::GetRow(int index) const
+{
+    int row = kEntries[index].row;
+    return !_newSaveShown && row > kEntries[ITEM_NEW_SAVE].row ? row - 1 : row;
+}
+
+int MenuBottomSheetView::FindEntry(int row, int column) const
+{
+    int firstCell = -1;
+    for (int i = 0; i < ITEM_COUNT; i++)
+    {
+        if (GetRow(i) != row || (i == ITEM_NEW_SAVE && !_newSaveShown))
+            continue;
+        if (kEntries[i].column == column || kEntries[i].column < 0)
+            return i;
+        if (firstCell < 0)
+            firstCell = i;
+    }
+    return firstCell;
+}
+
 void MenuBottomSheetView::Update()
 {
     int y = _position.y;
@@ -293,7 +298,7 @@ void MenuBottomSheetView::Update()
     for (int i = 0; i < ITEM_COUNT; i++)
     {
         int x = ITEMS_X + std::max(kEntries[i].column, 0) * CELL_WIDTH;
-        _items[i]->SetPosition(x, y + ROWS_Y + kEntries[i].row * ROW_SPACING);
+        _items[i]->SetPosition(x, y + ROWS_Y + GetRow(i) * ROW_SPACING);
     }
     _items[ITEM_DELETE]->SetEnabled(_viewModel->CanDeleteSelected());
     _items[ITEM_FAVORITES_FILTER]->SetActive(_viewModel->IsFavoritesFilterEnabled());
@@ -342,7 +347,7 @@ SharedPtr<View> MenuBottomSheetView::MoveFocus(const SharedPtr<View>& currentFoc
     if (idx < 0)
         return nullptr;
 
-    int row = kEntries[idx].row;
+    int row = GetRow(idx);
     int column = kEntries[idx].column;
     int target = -1;
     switch (direction)

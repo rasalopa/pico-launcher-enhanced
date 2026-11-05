@@ -86,8 +86,9 @@ private:
 /// by side, in their color while on. Picking a panel replaces this sheet with
 /// it; a filter closes the sheet through the display mode change it triggers;
 /// New save launches the highlighted game. Delete is faded while a folder is
-/// highlighted, and New save too while there is no DS game or no free save. A
-/// small button at the right of the title opens the about sheet.
+/// highlighted. New save is only there for a DS game, the filters moving up into
+/// its row otherwise, and is faded when all its saves are taken. A small button
+/// at the right of the title opens the about sheet.
 class MenuBottomSheetView : public BottomSheetView, public IMenuItemHost
 {
     SHARED_ONLY(MenuBottomSheetView)
@@ -127,9 +128,18 @@ private:
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<IconButton2DView> _aboutButton;
     SharedPtr<MenuItemView> _items[ITEM_COUNT];
+    /// @brief Whether New save is in the sheet: when it isn't, its item is made but never
+    ///        added, so it is neither drawn nor reached.
+    bool _newSaveShown = false;
 
     MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
 
     u32 LoadSprite(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
+    /// @brief The row an entry sits on: the ones under New save move up when it isn't shown.
+    int GetRow(int index) const;
+    /// @brief The shown entry of a row in a column, or -1 when there is none. A full row
+    ///        answers for either column, and a row of cells answers for a full row with its
+    ///        first cell.
+    int FindEntry(int row, int column) const;
 };

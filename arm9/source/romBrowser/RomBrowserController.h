@@ -30,6 +30,7 @@ public:
     void LaunchRandomGame() override;
     void LaunchSaveSlot(u32 saveSlot) override;
     void HideSavePicker() override;
+    bool SelectedHasSaveSlots() const override;
     u32 FindNewSaveSlotOfSelected() const override;
     void LaunchSelectedOnSaveSlot(u32 saveSlot) override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
