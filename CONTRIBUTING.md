@@ -6,7 +6,6 @@ Thanks for your interest! This fork welcomes bug reports, feature ideas and pull
 
 - **Bugs**: open an issue with what you did, what you expected, what happened, and your console model (DS / DS Lite / DSi). A photo of the screen helps.
 - **Features**: open an issue first so we can talk about the design before you invest time. Small quality-of-life features in the spirit of the existing ones are the best fit.
-- **Upstream or here?** Improvements to the launcher's core (display modes, themes, cheats, file associations) belong in [upstream Pico Launcher](https://github.com/LNH-team/pico-launcher). Please send them there so every user benefits. This fork focuses on the library features listed in [docs/Enhanced.md](docs/Enhanced.md).
 
 ## Building
 
@@ -21,10 +20,11 @@ The build must finish without new warnings.
 
 ## Pull requests
 
-- One change per PR. Small, focused PRs get reviewed fast; big ones stall.
+- One change per PR, each from its own branch. A PR that bundles several features, or is too big to review in one sitting, is asked to be split before it is reviewed. Small PRs get reviewed fast.
 - **Test on real hardware** before opening the PR and say in the description which console model you tested on. Emulators do not model the DSpico, the SD timing, or the power management hardware.
+- Every PR is built and tried on a console here before it is merged. PRs written with AI are welcome and go through the same review and the same tests, so read and try what you send.
 - Match the style of the surrounding code (4-space indent, braces on their own line, member fields prefixed `_`). Comments explain *why*, not *what*.
-- Update the docs that your change touches: [docs/Enhanced.md](docs/Enhanced.md) for user-facing behavior, [docs/GameData.md](docs/GameData.md) if you change the `gamedata.json` format, and [CHANGELOG.md](CHANGELOG.md).
+- Update the docs your change touches: [docs/Enhanced.md](docs/Enhanced.md) for user-facing behavior, [docs/GameData.md](docs/GameData.md) if you change the `gamedata.json` format. Leave the version number and [CHANGELOG.md](CHANGELOG.md) alone, they are written when a release is made.
 - Don't commit build artifacts (`LAUNCHER.nds`, `build/`).
 
 ## Things to know about this codebase
