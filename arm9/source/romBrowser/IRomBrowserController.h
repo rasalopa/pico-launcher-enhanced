@@ -61,6 +61,21 @@ public:
     /// @brief The about sheet, reached from the menu.
     virtual void ShowAbout() = 0;
     virtual void HideAbout() = 0;
+    /// @brief The parental controls sheet, reached from the menu. With the lock
+    ///        on it first asks for the PIN; with no PIN it starts the setup.
+    virtual void ShowParentalControls() = 0;
+    virtual void HideParentalControls() = 0;
+    virtual const ParentalControls& GetParentalControls() const = 0;
+    /// @brief Whether the PIN is the stored one. No PIN means anything unlocks.
+    virtual bool VerifyParentalPin(const char* pin) const = 0;
+    virtual void SetParentalEnabled(bool enabled) = 0;
+    virtual void SetParentalPin(const char* pin) = 0;
+    virtual void SetParentalFeatureAllowed(ParentalFeature feature, bool allowed) = 0;
+    /// @brief Whether parental controls take a feature away right now. Every
+    ///        action a blocked feature can be reached by asks this, not just
+    ///        the menu that draws it faded. The lock itself is the
+    ///        parentalControls flag in settings.json; no screen sets it.
+    virtual bool IsBlocked(ParentalFeature feature) const = 0;
     /// @brief Whether the highlighted entry can be deleted at all. Folders and
     ///        support files cannot, so the app bar dims its delete button rather
     ///        than offering one that does nothing.

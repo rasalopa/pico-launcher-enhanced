@@ -49,7 +49,8 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
     _triggerFileInfo = FileInfo(fileInfo);
     StringUtil::Copy(_triggerGameCode, gameCode ? gameCode : "",
         sizeof(_triggerGameCode) / sizeof(_triggerGameCode[0]));
-    if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
+    if (_triggerFileInfo.GetFileType()->UsesLoaderSave() &&
+        !IsBlocked(ParentalFeature::SaveSlots))
     {
         // the picker must list every save, and the ones noted when the folder was read
         // can miss some when its saves folder couldn't be read to the end
@@ -66,6 +67,9 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
 
 void RomBrowserController::LaunchSaveSlot(u32 saveSlot)
 {
+    // The main save is still a launch; only a different slot changes saves.
+    if (saveSlot != 0 && IsBlocked(ParentalFeature::SaveSlots))
+        return;
     _launchSaveSlot = saveSlot;
     _stateMachine.Fire(RomBrowserStateTrigger::Launch);
 }
@@ -77,6 +81,8 @@ void RomBrowserController::HideSavePicker()
 
 bool RomBrowserController::SelectedHasSaveSlots() const
 {
+    if (IsBlocked(ParentalFeature::SaveSlots))
+        return false;
     const FileInfo* game = GetSelectedGame();
     return game && game->GetFileType()->UsesLoaderSave();
 }
@@ -100,6 +106,8 @@ u32 RomBrowserController::FindNewSaveSlotOfSelected() const
 
 void RomBrowserController::LaunchSelectedOnSaveSlot(u32 saveSlot)
 {
+    if (IsBlocked(ParentalFeature::SaveSlots))
+        return;
     const FileInfo* game = GetSelectedGame();
     if (!game)
         return;
@@ -200,6 +208,8 @@ u16 RomBrowserController::FindSaveSlotsOnCard(const char* romFileName) const
 
 void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* gameCode)
 {
+    if (IsBlocked(ParentalFeature::Favorites))
+        return;
     // the path makes the entry navigable from the favorites panel even for
     // games that were marked but never launched
     TCHAR fullPath[256];
@@ -216,6 +226,8 @@ void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* 
 
 void RomBrowserController::ToggleCompleted(const FileInfo& fileInfo, const char* gameCode)
 {
+    if (IsBlocked(ParentalFeature::Completion))
+        return;
     TCHAR fullPath[256];
     BuildCurrentFolderFilePath(fileInfo.GetFileName(), fullPath,
         sizeof(fullPath) / sizeof(fullPath[0]));
@@ -242,6 +254,9 @@ void RomBrowserController::ToggleCompletedFilter()
 
 void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
 {
+    // this sheet is the cheats sheet; parental controls can take it away
+    if (IsBlocked(ParentalFeature::Cheats))
+        return;
     _triggerFileInfo = FileInfo(fileInfo);
     _stateMachine.Fire(RomBrowserStateTrigger::ShowGameInfo);
 }
@@ -287,6 +302,10 @@ void RomBrowserController::ShowStatistics()
 // the action can never disagree about what is deletable.
 bool RomBrowserController::CanDeleteSelected() const
 {
+    // the menu entry is drawn faded from this, but RequestDeleteSelected and
+    // ConfirmDelete ask it too, so no other route can delete while blocked
+    if (IsBlocked(ParentalFeature::Delete))
+        return false;
     return GetSelectedGame() != nullptr;
 }
 
@@ -368,6 +387,10 @@ void RomBrowserController::CancelDelete()
 
 void RomBrowserController::ConfirmDelete()
 {
+    // the sheet can only be here because RequestDeleteSelected let it, but the
+    // lock is checked again at the point the file actually goes
+    if (IsBlocked(ParentalFeature::Delete))
+        return;
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         FRESULT result = f_unlink(_deleteRomFileName);
@@ -443,6 +466,58 @@ void RomBrowserController::ShowAbout()
 void RomBrowserController::HideAbout()
 {
     _stateMachine.Fire(RomBrowserStateTrigger::HideAbout);
+}
+
+void RomBrowserController::ShowParentalControls()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowParentalControls);
+}
+
+void RomBrowserController::HideParentalControls()
+{
+    if (_saveSettingsPending)
+    {
+        _saveSettingsPending = false;
+        _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+        {
+            _appSettingsService->Save();
+            return TaskResult<void>::Completed();
+        });
+    }
+    _stateMachine.Fire(RomBrowserStateTrigger::HideParentalControls);
+}
+
+bool RomBrowserController::VerifyParentalPin(const char* pin) const
+{
+    const auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    return !parentalControls.HasPin() || parentalControls.MatchesPin(pin);
+}
+
+void RomBrowserController::SetParentalEnabled(bool enabled)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (parentalControls.enabled == enabled)
+        return;
+    parentalControls.enabled = enabled;
+    _saveSettingsPending = true;
+}
+
+void RomBrowserController::SetParentalPin(const char* pin)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (strcmp(parentalControls.pin.GetString(), pin ? pin : "") == 0)
+        return;
+    parentalControls.pin = pin ? pin : "";
+    _saveSettingsPending = true;
+}
+
+void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bool allowed)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (parentalControls.IsAllowed(feature) == allowed)
+        return;
+    parentalControls.SetAllowed(feature, allowed);
+    _saveSettingsPending = true;
 }
 
 void RomBrowserController::HideDisplaySettings()

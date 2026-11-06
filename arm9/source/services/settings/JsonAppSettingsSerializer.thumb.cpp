@@ -7,7 +7,7 @@
 
 #pragma GCC optimize("Os")
 
-#define JSON_RESERVED_SIZE  2048
+#define JSON_RESERVED_SIZE  4096
 
 #define KEY_LANGUAGE                 "language"
 #define KEY_ROM_BROWSER_LAYOUT       "romBrowserLayout"
@@ -18,6 +18,15 @@
 #define KEY_BACKLIGHT_LEVEL          "backlightLevel"
 #define KEY_SAVE_LOCATION            "saveLocation"
 #define KEY_LAUNCH_TRACKING          "launchTracking"
+#define KEY_RESTRICTED_MODE          "restrictedMode"
+#define KEY_PARENTAL_CONTROLS        "parentalControls"
+#define KEY_PARENTAL_PIN             "parentalPin"
+#define KEY_PARENTAL_ALLOW_DELETE    "parentalAllowDelete"
+#define KEY_PARENTAL_ALLOW_CHEATS    "parentalAllowCheats"
+#define KEY_PARENTAL_ALLOW_SAVES     "parentalAllowSaveSlots"
+#define KEY_PARENTAL_ALLOW_FAVORITES "parentalAllowFavorites"
+#define KEY_PARENTAL_ALLOW_COMPLETED "parentalAllowCompletion"
+#define KEY_PARENTAL_ALLOW_GAME_INFO "parentalAllowGameInfo"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
 
@@ -167,6 +176,18 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
         json[KEY_BACKLIGHT_LEVEL] = appSettings->backlightLevel;
     json[KEY_SAVE_LOCATION] = serializeSaveLocation(appSettings->saveLocation);
     json[KEY_LAUNCH_TRACKING] = appSettings->launchTracking;
+    // Parental controls are written in full so every switch can be edited on
+    // the card as well as in the launcher. `restrictedMode` is the master flag;
+    // parentalControls is only read for builds made before this key existed.
+    json[KEY_RESTRICTED_MODE] = appSettings->parentalControls.enabled;
+    if (appSettings->parentalControls.pin.GetString()[0] != 0)
+        json[KEY_PARENTAL_PIN] = appSettings->parentalControls.pin.GetString();
+    json[KEY_PARENTAL_ALLOW_DELETE] = appSettings->parentalControls.allowDelete;
+    json[KEY_PARENTAL_ALLOW_CHEATS] = appSettings->parentalControls.allowCheats;
+    json[KEY_PARENTAL_ALLOW_SAVES] = appSettings->parentalControls.allowSaveSlots;
+    json[KEY_PARENTAL_ALLOW_FAVORITES] = appSettings->parentalControls.allowFavorites;
+    json[KEY_PARENTAL_ALLOW_COMPLETED] = appSettings->parentalControls.allowCompletion;
+    json[KEY_PARENTAL_ALLOW_GAME_INFO] = appSettings->parentalControls.allowGameInfo;
     serializeFileAssociations(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
@@ -232,6 +253,26 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     }
     appSettings->launchTracking = json[KEY_LAUNCH_TRACKING] | appSettings->launchTracking;
 
+    bool restrictedMode = json[KEY_RESTRICTED_MODE] | appSettings->parentalControls.enabled;
+    // Before the screen existed the flag was called parentalControls. Read that
+    // too, so a card set up with the first build keeps its lock.
+    restrictedMode = json[KEY_PARENTAL_CONTROLS] | restrictedMode;
+    appSettings->parentalControls.enabled = restrictedMode;
+    const char* parentalPin = json[KEY_PARENTAL_PIN].as<const char*>();
+    if (parentalPin)
+        appSettings->parentalControls.pin = parentalPin;
+    appSettings->parentalControls.allowDelete =
+        json[KEY_PARENTAL_ALLOW_DELETE] | appSettings->parentalControls.allowDelete;
+    appSettings->parentalControls.allowCheats =
+        json[KEY_PARENTAL_ALLOW_CHEATS] | appSettings->parentalControls.allowCheats;
+    appSettings->parentalControls.allowSaveSlots =
+        json[KEY_PARENTAL_ALLOW_SAVES] | appSettings->parentalControls.allowSaveSlots;
+    appSettings->parentalControls.allowFavorites =
+        json[KEY_PARENTAL_ALLOW_FAVORITES] | appSettings->parentalControls.allowFavorites;
+    appSettings->parentalControls.allowCompletion =
+        json[KEY_PARENTAL_ALLOW_COMPLETED] | appSettings->parentalControls.allowCompletion;
+    appSettings->parentalControls.allowGameInfo =
+        json[KEY_PARENTAL_ALLOW_GAME_INFO] | appSettings->parentalControls.allowGameInfo;
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }
 
