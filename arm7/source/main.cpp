@@ -54,6 +54,13 @@ static volatile u8 sMcuIrqFlag = false;
 ///        the SPI bus with the touch screen, so all SPI stays on one thread.
 static volatile u8 sPendingBacklight = 0;
 
+/// @brief Frames between battery reads; the state moves in minutes.
+#define BATTERY_POLL_FRAMES 60
+
+static volatile u8 sBatteryFrames = BATTERY_POLL_FRAMES;
+/// @brief Last value sent to the ARM9, -1 to send the next read whatever it is.
+static volatile s16 sLastBattery = -1;
+
 // The custom ARM7 binary does not use libnds' default PM loop, so closing
 // the DS/DSi lid must be handled here. RCNT0_H bit 7 is the hinge sensor:
 // 0 = open, 1 = closed. We debounce it for a few VCount frames before
@@ -131,6 +138,9 @@ static void checkLidSleep()
         {
             sLidWasClosed = false;
             restoreBacklightAfterSleep();
+            // the battery may have changed during sleep: re-read on the next frame
+            sBatteryFrames = BATTERY_POLL_FRAMES;
+            sLastBattery = -1;
         }
 
         return;
@@ -206,6 +216,46 @@ static void applyPendingBacklight()
             pmic_writeRegister(PMIC_REG_BACKLIGHT,
                 (backlight & ~PMIC_BACKLIGHT_MASK) | (pending - 1));
         }
+    }
+}
+
+static void batteryIpcHandler(u32 channel, u32 data, void* arg)
+{
+    // the ARM9 (re)registered its handler and wants the state again
+    sLastBattery = -1;
+    sBatteryFrames = BATTERY_POLL_FRAMES;
+}
+
+static u8 readBatteryState()
+{
+    if (!isDSiMode())
+    {
+        // the DS only has a low battery flag: report it as 1 bar, else full
+        return pmic_isBatteryLow() ? 1 : (4 | IPC_BATTERY_DS_MODE);
+    }
+    // MCU power info: bits 0..3 are the battery level (0x0F full .. 0 empty),
+    // bit 7 is set while the charger is connected
+    u8 info = mcu_readReg(MCU_REG_POWER_INFO);
+    u8 raw = info & 0xF;
+    u8 level = raw >= 0xF ? 4 : raw >= 0xB ? 3 : raw >= 0x7 ? 2 : raw >= 0x1 ? 1 : 0;
+    return level | ((info & 0x80) ? IPC_BATTERY_CHARGING : 0);
+}
+
+// Runs on the main thread like the backlight: the PMIC shares the SPI bus with
+// the touch screen, and the MCU is only talked to from here.
+static void pollBattery()
+{
+    if (sBatteryFrames < BATTERY_POLL_FRAMES)
+    {
+        sBatteryFrames = sBatteryFrames + 1;
+        return;
+    }
+    sBatteryFrames = 0;
+    u8 state = readBatteryState();
+    if (state != sLastBattery)
+    {
+        sLastBattery = state;
+        ipc_sendFifoMessage(IPC_CHANNEL_BATTERY, state);
     }
 }
 
@@ -298,6 +348,7 @@ static void initializeArm7()
     sSoundIpcService.Start();
     sRtcIpcService.Start();
     ipc_setChannelHandler(IPC_CHANNEL_PMIC, backlightIpcHandler, nullptr);
+    ipc_setChannelHandler(IPC_CHANNEL_BATTERY, batteryIpcHandler, nullptr);
 
     initializeVCountIrq();
 
@@ -400,6 +451,7 @@ int main()
         }
         SHARED_KEY_XY = keys;
         applyPendingBacklight();
+        pollBattery();
         checkLidSleep();
         updateArm7();
     }

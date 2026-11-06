@@ -48,6 +48,8 @@ The following additional files are needed:
 | gridcellSelected.bin<br>gridcellPlttSelected.bin             | 64x48 (48x48 used)   | A3I5<br>32 color palette | Selected item background for grid modes.                       |
 | scrim.bin<br>scrimPltt.bin                                   | 8x42                 | A5I3<br>8 color palette  | Background for the toolbar. Intended to be a translucent fade. |
 | topbg.bin                                                    | 256x192              | 15 bpp bitmap            | Top screen background.                                         |
+| statusBar.bin<br>(optional)                                  | 32x16                | 4 bpp tiles, 256 bytes   | Piece of the top bar background, repeated 8 times across.      |
+| statusBarBattery.bin<br>(optional)                           | 16x96                | 4 bpp tiles, 768 bytes   | Battery frames of 16x16: empty, 1 to 4 bars, charging.         |
 
 These files can be created, for example, using [NitroPaint](https://github.com/Garhoogin/NitroPaint).
 
@@ -64,6 +66,12 @@ Custom themes support additional properties in the `theme.json` file to allow fo
 - **topCover** - Properties of the cover image displayed on the top screen.
 - **topGameCount** - No longer used: the game count moved to the statistics panel. A theme that still sets it keeps loading; the key is ignored.
 - **topLaunchInfo** - Where the game's markers go: a star on the most launched game, a check on a completed one and a heart on a favorite. Left out, they sit above `topIcon` with nothing under them: the row is centred on the icon (`topIcon.x + 16`) and its top edge is 18 px above it (`topIcon.y - 18`), which in the themes the launcher ships with puts the 16 px markers astride the card's top edge; one marker or three, the row stays centred. Set it to put them on a pill instead: `position` is the top-right corner of that pill, which grows to the left. Set `hidden` to `true` to remove them entirely. The launch count and play time that used to sit on the pill are switched off in this version.
+- **topStatusBar** - The bar with the clock and the battery meter along the top of the top screen. It is 16 px tall and full width. Themes made before the bar existed do not get it: it is **hidden unless the theme sets `"hidden": false`**. Everything else is optional and falls back to the launcher's own look:
+  - `background` - `hidden`, `fromColor` and `toColor` (the bar art is a gradient between them), `translucent`. The art comes from `statusBar.bin` when the theme has one.
+  - `clock` - `position`, `hidden`, `textColor`, `blendColor`.
+  - `battery` - `position`, `hidden`, `color`, `lowColor` (shown at the lowest level), `chargingColor`. The art comes from `statusBarBattery.bin` when the theme has one.
+  
+  A `.bin` file of the wrong size is ignored.
 - **gridIcon** - Properties of the icons displayed on the bottom screen in grid display modes.
 - **bannerListIcon** - Properties of the icons displayed on the bottom screen in banner list display mode.
 - **bannerListTextLine0** - Properties of the first banner text line displayed on the bottom screen in banner list display mode.
@@ -114,6 +122,12 @@ Blend colors are used to fake translucency. They should be set to an approximati
     "topLaunchInfo": {
         "position": { "x": 252, "y": 2 },
         "hidden": false
+    },
+    "topStatusBar": {
+        "hidden": false,
+        "background": { "fromColor": { "r": 120, "g": 120, "b": 120 }, "toColor": { "r": 240, "g": 240, "b": 240 }, "translucent": true },
+        "clock": { "position": { "x": 6, "y": 1 }, "textColor": { "r": 30, "g": 30, "b": 30 } },
+        "battery": { "position": { "x": 236, "y": 0 }, "color": { "r": 30, "g": 30, "b": 30 } }
     },
     "gridIcon": {
         "blendColor": { "r": 200, "g": 200, "b": 200 }

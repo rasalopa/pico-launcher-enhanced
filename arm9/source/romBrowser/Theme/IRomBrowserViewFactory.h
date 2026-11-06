@@ -2,6 +2,7 @@
 #include <memory>
 #include "core/SharedPtr.h"
 #include "core/math/Point.h"
+#include "TopStatusBarStyle.h"
 #include "../views/IconGridItemView.h"
 #include "../views/BannerListItemView.h"
 #include "../views/AppBarView.h"
@@ -62,6 +63,10 @@ public:
     virtual Point GetTopCoverPosition() const = 0;
 
     virtual TopStripElementLayout GetTopLaunchInfoLayout() const = 0;
+
+    /// @brief The art, positions and colors of the clock and battery bar along
+    ///        the top of the top screen. Valid as long as the factory is.
+    virtual const TopStatusBarStyle& GetTopStatusBarStyle() const = 0;
 };
 
 inline IRomBrowserViewFactory::~IRomBrowserViewFactory() { }

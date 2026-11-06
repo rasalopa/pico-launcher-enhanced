@@ -81,7 +81,21 @@ public:
         return { Point(40, 114), false, true, true };
     }
 
+    const TopStatusBarStyle& GetTopStatusBarStyle() const override
+    {
+        // built on first use: the color scheme is not filled in yet when the
+        // factory is constructed
+        if (!_topStatusBarStyleBuilt)
+        {
+            _topStatusBarStyle = MakeDefaultTopStatusBarStyle(*_materialColorScheme);
+            _topStatusBarStyleBuilt = true;
+        }
+        return _topStatusBarStyle;
+    }
+
 private:
+    mutable TopStatusBarStyle _topStatusBarStyle;
+    mutable bool _topStatusBarStyleBuilt = false;
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;
 };

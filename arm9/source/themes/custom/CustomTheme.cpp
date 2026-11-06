@@ -1,5 +1,6 @@
 #include "common.h"
 #include <memory>
+#include <optional>
 #include <libtwl/mem/memVram.h>
 #include <libtwl/gfx/gfx.h>
 #include <libtwl/gfx/gfxBackground.h>
@@ -27,6 +28,7 @@
 #define KEY_TOP_FILE_NAME_TEXT          "topFileNameText"
 #define KEY_TOP_COVER                   "topCover"
 #define KEY_TOP_LAUNCH_INFO             "topLaunchInfo"
+#define KEY_TOP_STATUS_BAR              "topStatusBar"
 #define KEY_GRID_ICON                   "gridIcon"
 #define KEY_BANNER_LIST_ICON            "bannerListIcon"
 #define KEY_BANNER_LIST_TEXT_LINE_0     "bannerListTextLine0"
@@ -38,6 +40,16 @@
 #define KEY_ELEMENT_TEXT_COLOR      "textColor"
 #define KEY_ELEMENT_BLEND_COLOR     "blendColor"
 #define KEY_ELEMENT_HIDDEN          "hidden"
+
+#define KEY_STATUS_BAR_BACKGROUND   "background"
+#define KEY_STATUS_BAR_CLOCK        "clock"
+#define KEY_STATUS_BAR_BATTERY      "battery"
+#define KEY_FROM_COLOR              "fromColor"
+#define KEY_TO_COLOR                "toColor"
+#define KEY_TRANSLUCENT             "translucent"
+#define KEY_COLOR                   "color"
+#define KEY_LOW_COLOR               "lowColor"
+#define KEY_CHARGING_COLOR          "chargingColor"
 
 static const CustomThemeInfo sDefaultCustomThemeInfo
 {
@@ -51,7 +63,8 @@ static const CustomThemeInfo sDefaultCustomThemeInfo
     // top-right corner of the markers' pill. Unset, the view factory puts the
     // markers at the theme's icon instead. A "topGameCount" key in an older
     // theme is simply not looked at any more.
-    .topLaunchInfoInfo = CustomTopStripElementInfo(Point(252, 2), false, false),
+    .topLaunchInfoInfo = CustomTopStripElementInfo(Point(252, 18), false, false),
+    .topStatusBarInfo = CustomTopStatusBarInfo(),
 
     .gridIconInfo = CustomBottomIconInfo(Rgb8(200, 200, 200)),
 
@@ -158,6 +171,50 @@ static CustomTopStripElementInfo parseCustomTopStripElementInfo(
     );
 }
 
+static std::optional<Rgb8> parseOptionalColor(const JsonObjectConst& json)
+{
+    if (json.isNull())
+        return std::nullopt;
+    return parseColor(json, Rgb8(0, 0, 0));
+}
+
+static std::optional<Point> parseOptionalPoint(const JsonObjectConst& json)
+{
+    if (json.isNull())
+        return std::nullopt;
+    return parsePoint(json, Point(0, 0));
+}
+
+static CustomTopStatusBarInfo parseCustomTopStatusBarInfo(const JsonObjectConst& json)
+{
+    CustomTopStatusBarInfo info;
+    if (json.isNull())
+        return info;
+
+    info.hidden = json[KEY_ELEMENT_HIDDEN] | true;
+
+    const JsonObjectConst background = json[KEY_STATUS_BAR_BACKGROUND];
+    info.backgroundHidden = background[KEY_ELEMENT_HIDDEN] | false;
+    info.backgroundFromColor = parseOptionalColor(background[KEY_FROM_COLOR]);
+    info.backgroundToColor = parseOptionalColor(background[KEY_TO_COLOR]);
+    if (background.containsKey(KEY_TRANSLUCENT))
+        info.backgroundTranslucent = background[KEY_TRANSLUCENT] | true;
+
+    const JsonObjectConst clock = json[KEY_STATUS_BAR_CLOCK];
+    info.clockHidden = clock[KEY_ELEMENT_HIDDEN] | false;
+    info.clockPosition = parseOptionalPoint(clock[KEY_ELEMENT_POSITION]);
+    info.clockTextColor = parseOptionalColor(clock[KEY_ELEMENT_TEXT_COLOR]);
+    info.clockBlendColor = parseOptionalColor(clock[KEY_ELEMENT_BLEND_COLOR]);
+
+    const JsonObjectConst battery = json[KEY_STATUS_BAR_BATTERY];
+    info.batteryHidden = battery[KEY_ELEMENT_HIDDEN] | false;
+    info.batteryPosition = parseOptionalPoint(battery[KEY_ELEMENT_POSITION]);
+    info.batteryColor = parseOptionalColor(battery[KEY_COLOR]);
+    info.batteryLowColor = parseOptionalColor(battery[KEY_LOW_COLOR]);
+    info.batteryChargingColor = parseOptionalColor(battery[KEY_CHARGING_COLOR]);
+    return info;
+}
+
 static CustomTopTextElementInfo parseCustomTextElementInfo(
     const JsonObjectConst& json, const CustomTopTextElementInfo& defaultInfo)
 {
@@ -190,6 +247,7 @@ static CustomThemeInfo parseCustomThemeInfo(const JsonDocument& json)
         .topCoverInfo = parseCustomTopCoverInfo(json[KEY_TOP_COVER], sDefaultCustomThemeInfo.topCoverInfo),
         .topLaunchInfoInfo = parseCustomTopStripElementInfo(
             json[KEY_TOP_LAUNCH_INFO], sDefaultCustomThemeInfo.topLaunchInfoInfo),
+        .topStatusBarInfo = parseCustomTopStatusBarInfo(json[KEY_TOP_STATUS_BAR]),
 
         .gridIconInfo = parseCustomBottomIconInfo(json[KEY_GRID_ICON], sDefaultCustomThemeInfo.gridIconInfo),
 

@@ -29,6 +29,7 @@
 #include "gui/font/nitroFont2.h"
 #include "picoLoaderBootstrap.h"
 #include "rtcIpc.h"
+#include "batteryIpc.h"
 #include "backlightIpc.h"
 
 ProcessManager gProcessManager;
@@ -179,6 +180,7 @@ int main(int argc, char* argv[])
 
     rtc_init();
     backlight_init();
+    battery_init();
 
     if (argc >= 1)
     {
