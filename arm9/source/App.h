@@ -165,6 +165,8 @@ private:
     void HandleShowAboutTrigger();
     void HandleHideAboutTrigger();
     void CloseSheetIfLeavingMenu();
+    void HandleShowGameInfoEditTrigger();
+    void HandleHideGameInfoEditTrigger();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
     void HandleChangeDisplayModeTrigger(RomBrowserState newState);

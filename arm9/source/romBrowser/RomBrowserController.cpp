@@ -241,6 +241,50 @@ void RomBrowserController::RequestDeleteSelected()
     _stateMachine.Fire(RomBrowserStateTrigger::ShowDeleteConfirm);
 }
 
+void RomBrowserController::ShowGameInfoEdit()
+{
+    if (!CanEditSelected())
+        return;
+    int selectedItem = _romBrowserViewModel->GetSelectedItem();
+    const auto& item = _romBrowserViewModel->GetFileInfoManager().GetItem(selectedItem);
+    _triggerFileInfo = FileInfo(item);
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowGameInfoEdit);
+}
+
+void RomBrowserController::HideGameInfoEdit()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::HideGameInfoEdit);
+}
+
+bool RomBrowserController::CanEditSelected() const
+{
+    // nothing to rename while parental controls take the sheet away
+    if (!_appSettingsService->GetAppSettings().parentalControls.Allows(ParentalFeature::GameInfo))
+        return false;
+    // the same files that can be deleted: a game, not a folder or support file
+    if (!_romBrowserViewModel.IsValid())
+        return false;
+    int selectedItem = _romBrowserViewModel->GetSelectedItem();
+    if (selectedItem < 0)
+        return false;
+    const auto& item = _romBrowserViewModel->GetFileInfoManager().GetItem(selectedItem);
+    return item.GetFileType()->GetClassification() == FileTypeClassification::Game;
+}
+
+void RomBrowserController::SetGameMetadata(const char* name, const char* publisher,
+    const char* developer)
+{
+    const char* fileName = _triggerFileInfo.GetFileName();
+    _gameDataService->SetGameMetadata(fileName, name, publisher, developer);
+    _gameDataService->SaveAsync(_ioTaskQueue);
+    // Rebuild the browser the way a display-mode change does, but land on the
+    // game that was just named: the list rows and the top screen then show the
+    // new values without the cost of reloading the folder.
+    StringUtil::Copy(_refreshSelectName, fileName,
+        sizeof(_refreshSelectName) / sizeof(_refreshSelectName[0]));
+    _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+}
+
 void RomBrowserController::FormatNowDateTime(TCHAR* buffer, u32 bufferLength) const
 {
     rtc_datetime_t dateTime;
@@ -696,7 +740,9 @@ void RomBrowserController::BeginLaunch()
 void RomBrowserController::HandleChangeDisplayModeTrigger()
 {
     LOG_DEBUG("RomBrowserStateTrigger::ChangeDisplayMode\n");
-    _romBrowserViewModel = SharedPtr<RomBrowserViewModel>::MakeShared(this);
+    _romBrowserViewModel = SharedPtr<RomBrowserViewModel>::MakeShared(this,
+        _refreshSelectName[0] != 0 ? _refreshSelectName : nullptr);
+    _refreshSelectName[0] = 0;
 }
 
 void RomBrowserController::HandleGotoSettingsScreenTrigger()

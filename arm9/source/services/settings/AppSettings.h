@@ -4,6 +4,7 @@
 #include "RomBrowserDisplaySettings.h"
 #include "SaveLocation.h"
 #include "FileAssociation.h"
+#include "ParentalControls.h"
 
 class AppSettings
 {
@@ -20,6 +21,8 @@ public:
     ///        play time, last played). Off, nothing about launches is
     ///        written; favorites and completed marks keep working.
     bool launchTracking = true;
+    /// @brief Whether the destructive actions are locked: see ParentalControls.
+    ParentalControls parentalControls;
     RomBrowserDisplaySettings romBrowserDisplaySettings;
 
     std::unique_ptr<FileAssociation[]> fileAssociations;

@@ -33,6 +33,19 @@ public:
     virtual bool IsCompletedFilterEnabled() const = 0;
     virtual void ShowGameInfo(const FileInfo& fileInfo) = 0;
     virtual void HideGameInfo() = 0;
+    /// @brief The game info sheet, reached from the menu: edits the name,
+    ///        publisher and developer shown for the highlighted game.
+    virtual void ShowGameInfoEdit() = 0;
+    virtual void HideGameInfoEdit() = 0;
+    /// @brief Stores the edited values for the game the sheet was opened on
+    ///        and rebuilds the browser on the same game, so the new name shows
+    ///        without reloading the folder. Empty strings clear a field.
+    virtual void SetGameMetadata(const char* name, const char* publisher,
+        const char* developer) = 0;
+    /// @brief Whether the highlighted entry has game info worth editing. Games
+    ///        yes, folders and support files no, and nothing while parental
+    ///        controls take the sheet away.
+    virtual bool CanEditSelected() const = 0;
     virtual void ShowDisplaySettings() = 0;
     virtual void HideDisplaySettings() = 0;
     virtual void ShowRecents() = 0;

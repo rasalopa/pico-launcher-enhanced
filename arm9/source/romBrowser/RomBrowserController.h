@@ -36,6 +36,11 @@ public:
     bool IsCompletedFilterEnabled() const override { return _completedFilter; }
     void ShowGameInfo(const FileInfo& fileInfo) override;
     void HideGameInfo() override;
+    void ShowGameInfoEdit() override;
+    void HideGameInfoEdit() override;
+    void SetGameMetadata(const char* name, const char* publisher,
+        const char* developer) override;
+    bool CanEditSelected() const override;
     void ShowDisplaySettings() override;
     void HideDisplaySettings() override;
     void ShowRecents() override;
@@ -142,6 +147,9 @@ private:
     ///        _navigatePath. Used when going up a folder: the parent listing
     ///        preselects the folder just left instead of its first entry.
     TCHAR _navigateSelectName[256];
+    /// @brief Entry the next rebuilt listing should land on, set when a rename
+    ///        rebuilds the browser so it does not jump to the top of the folder.
+    TCHAR _refreshSelectName[256] = {};
     FileInfo _triggerFileInfo;
     QueueTask<void> _navigateTask;
     /// @brief Reads, on the io thread, whether the game about to launch is for
