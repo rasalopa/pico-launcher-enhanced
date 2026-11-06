@@ -18,6 +18,7 @@
 #define KEY_BACKLIGHT_LEVEL          "backlightLevel"
 #define KEY_SAVE_LOCATION            "saveLocation"
 #define KEY_LAUNCH_TRACKING          "launchTracking"
+#define KEY_PARENTAL_CONTROLS        "parentalControls"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
 
@@ -167,6 +168,9 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
         json[KEY_BACKLIGHT_LEVEL] = appSettings->backlightLevel;
     json[KEY_SAVE_LOCATION] = serializeSaveLocation(appSettings->saveLocation);
     json[KEY_LAUNCH_TRACKING] = appSettings->launchTracking;
+    // Parental controls are always written: settings.json is the only place
+    // they are switched on or off, so the flag is always there to edit.
+    json[KEY_PARENTAL_CONTROLS] = appSettings->parentalControls.enabled;
     serializeFileAssociations(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
@@ -232,6 +236,8 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     }
     appSettings->launchTracking = json[KEY_LAUNCH_TRACKING] | appSettings->launchTracking;
 
+    appSettings->parentalControls.enabled =
+        json[KEY_PARENTAL_CONTROLS] | appSettings->parentalControls.enabled;
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }
 
