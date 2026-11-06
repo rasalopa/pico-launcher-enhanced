@@ -35,10 +35,11 @@ Everything upstream Pico Launcher offers (display modes, [custom icons, banners 
 - **Screenshots**: hold START for about half a second to save both screens to `/_pico/screenshots`
 - **Per-game launch tracking**: launch count and last-played date, kept per game; the recently played panel shows each game's date, and the statistics panel the counts of the three most launched games; can be switched off in `settings.json`
 - **Approximate play time**: per game, in the favorites panel
-- **Game deletion**: from the menu, with confirmation; removes the ROM, and its save for a DS or GBA game
+- **Game deletion**: from the menu, with confirmation; removes the ROM and, for a DS or GBA game, its save; a DS game's extra saves go too
 - **ROMs run by an emulator count as games**: GB, SNES or any ROM opened through a file association can be marked, deleted and picked at random; see [FileAssociations.md](docs/FileAssociations.md)
 - **Theme deletion**: from the theme selector, with confirmation; the theme in use and the two that come with the launcher are kept
 - **A saves folder**: set `"saveLocation": "saves"` in `settings.json` and DS saves live in a `saves` folder next to the games, the layout TWiLight Menu++ uses, so both launchers can share one card; see [Usage.md](docs/Usage.md#settings)
+- **Save slots**: up to nine extra saves per DS game, `.sav1` to `.sav9` as TWiLight Menu++ names them; A on a game that has any lets you pick the one to play, and New save in the menu starts the game on a new one; see [Save slots](docs/Enhanced.md#save-slots)
 - **Brightness control**: set the DS Lite's backlight level from display settings
 - **Hide empty folders**: optional; folders with nothing playable inside are left out of the listing
 - **Cheats list that reads better**: the list wraps around at both ends, and X turns every cheat off at once
