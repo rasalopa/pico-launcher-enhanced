@@ -14,6 +14,7 @@
 #define LINE_X              20
 #define FILE_NAME_Y         44
 #define SAVE_Y              62
+#define SAVE_END_Y          78
 #define HINT_Y              96
 
 #define LINE_WIDTH          216
@@ -26,6 +27,7 @@ DeleteConfirmBottomSheetView::DeleteConfirmBottomSheetView(SharedPtr<IDeleteConf
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _fileNameLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 256, fontRepository->GetFont(FontType::Regular10)))
     , _saveLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 270, fontRepository->GetFont(FontType::Medium7_5)))
+    , _saveEndLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 40, fontRepository->GetFont(FontType::Medium7_5)))
     , _hintLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 40, fontRepository->GetFont(FontType::Medium7_5)))
     , _materialColorScheme(materialColorScheme)
 {
@@ -42,11 +44,20 @@ DeleteConfirmBottomSheetView::DeleteConfirmBottomSheetView(SharedPtr<IDeleteConf
         _saveLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
         _saveLabel->SetText(detailLine);
     }
+    const char* detailEndLine = _viewModel->GetDetailEndLine();
+    _hasDetailEnd = _hasDetail && detailEndLine != nullptr && detailEndLine[0] != 0;
+    if (_hasDetailEnd)
+    {
+        _saveEndLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
+        _saveEndLabel->SetText(detailEndLine);
+    }
     _hintLabel->SetText(kHint);
     AddChildTail(_titleLabel.GetPointer());
     AddChildTail(_fileNameLabel.GetPointer());
     if (_hasDetail)
         AddChildTail(_saveLabel.GetPointer());
+    if (_hasDetailEnd)
+        AddChildTail(_saveEndLabel.GetPointer());
     AddChildTail(_hintLabel.GetPointer());
 }
 
@@ -64,6 +75,7 @@ void DeleteConfirmBottomSheetView::Update()
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
     _fileNameLabel->SetPosition(LINE_X, _position.y + FILE_NAME_Y);
     _saveLabel->SetPosition(LINE_X, _position.y + SAVE_Y);
+    _saveEndLabel->SetPosition(LINE_X, _position.y + SAVE_END_Y);
     _hintLabel->SetPosition(LINE_X, _position.y + HINT_Y);
     BottomSheetView::Update();
 }
@@ -88,6 +100,13 @@ void DeleteConfirmBottomSheetView::Draw(GraphicsContext& graphicsContext)
             _saveLabel->SetBackgroundColor(backColor);
             _saveLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
             _saveLabel->Draw(graphicsContext);
+        }
+
+        if (_hasDetailEnd)
+        {
+            _saveEndLabel->SetBackgroundColor(backColor);
+            _saveEndLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+            _saveEndLabel->Draw(graphicsContext);
         }
 
         _hintLabel->SetBackgroundColor(backColor);

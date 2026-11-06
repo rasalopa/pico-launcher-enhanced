@@ -28,10 +28,12 @@ private:
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<Label2DView> _fileNameLabel;
     SharedPtr<Label2DView> _saveLabel;
+    SharedPtr<Label2DView> _saveEndLabel;
     SharedPtr<Label2DView> _hintLabel;
     const MaterialColorScheme* _materialColorScheme;
     const char* _shownStatus = nullptr;
     bool _hasDetail = false;
+    bool _hasDetailEnd = false;
     bool _confirmed = false;
 
     DeleteConfirmBottomSheetView(SharedPtr<IDeleteConfirmViewModel> viewModel,
