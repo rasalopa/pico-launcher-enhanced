@@ -142,6 +142,9 @@ void RomBrowserController::ToggleCompletedFilter()
 
 void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
 {
+    // this sheet is the cheats sheet; parental controls can take it away
+    if (IsBlocked(ParentalFeature::Cheats))
+        return;
     _triggerFileInfo = FileInfo(fileInfo);
     _stateMachine.Fire(RomBrowserStateTrigger::ShowGameInfo);
 }
@@ -186,6 +189,15 @@ void RomBrowserController::ShowStatistics()
 // same question to decide whether to dim its delete button, so the button and
 // the action can never disagree about what is deletable.
 bool RomBrowserController::CanDeleteSelected() const
+{
+    // the menu entry is drawn faded from this, but RequestDeleteSelected and
+    // ConfirmDelete ask it too, so no other route can delete while blocked
+    if (IsBlocked(ParentalFeature::Delete))
+        return false;
+    return IsSelectedGame();
+}
+
+bool RomBrowserController::IsSelectedGame() const
 {
     if (!_romBrowserViewModel.IsValid())
         return false;
@@ -258,6 +270,10 @@ void RomBrowserController::CancelDelete()
 
 void RomBrowserController::ConfirmDelete()
 {
+    // the sheet can only be here because RequestDeleteSelected let it, but the
+    // lock is checked again at the point the file actually goes
+    if (IsBlocked(ParentalFeature::Delete))
+        return;
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         FRESULT result = f_unlink(_deleteRomFileName);

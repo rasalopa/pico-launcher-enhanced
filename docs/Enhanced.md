@@ -20,6 +20,24 @@ The app bar has three buttons: back, the menu (three dots) and display settings.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
+## Parental controls
+Parental controls have no screen of their own. They are one flag in `settings.json`, set from a PC before the console is handed to a child:
+
+```json
+"parentalControls": true
+```
+
+While it is `true`, the two actions that can destroy work are refused:
+
+| Action | With parental controls on |
+|---|---|
+| Delete game | Refused, from the menu and at the confirmation |
+| Cheats (Y on a game) | The cheats sheet does not open |
+
+Everything else stays as it is, and there is nothing to switch one at a time: the favorite and completed marks (X) are never blocked, and neither is any other button, panel or setting. The actions are refused where they are carried out, not only faded in the menu, so no other route can reach them while the flag is on.
+
+Switch it off by setting the flag back to `false` on the SD card and starting the launcher again. There is no PIN and no menu row to get past, so there is nothing to remember and nothing to forget; this is a simple lock against a child poking at the console, not a secret that stands up to someone with the SD card.
+
 ## Jumping by initial
 In a folder with hundreds of games, paging through the list a screen at a time takes a
 while. L and R now jump to where the previous or next initial starts, so crossing a large
