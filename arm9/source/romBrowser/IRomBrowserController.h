@@ -47,6 +47,15 @@ public:
     /// @brief The about sheet, reached from the menu.
     virtual void ShowAbout() = 0;
     virtual void HideAbout() = 0;
+    /// @brief The in-game exit combo sheet, reached from the menu.
+    virtual void ShowExitCombo() = 0;
+    virtual void HideExitCombo() = 0;
+    /// @brief Keys held to leave a DS game, as a KEY_* mask (see KeyCombo).
+    ///        Zero means the enhanced loader's default.
+    virtual u16 GetLoaderExitCombo() const = 0;
+    /// @brief Stores the combo, as names, in settings.json. Zero puts the
+    ///        loader's default back. It reaches a game at its next launch.
+    virtual void SetLoaderExitCombo(u16 combo) = 0;
     /// @brief Whether the highlighted entry can be deleted at all. Folders and
     ///        support files cannot, so the app bar dims its delete button rather
     ///        than offering one that does nothing.

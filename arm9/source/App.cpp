@@ -31,6 +31,7 @@
 #include "romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.h"
 #include "romBrowser/views/menu/MenuBottomSheetView.h"
 #include "romBrowser/views/about/AboutBottomSheetView.h"
+#include "romBrowser/views/exitcombo/ExitComboBottomSheetView.h"
 #include "romBrowser/views/DisplaySettingsBottomSheetView.h"
 #include "bgm/AudioStreamPlayer.h"
 #include "bgm/BgmService.h"
@@ -436,6 +437,16 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
             HandleHideAboutTrigger();
             break;
         }
+        case RomBrowserStateTrigger::ShowExitCombo:
+        {
+            HandleShowExitComboTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideExitCombo:
+        {
+            HandleHideExitComboTrigger();
+            break;
+        }
         case RomBrowserStateTrigger::Navigate:
         {
             HandleNavigateTrigger();
@@ -577,6 +588,22 @@ void App::HandleShowAboutTrigger()
 }
 
 void App::HandleHideAboutTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowExitComboTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto exitComboViewModel = SharedPtr<ExitComboViewModel>::MakeShared(&_romBrowserController);
+    auto exitComboDialog = ExitComboBottomSheetView::CreateShared(
+        std::move(exitComboViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(exitComboDialog));
+}
+
+void App::HandleHideExitComboTrigger()
 {
     _dialogPresenter.CloseDialog();
     if (!_dialogPresenter.GetOldFocus())
@@ -979,6 +1006,14 @@ void App::HandleInput()
     {
         _screenshotHoldFrames = 0;
         _screenshotHoldArmed = true;
+    }
+    else if (_dialogPresenter.IsCapturingInput())
+    {
+        // The in-game exit sheet is capturing keys, and START may be part of
+        // the combination. Drop the count and stay disarmed until START is seen
+        // up, so finishing a combo with START held cannot save a screenshot.
+        _screenshotHoldFrames = 0;
+        _screenshotHoldArmed = false;
     }
     else if (_screenshotHoldArmed && !_fadeIn &&
         ++_screenshotHoldFrames == kScreenshotHoldFrames)

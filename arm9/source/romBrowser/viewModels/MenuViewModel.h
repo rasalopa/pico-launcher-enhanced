@@ -22,6 +22,7 @@ public:
     bool IsCompletedFilterEnabled() const { return _romBrowserController->IsCompletedFilterEnabled(); }
 
     void ShowAbout() { _romBrowserController->ShowAbout(); }
+    void ShowExitCombo() { _romBrowserController->ShowExitCombo(); }
 
     void Close() { _romBrowserController->HideMenu(); }
 
