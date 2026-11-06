@@ -164,6 +164,8 @@ private:
     void HandleHideMenuTrigger();
     void HandleShowAboutTrigger();
     void HandleHideAboutTrigger();
+    void HandleShowExitComboTrigger();
+    void HandleHideExitComboTrigger();
     void CloseSheetIfLeavingMenu();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
