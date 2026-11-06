@@ -20,6 +20,7 @@
 #include "backlightIpc.h"
 #include "SaveFileName.h"
 #include "SaveSlotIndex.h"
+#include "services/settings/KeyCombo.h"
 #include "RomBrowserController.h"
 
 RomBrowserController::RomBrowserController(
@@ -443,6 +444,56 @@ void RomBrowserController::ShowAbout()
 void RomBrowserController::HideAbout()
 {
     _stateMachine.Fire(RomBrowserStateTrigger::HideAbout);
+}
+
+void RomBrowserController::ShowExitCombo()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowExitCombo);
+}
+
+void RomBrowserController::HideExitCombo()
+{
+    if (_saveSettingsPending)
+    {
+        _saveSettingsPending = false;
+        _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+        {
+            _appSettingsService->Save();
+            return TaskResult<void>::Completed();
+        });
+    }
+    _stateMachine.Fire(RomBrowserStateTrigger::HideExitCombo);
+}
+
+u16 RomBrowserController::GetLoaderExitCombo() const
+{
+    u16 combo;
+    if (!KeyCombo::TryParse(
+            _appSettingsService->GetAppSettings().loaderExitCombo.GetString(), combo))
+    {
+        return 0;
+    }
+    return combo;
+}
+
+void RomBrowserController::SetLoaderExitCombo(u16 combo)
+{
+    char text[KeyCombo::kMaxTextLength] = "";
+    if (combo != 0)
+    {
+        // The loader checks these rules too; refusing here keeps an unusable
+        // combination out of settings.json in the first place.
+        if (!KeyCombo::IsValid(combo))
+            return;
+        KeyCombo::Format(combo, text, sizeof(text));
+    }
+
+    auto& appSettings = _appSettingsService->GetAppSettings();
+    if (strcmp(appSettings.loaderExitCombo.GetString(), text) != 0)
+    {
+        appSettings.loaderExitCombo = text;
+        _saveSettingsPending = true;
+    }
 }
 
 void RomBrowserController::HideDisplaySettings()
@@ -907,6 +958,7 @@ void RomBrowserController::UpdateLastUsedFilepath()
 
 void RomBrowserController::SetPicoLoaderParams() const
 {
+    pload_setExitCombo(GetLoaderExitCombo());
     auto loadParams = pload_getLoadParams();
     loadParams->savePath[0] = 0;
     loadParams->arguments[0] = 0;
