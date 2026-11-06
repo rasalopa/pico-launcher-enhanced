@@ -466,6 +466,22 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     }
 }
 
+void DisplaySettingsBottomSheetView::Focus(FocusManager& focusManager)
+{
+    // start on the selected layout, so focus never sits on a second option
+    // and makes it look selected too
+    auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
+    for (u32 i = 0; i < _layoutOptions.size(); i++)
+    {
+        if (sRomBrowserDisplayModes[i] == selectedDisplayMode)
+        {
+            focusManager.Focus(_layoutOptions[i]);
+            return;
+        }
+    }
+    focusManager.Focus(_layoutOptions[0]);
+}
+
 void DisplaySettingsBottomSheetView::Close()
 {
     _viewModel->Close();
