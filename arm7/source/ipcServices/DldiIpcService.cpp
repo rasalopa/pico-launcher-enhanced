@@ -35,12 +35,16 @@ void DldiIpcService::SetupDldi(const dldi_ipc_cmd_t* cmd) const
 
 void DldiIpcService::ReadSectors(const dldi_ipc_cmd_t* cmd) const
 {
+    rtos_lockMutex(&gCardMutex);
     _DLDI_readSectors_ptr(cmd->sector, cmd->count, cmd->buffer);
+    rtos_unlockMutex(&gCardMutex);
     SendResponseMessage(0);
 }
 
 void DldiIpcService::WriteSectors(const dldi_ipc_cmd_t* cmd) const
 {
+    rtos_lockMutex(&gCardMutex);
     _DLDI_writeSectors_ptr(cmd->sector, cmd->count, cmd->buffer);
+    rtos_unlockMutex(&gCardMutex);
     SendResponseMessage(0);
 }

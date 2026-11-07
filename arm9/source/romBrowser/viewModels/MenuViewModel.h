@@ -20,6 +20,9 @@ public:
     bool IsFavoritesFilterEnabled() const { return _romBrowserController->IsFavoritesFilterEnabled(); }
     void ToggleCompletedFilter() { _romBrowserController->ToggleCompletedFilter(); }
     bool IsCompletedFilterEnabled() const { return _romBrowserController->IsCompletedFilterEnabled(); }
+    void ShowUsb() { _romBrowserController->ShowUsb(); }
+    bool QueryUsbHostPresent() { return _romBrowserController->QueryUsbHostPresent(); }
+    bool IsUsbHostPresent() const { return _romBrowserController->IsUsbHostPresent(); }
 
     void ShowAbout() { _romBrowserController->ShowAbout(); }
 

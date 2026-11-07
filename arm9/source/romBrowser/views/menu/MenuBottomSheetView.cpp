@@ -192,22 +192,31 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
     }, this);
     AddChildTail(_aboutButton.GetPointer());
 
-    static const struct { const char* name; bool filter; } kEntries[ITEM_COUNT] =
+    // Every entry is a cell but the card reader, which takes a row of its own:
+    // the last cell row ends where the sheet's rounded edge begins, so there is
+    // no height left for another one. A cell is too narrow for the filters to
+    // say "on" or "off" beside their name, so their colour carries that here.
+    static const char* const kEntries[ITEM_COUNT] =
     {
-        { "Recently played", false },
-        { "Favorites", false },
-        { "Statistics", false },
-        { "Delete game", false },
-        { "Only favorites", true },
-        { "Only completed", true }
+        "Recently played",
+        "Favorites",
+        "Statistics",
+        "Delete game",
+        "Only favorites",
+        "Only completed",
+        "Mount microSD"
     };
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].filter ? ROW_WIDTH : CELL_WIDTH,
-            kEntries[i].name, kEntries[i].filter, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
+        _items[i] = MenuItemView::CreateShared(this, i, i == ITEM_USB ? ROW_WIDTH : CELL_WIDTH,
+            kEntries[i], false, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
             materialColorScheme, fontRepository);
         AddChildTail(_items[i].GetPointer());
     }
+    // The launcher asked once, at startup, whether a host was on the other end
+    // of the flashcart's cable; the entry shows that answer. The cable is meant
+    // to be plugged in before the cart is booted, so nothing here polls.
+    _items[ITEM_USB]->SetEnabled(_viewModel->IsUsbHostPresent());
 }
 
 void MenuBottomSheetView::InitVram(const VramContext& vramContext)
@@ -217,10 +226,13 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (!objVramManager)
         return;
+    // The card reader has no icon of its own yet and borrows the info one.
     static const unsigned int* const kTiles[ITEM_COUNT] =
-        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, heartIconTiles, checkIconTiles };
+        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, heartIconTiles,
+            checkIconTiles, infoIconTiles };
     static const u32 kTilesLength[ITEM_COUNT] =
-        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, heartIconTilesLen, checkIconTilesLen };
+        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen,
+            heartIconTilesLen, checkIconTilesLen, infoIconTilesLen };
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
@@ -244,9 +256,9 @@ void MenuBottomSheetView::Update()
     _aboutButton->SetPosition(ABOUT_BUTTON_X, y + ABOUT_BUTTON_Y);
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        // two rows of two cells, then the filters as the third and fourth row
-        bool cell = i < ITEM_FAVORITES_FILTER;
-        int row = cell ? i / 2 : i - 2;
+        // three rows of two cells, then the card reader across the fourth
+        bool cell = i != ITEM_USB;
+        int row = i / 2;
         int x = ITEMS_X + (cell ? (i % 2) * CELL_WIDTH : 0);
         _items[i]->SetPosition(x, y + ROWS_Y + row * ROW_SPACING);
     }
@@ -361,6 +373,19 @@ void MenuBottomSheetView::Activate(int index)
             break;
         case ITEM_COMPLETED_FILTER:
             _viewModel->ToggleCompletedFilter();
+            break;
+        case ITEM_USB:
+            // The faded look comes from the startup check, but the cable can be
+            // pulled while the launcher runs, and mounting with no host on the
+            // other end is the one way to get the USB stack into a state it
+            // cannot leave. So ask again on the press: with no host this does
+            // nothing at all - no sheet, no state change, the menu stays up and
+            // browsing keeps working. With a host it mounts as it would have at
+            // startup, which also covers a cable plugged in after boot.
+            if (!_viewModel->QueryUsbHostPresent())
+                break;
+            _items[ITEM_USB]->SetEnabled(true);
+            _viewModel->ShowUsb();
             break;
     }
 }

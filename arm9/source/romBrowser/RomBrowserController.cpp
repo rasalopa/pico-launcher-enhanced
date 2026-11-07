@@ -18,6 +18,7 @@
 #include "core/mini-printf.h"
 #include "rtcIpc.h"
 #include "backlightIpc.h"
+#include "usbMsc/UsbMscIpc.h"
 #include "RomBrowserController.h"
 
 RomBrowserController::RomBrowserController(
@@ -44,6 +45,15 @@ void RomBrowserController::NavigateToPath(const TCHAR* name)
 
 void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* gameCode)
 {
+    // While a host owns the card the launcher must not start a game under it:
+    // the launcher is a cold restart away from nothing, and the PC would lose
+    // the filesystem mid-transfer. Answer the request with the sheet that says
+    // how out instead.
+    if (UsbMscIsMounted())
+    {
+        _stateMachine.Fire(RomBrowserStateTrigger::ShowUsb);
+        return;
+    }
     _triggerFileInfo = FileInfo(fileInfo);
     StringUtil::Copy(_triggerGameCode, gameCode ? gameCode : "",
         sizeof(_triggerGameCode) / sizeof(_triggerGameCode[0]));
@@ -149,6 +159,26 @@ void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
 void RomBrowserController::HideGameInfo()
 {
     _stateMachine.Fire(RomBrowserStateTrigger::HideGameInfo);
+}
+
+void RomBrowserController::ShowUsb()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowUsb);
+}
+
+void RomBrowserController::HideUsb()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::HideUsb);
+}
+
+bool RomBrowserController::QueryUsbHostPresent()
+{
+    return UsbMscQueryHostPresent();
+}
+
+bool RomBrowserController::IsUsbHostPresent() const
+{
+    return UsbMscHostPresent();
 }
 
 void RomBrowserController::ShowDisplaySettings()

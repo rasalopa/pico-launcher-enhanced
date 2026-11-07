@@ -39,6 +39,8 @@
 #include "gui/Gx.h"
 #include "splashTop.h"
 #include "App.h"
+#include "romBrowser/views/usb/UsbBottomSheetView.h"
+#include "usbMsc/UsbMscIpc.h"
 
 #define SPLASH_FRAMES       44
 
@@ -209,6 +211,14 @@ void App::Run()
     _dialogPresenter.InitVram();
 
     LoadTheme();
+
+    // The one opening question about the cable, asked here so the menu's card
+    // reader entry can be drawn faded without asking anything of its own. The
+    // ARM7 armed the USB device stack when it booted; this is the round trip
+    // that reads what it found, and the only cost on a session that never
+    // opens the menu. Picking the entry asks again, since the cable can be
+    // pulled while the launcher runs.
+    UsbMscQueryHostPresent();
 
     // Made before the vram states are stored, so the texture behind its text is
     // part of what a display mode change restores instead of being dropped by it.
@@ -436,6 +446,16 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
             HandleHideAboutTrigger();
             break;
         }
+        case RomBrowserStateTrigger::ShowUsb:
+        {
+            HandleShowUsbTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideUsb:
+        {
+            HandleHideUsbTrigger();
+            break;
+        }
         case RomBrowserStateTrigger::Navigate:
         {
             HandleNavigateTrigger();
@@ -577,6 +597,24 @@ void App::HandleShowAboutTrigger()
 }
 
 void App::HandleHideAboutTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowUsbTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    // Mounted before the sheet exists: the sheet has nothing to show while it
+    // waits, and the wait is one USB enumeration at most.
+    const bool mounted = UsbMscMountMicroSd();
+    auto usbDialog = UsbBottomSheetView::CreateShared(mounted, &_romBrowserController,
+        &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(usbDialog));
+}
+
+void App::HandleHideUsbTrigger()
 {
     _dialogPresenter.CloseDialog();
     if (!_dialogPresenter.GetOldFocus())

@@ -11,14 +11,23 @@ These controls are available in the rom browser, on top of the standard ones (se
 | X (hold ~half a second) | Toggle completed for the highlighted game |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
-| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game and the two filters (see [The menu](#the-menu)) |
+| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, the two filters and the card reader (see [The menu](#the-menu)) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 
 ## The menu
-The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: **Recently played**, **Favorites**, **Statistics** and **Delete game** in two columns, and under them the two filters, **Only favorites** and **Only completed**, each saying `on` or `off`. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: **Recently played**, **Favorites**, **Statistics** and **Delete game** in two columns, and under them the two filters, **Only favorites** and **Only completed** under those, and **Mount microSD** across the last row (see [USB card reader](#usb-card-reader)). Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu. A filter's name is red or green while it is on. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
+
+## USB card reader
+**Mount microSD** in the menu hands the card to a PC over the flashcart's USB cable, so copying games no longer needs a card reader. The entry is faded when the flashcart saw no USB host on the other end at startup.
+
+Plug the cable into the flashcart and into the PC, then start the launcher. The flashcart cannot report a cable on its own, so the launcher puts the USB device stack on the bus when it boots and asks the ARM7 once, at startup, whether a host enumerated it. That answer is what the menu draws: **Mount microSD** is faded when it was no. Picking the entry asks again before it does anything, because the cable can be pulled while the launcher runs and mounting with no host on the other end is not something the USB stack can be talked out of. A press with no host is a no-op that leaves the launcher exactly as it was - no sheet, nothing to recover from - and a press with a host mounts as it would have at startup, so a cable plugged in after boot is picked up too. An armed stack that serves no card shows no drive on the PC, so leaving the cable in while browsing changes nothing.
+
+While the card is still starting up the PC lists the drive under a generic name, **USB Drive**; a moment later it takes the card's own name. That is normal, and the sheet says so. There is deliberately no unmount, and no way back to the launcher once the card is mounted; the sheet spells that out, so the frozen screen reads as intended rather than as a hang. With the card handed over there is nothing sensible to do in the launcher anyway. When you are done, eject the drive on the PC, then power the console off (DS, DS Lite) or return to the HOME menu (DSi, 3DS), and only then take the flashcart out and unplug the cable. While the card is mounted the launcher refuses to launch a game, because the PC owns the filesystem until the console leaves the launcher.
+
+The USB stack is the one from the [mass-storage example](https://github.com/LNH-team/pico-launcher) by the LNH team, the same code the standalone `mass-storage.nds` runs, and the DSpico driver behind it lives in `platform/`, apart from the launcher's own code.
 
 ## Jumping by initial
 In a folder with hundreds of games, paging through the list a screen at a time takes a

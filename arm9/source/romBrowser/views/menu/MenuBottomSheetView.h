@@ -72,10 +72,12 @@ private:
 ///        hold as icons, and behind long presses, written out.
 ///
 /// Recently played, favorites, statistics and delete in two columns, then the
-/// two filters as full rows that say whether they are on. Picking a panel
-/// replaces this sheet with it; a filter closes the sheet through the display
-/// mode change it triggers; delete is faded while a folder is highlighted. A
-/// small button at the right of the title opens the about sheet.
+/// two filters the same way and the card reader across the last row. Picking a
+/// panel replaces this sheet with it; a filter closes the sheet through the
+/// display mode change it triggers, its name in red or green while it is on;
+/// delete is faded while a folder is highlighted, and the card reader while
+/// nothing is plugged into the flashcart's USB port. A small button at the
+/// right of the title opens the about sheet.
 class MenuBottomSheetView : public BottomSheetView
 {
     SHARED_ONLY(MenuBottomSheetView)
@@ -106,6 +108,7 @@ private:
         ITEM_DELETE,
         ITEM_FAVORITES_FILTER,
         ITEM_COMPLETED_FILTER,
+        ITEM_USB,
         ITEM_COUNT
     };
 

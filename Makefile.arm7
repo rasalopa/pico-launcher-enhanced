@@ -13,8 +13,8 @@ ARM_NONE_EABI_PATH	?= $(WONDERFUL_TOOLCHAIN)/toolchain/gcc-arm-none-eabi/bin/
 # Source code paths
 # -----------------
 
-SOURCEDIRS	:= arm7/source common
-INCLUDEDIRS	:= arm7/source common
+SOURCEDIRS	:= arm7/source common platform
+INCLUDEDIRS	:= arm7/source common arm7/source/usb platform libs/tinyusb/src
 BINDIRS		:=
 
 # Defines passed to all files
@@ -66,8 +66,15 @@ ifneq ($(BINDIRS),)
     INCLUDEDIRS	+= $(addprefix $(BUILDDIR)/,$(BINDIRS))
 endif
 
+# TinyUSB is compiled from the few directories the device mass-storage
+# stack needs, listed one by one: SOURCEDIRS is searched recursively,
+# and libs/tinyusb/src holds a driver for every MCU under it.
+TUSB_SOURCEDIRS	:= libs/tinyusb/src libs/tinyusb/src/device \
+		   libs/tinyusb/src/class/msc libs/tinyusb/src/common
+
 SOURCES_S	:= $(shell find -L $(SOURCEDIRS) -name "*.s")
-SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c")
+SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c") \
+		   $(filter-out %_host.c,$(foreach dir,$(TUSB_SOURCEDIRS),$(wildcard $(dir)/*.c)))
 SOURCES_CPP	:= $(shell find -L $(SOURCEDIRS) -name "*.cpp")
 
 # Compiler and linker flags

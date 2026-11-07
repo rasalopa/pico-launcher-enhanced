@@ -47,6 +47,18 @@ public:
     /// @brief The about sheet, reached from the menu.
     virtual void ShowAbout() = 0;
     virtual void HideAbout() = 0;
+    /// @brief The USB card reader sheet, reached from the menu: puts the
+    ///        microSD on the flashcart's USB bus so a PC can read and write
+    ///        it. There is no unmount; the sheet says how to leave safely.
+    virtual void ShowUsb() = 0;
+    virtual void HideUsb() = 0;
+    /// @brief Asks the ARM7 whether a USB host is on the other end of the
+    ///        flashcart's cable right now, and caches the answer. The launcher
+    ///        asks once at startup, which is what fades the menu entry, and
+    ///        the entry asks again before it mounts.
+    virtual bool QueryUsbHostPresent() = 0;
+    /// @brief The cached answer to the last QueryUsbHostPresent().
+    virtual bool IsUsbHostPresent() const = 0;
     /// @brief Whether the highlighted entry can be deleted at all. Folders and
     ///        support files cannot, so the app bar dims its delete button rather
     ///        than offering one that does nothing.

@@ -29,6 +29,8 @@
 #include "ipcServices/DldiIpcService.h"
 #include "ipcServices/SoundIpcService.h"
 #include "ipcServices/RtcIpcService.h"
+#include "usb/UsbMscIpcService.h"
+#include "usb/UsbMscMode.h"
 #include "ExitMode.h"
 #include "Arm7State.h"
 #include "mmc/tmio.h"
@@ -42,6 +44,7 @@ static DsiSdIpcService sDsiSdIpcService;
 static DldiIpcService sDldiIpcService;
 static SoundIpcService sSoundIpcService;
 static RtcIpcService sRtcIpcService;
+static UsbMscIpcService sUsbMscIpcService;
 
 ILogger* gLogger = &sThreadSafeLogger;
 
@@ -271,6 +274,8 @@ static void initializeArm7()
     rtos_startMainThread();
     ipc_initFifoSystem();
 
+    rtos_createMutex(&gCardMutex);
+
     clearSoundRegisters();
 
     pmic_setAmplifierEnable(true);
@@ -291,6 +296,7 @@ static void initializeArm7()
     }
 
     sDldiIpcService.Start();
+    sUsbMscIpcService.Start();
     pload_init();
 
     snd_setMasterVolume(127);
@@ -313,6 +319,12 @@ static void initializeArm7()
     }
 
     touch_init();
+
+    // Arm the USB device stack now rather than on the first mount: the DSpico
+    // cannot report a cable, so being on the bus is the only way the menu can
+    // tell whether a host is plugged in. Without a cable this costs nothing
+    // and shows nothing on the PC until the card reader is asked for.
+    UsbMscStart();
 
     ipc_setArm7SyncBits(7);
 }

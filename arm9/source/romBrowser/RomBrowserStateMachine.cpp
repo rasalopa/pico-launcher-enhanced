@@ -26,6 +26,7 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
             .Trigger(RomBrowserStateTrigger::ShowStatistics).GoesTo(RomBrowserState::Statistics)
             .Trigger(RomBrowserStateTrigger::ShowDeleteConfirm).GoesTo(RomBrowserState::DeleteConfirm)
             .Trigger(RomBrowserStateTrigger::ShowMenu).GoesTo(RomBrowserState::Menu)
+            .Trigger(RomBrowserStateTrigger::ShowUsb).GoesTo(RomBrowserState::Usb)
         // The menu hands over to whatever is picked from it. A filter toggle
         // fires ChangeDisplayMode, which from here also means "and close the menu".
         .In(RomBrowserState::Menu)
@@ -36,8 +37,14 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
             .Trigger(RomBrowserStateTrigger::ShowStatistics).GoesTo(RomBrowserState::Statistics)
             .Trigger(RomBrowserStateTrigger::ShowDeleteConfirm).GoesTo(RomBrowserState::DeleteConfirm)
             .Trigger(RomBrowserStateTrigger::ShowAbout).GoesTo(RomBrowserState::About)
+            .Trigger(RomBrowserStateTrigger::ShowUsb).GoesTo(RomBrowserState::Usb)
         .In(RomBrowserState::About)
             .Trigger(RomBrowserStateTrigger::HideAbout).GoesTo(RomBrowserState::Browser)
+        // The card reader hands the card to a PC and gives the launcher no way
+        // back, so nothing leaves this state but a reboot; the transition is
+        // here for the sheet to be closable if it ever needs to be.
+        .In(RomBrowserState::Usb)
+            .Trigger(RomBrowserStateTrigger::HideUsb).GoesTo(RomBrowserState::Browser)
         .In(RomBrowserState::Recents)
             .Trigger(RomBrowserStateTrigger::HideRecents).GoesTo(RomBrowserState::Browser)
             .Trigger(RomBrowserStateTrigger::Navigate).GoesTo(RomBrowserState::LoadingFolder)

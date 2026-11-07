@@ -48,6 +48,10 @@ public:
     void HideMenu() override;
     void ShowAbout() override;
     void HideAbout() override;
+    void ShowUsb() override;
+    void HideUsb() override;
+    bool QueryUsbHostPresent() override;
+    bool IsUsbHostPresent() const override;
     bool CanDeleteSelected() const override;
     void RequestDeleteSelected() override;
     void CancelDelete() override;
