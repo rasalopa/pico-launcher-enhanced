@@ -21,6 +21,12 @@ struct GameDataEntry
     bool favorite = false;
     /// @brief Marked as finished by the user (long-press X in the browser).
     bool completed = false;
+    /// @brief Whether this file's launches count towards the statistics. False
+    ///        keeps it out of the launch counts, play time, last played date,
+    ///        recents list and the most-launched star, while favorites and
+    ///        completed marks keep working. Hand-edited in gamedata.json; the
+    ///        launcher never sets it back to true itself.
+    bool countStats = true;
     /// @brief "YYYY-MM-DD HH:MM", empty when never launched. Lexicographic
     ///        order equals chronological order.
     String<char, 20> lastPlayed;

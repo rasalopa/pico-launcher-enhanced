@@ -36,12 +36,22 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `gameCode` | string | non-empty | Internal game code from the NDS/GBA header, stored as information only: it is never used to identify an entry. Written when it is printable ASCII and not the `####` toolchain placeholder (homebrew ROMs often carry garbage or the placeholder there). |
 | `favorite` | bool | `true` | Marked as favorite. Absent means not a favorite; `false` is never written. |
 | `completed` | bool | `true` | Marked as completed (finished). Absent means not completed; `false` is never written. |
+| `countStats` | bool | `false` | Whether this file's launches count towards the statistics. Absent means `true`; the launcher writes it only when it is `false`, which you set by hand (see below). |
 | `launchCount` | number | > 0 | How many times the game was launched. |
 | `playMinutes` | number | > 0 | Accumulated play time in minutes (approximate, see below). |
 | `lastPlayed` | string | non-empty | `"YYYY-MM-DD HH:MM"`, 24-hour clock. Lexicographic order equals chronological order, so tools can sort these as plain strings. |
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
 
-An entry whose `favorite` and `completed` are both false and whose `launchCount` and `playMinutes` are both 0 is pruned on the next write. Deleting a game through the launcher also removes its entry.
+An entry whose `favorite` and `completed` are both false, whose `countStats` is true and whose `launchCount` and `playMinutes` are both 0 is pruned on the next write; an entry marked `countStats: false` is kept even when nothing else is set. Deleting a game through the launcher also removes its entry.
+
+### `countStats`: leaving a ROM out of the statistics
+Set `"countStats": false` on a game's entry to stop counting it. Launching that file then writes no launch count, no last played date and no play time, and opens no play session, so it does not appear in **Recently played** or in the statistics, including the star for the most launched game. Favorites and completed marks keep working.
+
+```json
+"tetris.gb": { "countStats": false }
+```
+
+What was already recorded stays as it is. To remove that too, set `launchCount` and `playMinutes` to 0 (or delete the entry) yourself; the launcher never rewrites a figure downwards. The launcher only ever writes `countStats` when it is `false`, so removing the key turns counting back on. Like every other figure here, the key belongs to one file: a second copy of the same game is counted unless it is marked too.
 
 ## Session keys (root level)
 While a play session is open, the root object holds:
