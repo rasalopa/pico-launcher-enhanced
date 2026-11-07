@@ -72,6 +72,18 @@ Play time is approximate: a session starts when a game is launched and ends the 
 
 If you would rather the launcher kept no record of your launches, set `"launchTracking": false` in `settings.json` (see [Usage.md](/docs/Usage.md#settings)). Launching a game then writes nothing to the game data: no launch count, no play time, no last played date. (The launcher still remembers the last game you launched, as it always did, so it can highlight it on the next boot.) The recently played list, the statistics panel and the star of the most launched game keep showing what was recorded before, and favorites and completed marks keep working.
 
+## Leaving a ROM out of the statistics
+A single file can be marked as not a game in `/_pico/gamedata.json`: add `"countStats": false` to its entry and the launcher stops counting it. Launching it then writes no launch count, no last played date and no play time, opens no play session, and it does not appear in **Recently played** or in the statistics, including the star for the most launched game. Favorites and completed marks keep working.
+
+```json
+"games": {
+  "_picoboot.nds": { "countStats": false },
+  "tetris.gb": { "countStats": false, "favorite": true }
+}
+```
+
+What was already recorded stays as it is; set the entry's `launchCount` and `playMinutes` to 0 if you want it gone from the panels too. The launcher never writes `countStats: true`, so removing the key turns counting back on. Use it for files that are not games, such as the launcher started from inside itself or a homebrew tool that should not compete with games. The key is per file, so a second copy of a game is counted unless it is marked too.
+
 ## Recently played
 **Recently played** in the menu opens a list of up to 20 recently played games, most recent first, each with the date and time it was last played. Tap an entry (or highlight it and press A) to jump to that game's folder with the game preselected. Press B to close the panel.
 
