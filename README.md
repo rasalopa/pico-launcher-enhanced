@@ -6,12 +6,8 @@
 
 A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by the LNH team, adding library features inspired by modern consoles, like favorites, play stats and recently played, while staying fully compatible with stock SD cards. It is a drop-in `_picoboot.nds` replacement, and all upstream features remain intact.
 
-![Cover flow in the Material theme: the most launched game, a favorite and completed, with its star, heart and check above the icon](docs/images/enhanced/Coverflow.png)
-![Icon grid in the Material theme: the most launched game, a favorite and completed, with its star, heart and check above the icon](docs/images/enhanced/Grid.png)
-![A custom theme: the game markers sit above the game's icon, drawn to read on any art](docs/images/enhanced/CustomTheme.png)
-![The favorites panel, every favorite across all folders with its play time](docs/images/enhanced/Favorites.png)
-![The statistics panel: totals, most launched games and the last one played](docs/images/enhanced/Statistics.png)
-![The menu: recently played, favorites, statistics, delete game, and the two filters with their state](docs/images/enhanced/Menu.png)
+![The statistics panel: the folder's game count, totals, the most launched games and the last one played](docs/images/enhanced/Statistics.png)
+![The menu, with Mario Kart DS and its star, heart and check on the top screen: recently played, favorites, statistics, delete game, a new save for that game and the two filters](docs/images/enhanced/Menu.png)
 ![The about sheet: Pico Launcher by the LNH team, Enhanced by rasalopa, where the build came from, and a cheat sheet of the controls](docs/images/enhanced/About.png)
 
 *Taken on the console with the launcher's own screenshot key (hold START).*
