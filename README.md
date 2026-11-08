@@ -60,9 +60,11 @@ No other changes to your SD card are needed: themes, covers and the `_pico` fold
 > [!NOTE]
 > To use Pico Launcher, the Pico Loader files (`aplist.bin`, `patchlist.bin`, `savelist.bin`, `picoLoader7.bin` and `picoLoader9.bin`) must also be present in the `/_pico` folder on your SD card.
 
+On another flashcart, like an R4 or a DSTT, the steps are the same when the card starts `_picoboot.nds` from the root, as the DSTT setup from flashcarts.net does. Keep the Pico Loader files made for that card in `/_pico`: LNH has a zip for each card in the [Pico Loader releases](https://github.com/LNH-team/pico-loader/releases).
+
 ### Optional: the in-game exit
 
-The release also has a second zip, Pico Loader Enhanced: a version of Pico Loader that lets you go back to the launcher from inside a DS game by holding L + R + Right + Select for a moment. To use it, copy its `picoLoader7.bin` and `picoLoader9.bin` into `/_pico/`, over the official ones. It is optional, the launcher works the same with the official loader. Which games get the exit, and the known issues, are in the [release notes](../../releases/latest).
+The release also has a second zip, Pico Loader Enhanced: a version of Pico Loader that lets you go back to the launcher from inside a DS game by holding L + R + Right + Select for a moment. To use it, copy its `picoLoader7.bin` and `picoLoader9.bin` into `/_pico/`, over the official ones. It is optional, the launcher works the same with the official loader. It is the DSpico build, so on another flashcart keep the loader made for that card. Which games get the exit, and the known issues, are in the [release notes](../../releases/latest).
 
 ## Building from source
 We recommend using WSL (Windows Subsystem for Linux), or MSYS2 to compile this repository.
