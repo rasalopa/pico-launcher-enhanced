@@ -2,6 +2,33 @@
 
 ## Enhanced fork
 
+### [enhanced-v1.11.0]
+
+#### Added
+- Save slots: a DS game can keep up to nine extra saves, `<game name>.sav1` to `.sav9`, the names
+  TWiLight Menu++ gives them, next to the game or in the saves folder. A on a game that has any
+  opens a sheet to pick the save, on the one the game was started on last time, with + New save
+  while a name is free; a game without extra saves starts right away, as before. To give a game
+  its first extra save, highlight it and pick New save in the menu. When `<game name>.sav3` would
+  not fit in the path the loader gets, picking Save 3 shows `Name too long for Save 3` and the
+  game doesn't start. Deleting a game deletes its extra saves too. The save each game was started
+  on last time is `saveSlot` in `gamedata.json`. Based on BigBrainAFK's pull request (#32).
+
+#### Changed
+- The menu's two filters share a row and no longer say on or off; a filter that is on still has
+  its name and icon in red or green. While a DS game is highlighted, New save has a row of its
+  own above them.
+- The favorite heart is red on every theme. On the top screen, in the statistics panel and in the
+  recently played list it took the theme's main color, while the menu's Only favorites filter was
+  red.
+
+#### Fixed
+- The delete confirmation gives the save's name a line of its own. With a long name the line was
+  cut before it said whether the save is deleted or kept.
+- A DS game whose folder can't be read when it is launched, because the folder's path is too long
+  or the card fails to read, stays in the browser with `Folder path too long` or `Couldn't read
+  the game`. It used to start with the folder missing from its path.
+
 ### [enhanced-v1.10.0]
 
 #### Added
