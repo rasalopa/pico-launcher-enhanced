@@ -141,9 +141,18 @@ This project is licensed under the Zlib license. For details, see `LICENSE.txt`.
 Additional licenses may apply to the project. For details, see the `license` directory.
 
 ## Contributors
+
+Pico Launcher, by the LNH team:
+
 - [@Gericom](https://github.com/Gericom)
 - [@XLuma](https://github.com/XLuma)
 - [@Dartz150](https://github.com/Dartz150)
 - [@lifehackerhansol](https://github.com/lifehackerhansol)
 
 All credit for the launcher's foundation goes to the LNH team. This fork only builds on their excellent work.
+
+Pico Launcher Enhanced:
+
+- [@rasalopa](https://github.com/rasalopa), who keeps the fork
+- [@marlooonxdd](https://github.com/marlooonxdd): sleep when the lid closes ([#23](https://github.com/rasalopa/pico-launcher-enhanced/pull/23)) and a fix in the selector of the icon buttons ([#24](https://github.com/rasalopa/pico-launcher-enhanced/pull/24))
+- [@BigBrainAFK](https://github.com/BigBrainAFK): save slots for DS games ([#32](https://github.com/rasalopa/pico-launcher-enhanced/pull/32))
