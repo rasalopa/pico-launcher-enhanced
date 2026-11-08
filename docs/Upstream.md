@@ -2,7 +2,7 @@
 
 Everything Pico Launcher Enhanced adds or changes on top of [upstream Pico Launcher](https://github.com/LNH-team/pico-launcher), one entry per feature, so each can be looked at on its own, though some build on others (the toast, the panels, the delete sheet, the game data file). Each entry says what it does, which commits make it up, whether upstream has an issue or a pull request about the same thing, and which upstream files it touches, which is where a merge can conflict.
 
-This page is up to date with v1.10.0, against upstream `develop` at `dc64a34`. The fork is not behind upstream: it merged upstream's latest commit, `dc64a34`, in `8f7d705`, so everything listed here is a change upstream does not have. Documentation files are left out of the file lists.
+This page is up to date with v1.11.0, against upstream `develop` at `dc64a34`. The fork is not behind upstream: it merged upstream's latest commit, `dc64a34`, in `8f7d705`, so everything listed here is a change upstream does not have. Documentation files are left out of the file lists.
 
 ## Browsing
 
@@ -80,7 +80,7 @@ Delete game in the menu deletes the highlighted game after a confirmation sheet 
 - **Commits:** `94f405e`
 - **Upstream:** None found.
 - **Settings and data:** Removes the game's entry from `gamedata.json`.
-- **Notes:** It moved from the app bar into the menu with the menu entry, and the save removal follows `saveLocation` since the saves folder entry. Games with the same name and a different extension in one folder share one `.sav`.
+- **Notes:** It moved from the app bar into the menu with the menu entry, and the save removal follows `saveLocation` since the saves folder entry. Since [Save slots](#save-slots) it deletes a DS game's extra saves too, and the sheet gives the save its own line. Games with the same name and a different extension in one folder share one `.sav`.
 
 <details><summary>Files: 12 upstream, 5 new</summary>
 
@@ -365,14 +365,14 @@ New files:
 
 ### Top screen markers (heart, check and star)
 
-When a game is highlighted, its favorite heart and completed check sit above its icon on the top screen as crisp outlined pixel markers that read on any theme, and a gold star marks your most launched game. The game count and launch text that used to sit on the top screen are gone from it; the count now heads the statistics panel.
+When a game is highlighted, its favorite heart and completed check sit above its icon on the top screen as crisp outlined pixel markers that read on any theme, and a gold star marks your most launched game. The heart is red on every theme, as the check is green and the star gold; the three colors live in `MarkerColors.h`, which the menu, recents and statistics panels read too. The game count and launch text that used to sit on the top screen are gone from it; the count now heads the statistics panel.
 
-- **Commits:** `3985737`, `9d72a51`, `bf37a9f`, `25b31f7`, `f1ec46f`, `2173910`
+- **Commits:** `3985737`, `9d72a51`, `bf37a9f`, `25b31f7`, `f1ec46f`, `2173910`, `d8f80d9`
 - **Upstream:** None found. It builds on upstream's positioning of top screen elements for custom themes ([LNH-team/pico-launcher#40](https://github.com/LNH-team/pico-launcher/issues/40)). [PR #78](https://github.com/LNH-team/pico-launcher/pull/78) adds its time and battery bar to the same top screen view and the same view factory headers, and [PR #67](https://github.com/LNH-team/pico-launcher/pull/67) draws its own hearts.
 - **Settings and data:** `topLaunchInfo` in a custom theme's `theme.json` (optional). `topGameCount` is no longer read.
 - **Fork issues:** [#4](https://github.com/rasalopa/pico-launcher-enhanced/issues/4), [#18](https://github.com/rasalopa/pico-launcher-enhanced/issues/18)
 
-<details><summary>Files: 13 upstream, 15 new</summary>
+<details><summary>Files: 13 upstream, 18 new</summary>
 
 Upstream files touched:
 
@@ -407,6 +407,9 @@ New files:
 - `arm9/source/services/gamedata/GameDataEntry.h`
 - `arm9/source/Version.cpp`
 - `arm9/source/Version.h`
+- `arm9/source/romBrowser/views/MarkerColors.h`
+- `arm9/source/romBrowser/views/menu/MenuBottomSheetView.cpp`
+- `arm9/source/romBrowser/views/recents/RecentListItemView.cpp`
 
 </details>
 
@@ -508,19 +511,22 @@ New files:
 
 ### Save slots
 
-Up to ten saves per DS game. Y opens a game details sheet, upstream's unused `NdsGameDetailsBottomSheetView` brought to life, where L and R pick the slot; its **Cheats** chip opens the cheats panel. Slot 0 is the regular `.sav`, slots 1 to 9 are `.sav1` to `.sav9`, in the folder `saveLocation` says. Deleting a game deletes its slot saves too.
+A DS game can have up to nine extra saves, `<game name>.sav1` to `.sav9` as TWiLight Menu++ names them, in the folder `saveLocation` says. A on a game that has any opens a sheet to pick the save: Main save, each extra save and, while one of the nine names is free, + New save. It opens on the save the game was started on last time. A game without extra saves starts right away, and New save in the menu starts the highlighted DS game on the lowest free name. Y opens the cheats as before. When a save's path doesn't fit, or the game's folder can't be read at that moment, the launch is turned away with a message instead of starting on another save. Deleting a game deletes its extra saves too, and the confirmation names the save on its own line.
 
-- **Commits:** not committed yet
-- **Upstream:** Open as [LNH-team/pico-launcher#92](https://github.com/LNH-team/pico-launcher/pull/92), with the same save names and sheet. Upstream keeps the picked slot in its own `/_pico/saveslots.txt`, keyed by full path; here it is `saveSlot` in `gamedata.json`, keyed by file name like every other mark, and it follows the saves folder. Merging #92 conflicts with this entry in every upstream file below; keep this side's storage and save path code.
-- **Settings and data:** `saveSlot` per game in `gamedata.json`, 1 to 9, absent for slot 0.
-- **Notes:** The cheats sheet guards a list rebuild that ran before it had vram when its cheats finished loading before it was shown, which the hand-over from the details sheet made happen every time. Homebrew and DSiWare get no slots.
+- **Commits:** `c26788f`, `2fdfef3`, `62dc9e4`, `b303762`, `edf4d82`, `ade9fd5`, `c440700`, `5d17ada`, `9e0a943`, `e00db06`, `c82ef11`, `d0f7baf`, `7b51b84`, `2394031`, `cb089ce`
+- **Upstream:** Open as [LNH-team/pico-launcher#92](https://github.com/LNH-team/pico-launcher/pull/92) by BigBrainAFK, who brought it to the fork as `c26788f`. It uses the same save names, but there Y opens a details sheet where L and R pick the slot, kept in `/_pico/saveslots.txt` by full path. Here A asks which save to start, and the last one started is `saveSlot` in `gamedata.json`, keyed by file name like every other mark. Merging #92 conflicts in `IRomBrowserController.h`, `RomBrowserController.cpp`, `RomBrowserController.h` and `CheatsBottomSheetView.cpp`, and would bring its details sheet back on Y; keep this side.
+- **Settings and data:** `saveSlot` per game in `gamedata.json`, 1 to 9: the save the game was started on last time, written when a launch changes it, with launch tracking off too; absent for the main save.
+- **Fork issues:** PR [#32](https://github.com/rasalopa/pico-launcher-enhanced/pull/32)
+- **Notes:** A game's saves are noted while its folder is read, from the file names that read already gives (`SaveSlotIndex`). With `saveLocation` set to `saves` the saves folder is read too, within an allowance sized to the games in the folder; when it can't be read to its end, the picker and New save look each name up on the card. Every `.nds`, `.dsi` and `.srl` file gets extra saves and nothing else does; homebrew and DSiWare have no card save, so for them the loader gets no save path whichever is picked. The menu's filter row and its New save entry come from `e00db06`. The cheats sheet keeps a guard from `c26788f` that skips a list rebuild before it has vram.
 
-<details><summary>Files: 14 upstream, 3 new</summary>
+<details><summary>Files: 12 upstream, 21 new</summary>
 
 Upstream files touched:
 
 - `arm9/source/App.cpp`
 - `arm9/source/App.h`
+- `arm9/source/romBrowser/FileInfo.cpp`
+- `arm9/source/romBrowser/FileInfo.h`
 - `arm9/source/romBrowser/IRomBrowserController.h`
 - `arm9/source/romBrowser/RomBrowserController.cpp`
 - `arm9/source/romBrowser/RomBrowserController.h`
@@ -528,17 +534,31 @@ Upstream files touched:
 - `arm9/source/romBrowser/RomBrowserStateMachine.cpp`
 - `arm9/source/romBrowser/RomBrowserStateTrigger.h`
 - `arm9/source/romBrowser/viewModels/RomBrowserBottomScreenViewModel.h`
-- `arm9/source/romBrowser/views/ChipView.cpp`
-- `arm9/source/romBrowser/views/ChipView.h`
-- `arm9/source/romBrowser/views/NdsGameDetailsBottomSheetView.cpp`
-- `arm9/source/romBrowser/views/NdsGameDetailsBottomSheetView.h`
 - `arm9/source/romBrowser/views/cheats/CheatsBottomSheetView.cpp`
 
 New files:
 
+- `arm9/gfx/plusIcon.grit`
+- `arm9/gfx/plusIcon.png`
+- `arm9/source/romBrowser/FileType/Nds/NdsRomHeader.cpp`
+- `arm9/source/romBrowser/FileType/Nds/NdsRomHeader.h`
 - `arm9/source/romBrowser/SaveFileName.h`
-- `arm9/source/romBrowser/viewModels/NdsGameDetailsViewModel.cpp`
-- `arm9/source/romBrowser/viewModels/NdsGameDetailsViewModel.h`
+- `arm9/source/romBrowser/SaveSlotIndex.cpp`
+- `arm9/source/romBrowser/SaveSlotIndex.h`
+- `arm9/source/romBrowser/viewModels/DeleteConfirmViewModel.h`
+- `arm9/source/romBrowser/viewModels/IDeleteConfirmViewModel.h`
+- `arm9/source/romBrowser/viewModels/MenuViewModel.h`
+- `arm9/source/romBrowser/viewModels/SavePickerViewModel.h`
+- `arm9/source/romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.cpp`
+- `arm9/source/romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.h`
+- `arm9/source/romBrowser/views/menu/MenuBottomSheetView.cpp`
+- `arm9/source/romBrowser/views/menu/MenuBottomSheetView.h`
+- `arm9/source/romBrowser/views/savepicker/SavePickerBottomSheetView.cpp`
+- `arm9/source/romBrowser/views/savepicker/SavePickerBottomSheetView.h`
+- `arm9/source/services/gamedata/GameDataEntry.h`
+- `arm9/source/services/gamedata/IGameDataService.h`
+- `arm9/source/services/gamedata/JsonGameDataService.h`
+- `arm9/source/services/gamedata/JsonGameDataService.thumb.cpp`
 
 </details>
 
@@ -546,7 +566,7 @@ New files:
 
 ### Three-dot menu and a three-button app bar
 
-The app bar holds back, a three-dot menu and display settings. The menu lists Recently played, Favorites, Statistics and Delete game by name, plus the Only favorites and Only completed filters saying on or off, and no app bar button hides a second action behind a long press any more (holding X on a game still marks it completed).
+The app bar holds back, a three-dot menu and display settings. The menu lists Recently played, Favorites, Statistics and Delete game by name, New save while a DS game is highlighted (see [Save slots](#save-slots)), and the Only favorites and Only completed filters side by side, whose name turns red or green while on. No app bar button hides a second action behind a long press any more (holding X on a game still marks it completed).
 
 - **Commits:** `089eb53`, `0b90347`, `eb691fb`
 - **Upstream:** None found for the bar. [PR #37](https://github.com/LNH-team/pico-launcher/pull/37) has a loosely similar sheet of named entries, and [PR #67](https://github.com/LNH-team/pico-launcher/pull/67) would add a heart button to the bar.
@@ -1068,7 +1088,7 @@ New files:
 
 Commits with no feature of their own, listed so every commit is accounted for. Two of them could still go upstream on their own: the error log and the VRAM offset fix.
 
-- **Fork documentation (readme, docs pages, screenshots, contributing).** The fork's readme, its docs pages and the contributing guide. `ebddb97`, `37b5a5d`, `50acb27`, `34e04db`, `cd5ce1a`, `95bfbca`, `5557e97`, `e07bfb9`, `799148e`, `4e7a08a`
+- **Fork documentation (readme, docs pages, screenshots, contributing).** The fork's readme, its docs pages and the contributing guide. `ebddb97`, `37b5a5d`, `50acb27`, `34e04db`, `cd5ce1a`, `95bfbca`, `5557e97`, `e07bfb9`, `799148e`, `4e7a08a`, `f58f427`, `0fa6943`
 - **Changelog release rolls.** Release headings in the changelog, and the version bump with the last one. `d8a7744`, `0b51e82`, `7bd4a5b`, `6fd0165`, `ad218ea`, `83e5c03`
 - **Error log on the SD card.** Errors go to `/_pico/launcher.log` on real hardware, so what was logged before a crash can be read afterwards; the crash itself is not recorded, and the next boot that logs an error starts the file again. `3a4ce98`
 - **Enhanced line in the cartridge banner.** The boot banner's second line says Enhanced, so tools can tell the fork from the stock launcher. `1966ccd`
@@ -1077,4 +1097,4 @@ Commits with no feature of their own, listed so every commit is accounted for. T
 
 ---
 
-Checked for this update: every commit the fork adds sits in exactly one entry above, apart from the two merges and the commits that write this page, and each entry was compared with the code.
+Checked for this update: every commit the fork adds sits in exactly one entry above, apart from the three merges and the commits that write this page, and each entry was compared with the code.
