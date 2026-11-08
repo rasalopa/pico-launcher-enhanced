@@ -1,5 +1,7 @@
 #include "common.h"
 #include <algorithm>
+#include <iterator>
+#include "core/mini-printf.h"
 #include "gui/GraphicsContext.h"
 #include "gui/VramContext.h"
 #include "gui/OamBuilder.h"
@@ -15,6 +17,7 @@
 #include "smallHeartIconFilled.h"
 #include "statsIcon.h"
 #include "trashIcon.h"
+#include "plusIcon.h"
 #include "heartIcon.h"
 #include "checkIcon.h"
 #include "infoIcon.h"
@@ -29,9 +32,10 @@
 #define ABOUT_BUTTON_X      212
 #define ABOUT_BUTTON_Y      (TITLE_Y - 7)
 
-// Two cells per row over the 224 px the recents list uses, then two full rows.
-// Rows sit 26 apart so the 24 px items keep a hairline between them; the last
-// one ends at 142, screen y 174, with the sheet's rounded edge below it.
+// Two cells per row over the 224 px the recents list uses, or one full row.
+// Rows sit 26 apart so the 24 px items keep a hairline between them; the
+// fourth ends at 142, screen y 174, with the sheet's rounded edge below it. A
+// fifth would end past the screen, so the filters share a row.
 #define ITEMS_X             16
 #define CELL_WIDTH          112
 #define ROW_WIDTH           224
@@ -51,22 +55,46 @@
 // The recents list's highlight sprite: 64 px wide, laid end to end.
 #define SELECTOR_WIDTH      64
 
-MenuItemView::MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char* name,
-    bool hasState, const Rgb<8, 8, 8>& activeColor,
+namespace
+{
+    struct MenuEntry
+    {
+        const char* name;
+        int row;
+        /// 0 or 1 for a cell, -1 for a full row.
+        int column;
+    };
+}
+
+// In the order of MenuBottomSheetView::Item.
+static constexpr MenuEntry kEntries[] =
+{
+    { "Recently played", 0, 0 },
+    { "Favorites", 0, 1 },
+    { "Statistics", 1, 0 },
+    { "Delete game", 1, 1 },
+    { "New save", 2, -1 },
+    { "Only favorites", 3, 0 },
+    { "Only completed", 3, 1 }
+};
+
+MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
+    const char* stateText, const Rgb<8, 8, 8>& activeColor,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
     : _sheet(sheet), _index(index), _width(width), _activeColor(activeColor)
     , _materialColorScheme(materialColorScheme)
 {
-    int nameWidth = width - NAME_DX - 4 - (hasState ? STATE_WIDTH : 0);
+    int nameWidth = width - NAME_DX - 4 - (stateText ? STATE_WIDTH : 0);
     _nameLabel = Label2DView::CreateShared(nameWidth, 16, 24, fontRepository->GetFont(FontType::Regular10));
     _nameLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
     _nameLabel->SetText(name);
     AddChildTail(_nameLabel.GetPointer());
-    if (hasState)
+    if (stateText)
     {
-        _stateLabel = Label2DView::CreateShared(STATE_WIDTH, 16, 4, fontRepository->GetFont(FontType::Medium7_5));
+        // "Save 9" is the longest
+        _stateLabel = Label2DView::CreateShared(STATE_WIDTH, 16, 6, fontRepository->GetFont(FontType::Medium7_5));
         _stateLabel->SetHorizontalAlignment(Alignment::End);
-        _stateLabel->SetText("off");
+        _stateLabel->SetText(stateText);
         AddChildTail(_stateLabel.GetPointer());
     }
 }
@@ -123,10 +151,12 @@ void MenuItemView::Draw(GraphicsContext& graphicsContext)
     if (_stateLabel)
     {
         _stateLabel->SetBackgroundColor(back);
-        _stateLabel->SetForegroundColor(_active ? _activeColor : _materialColorScheme->outline);
+        _stateLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
     }
     ViewContainer::Draw(graphicsContext);
 
+    if (!_hasIcon)
+        return;
     int iconY = _position.y + ICON_DY;
     u32 iconRow = graphicsContext.GetPaletteManager().AllocRow(
         GradientPalette(back, tint), iconY, iconY + ICON_SIZE);
@@ -192,22 +222,22 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
     }, this);
     AddChildTail(_aboutButton.GetPointer());
 
-    static const struct { const char* name; bool filter; } kEntries[ITEM_COUNT] =
-    {
-        { "Recently played", false },
-        { "Favorites", false },
-        { "Statistics", false },
-        { "Delete game", false },
-        { "Only favorites", true },
-        { "Only completed", true }
-    };
+    static_assert(std::size(kEntries) == ITEM_COUNT, "one entry per item");
+    // the highlighted game can't change while the menu is open
+    _newSaveShown = _viewModel->ShowsNewSave();
+    u32 newSaveSlot = _viewModel->GetNewSaveSlot();
+    char newSaveText[8];
+    mini_snprintf(newSaveText, sizeof(newSaveText), "Save %u", newSaveSlot);
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].filter ? ROW_WIDTH : CELL_WIDTH,
-            kEntries[i].name, kEntries[i].filter, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
+        const char* stateText = i == ITEM_NEW_SAVE && newSaveSlot != 0 ? newSaveText : nullptr;
+        _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].column < 0 ? ROW_WIDTH : CELL_WIDTH,
+            kEntries[i].name, stateText, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
             materialColorScheme, fontRepository);
-        AddChildTail(_items[i].GetPointer());
+        if (i != ITEM_NEW_SAVE || _newSaveShown)
+            AddChildTail(_items[i].GetPointer());
     }
+    _items[ITEM_NEW_SAVE]->SetEnabled(newSaveSlot != 0);
 }
 
 void MenuBottomSheetView::InitVram(const VramContext& vramContext)
@@ -218,9 +248,11 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
     if (!objVramManager)
         return;
     static const unsigned int* const kTiles[ITEM_COUNT] =
-        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, heartIconTiles, checkIconTiles };
+        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, plusIconTiles,
+          heartIconTiles, checkIconTiles };
     static const u32 kTilesLength[ITEM_COUNT] =
-        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, heartIconTilesLen, checkIconTilesLen };
+        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, plusIconTilesLen,
+          heartIconTilesLen, checkIconTilesLen };
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
@@ -237,6 +269,27 @@ u32 MenuBottomSheetView::LoadSprite(IVramManager& vramManager, const unsigned in
     return vramOffset;
 }
 
+int MenuBottomSheetView::GetRow(int index) const
+{
+    int row = kEntries[index].row;
+    return !_newSaveShown && row > kEntries[ITEM_NEW_SAVE].row ? row - 1 : row;
+}
+
+int MenuBottomSheetView::FindEntry(int row, int column) const
+{
+    int firstCell = -1;
+    for (int i = 0; i < ITEM_COUNT; i++)
+    {
+        if (GetRow(i) != row || (i == ITEM_NEW_SAVE && !_newSaveShown))
+            continue;
+        if (kEntries[i].column == column || kEntries[i].column < 0)
+            return i;
+        if (firstCell < 0)
+            firstCell = i;
+    }
+    return firstCell;
+}
+
 void MenuBottomSheetView::Update()
 {
     int y = _position.y;
@@ -244,11 +297,8 @@ void MenuBottomSheetView::Update()
     _aboutButton->SetPosition(ABOUT_BUTTON_X, y + ABOUT_BUTTON_Y);
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        // two rows of two cells, then the filters as the third and fourth row
-        bool cell = i < ITEM_FAVORITES_FILTER;
-        int row = cell ? i / 2 : i - 2;
-        int x = ITEMS_X + (cell ? (i % 2) * CELL_WIDTH : 0);
-        _items[i]->SetPosition(x, y + ROWS_Y + row * ROW_SPACING);
+        int x = ITEMS_X + std::max(kEntries[i].column, 0) * CELL_WIDTH;
+        _items[i]->SetPosition(x, y + ROWS_Y + GetRow(i) * ROW_SPACING);
     }
     _items[ITEM_DELETE]->SetEnabled(_viewModel->CanDeleteSelected());
     _items[ITEM_FAVORITES_FILTER]->SetActive(_viewModel->IsFavoritesFilterEnabled());
@@ -297,36 +347,26 @@ SharedPtr<View> MenuBottomSheetView::MoveFocus(const SharedPtr<View>& currentFoc
     if (idx < 0)
         return nullptr;
 
-    // 0 1 and 2 3 are the two-by-two grid, 4 and 5 the full rows under it.
-    bool cell = idx < ITEM_FAVORITES_FILTER;
+    int row = GetRow(idx);
+    int column = kEntries[idx].column;
+    int target = -1;
     switch (direction)
     {
         case FocusMoveDirection::Left:
-            if (cell && (idx % 2) == 1)
-                return _items[idx - 1];
-            break;
         case FocusMoveDirection::Right:
-            if (cell && (idx % 2) == 0)
-                return _items[idx + 1];
+            if (column >= 0)
+                target = FindEntry(row, direction == FocusMoveDirection::Left ? 0 : 1);
             break;
         case FocusMoveDirection::Up:
-            if (idx == ITEM_COMPLETED_FILTER)
-                return _items[ITEM_FAVORITES_FILTER];
-            if (idx == ITEM_FAVORITES_FILTER)
-                return _items[ITEM_STATISTICS];
-            if (idx >= 2)
-                return _items[idx - 2];
-            return _aboutButton;
+            if (row == 0)
+                return _aboutButton;
+            target = FindEntry(row - 1, column);
+            break;
         case FocusMoveDirection::Down:
-            if (idx == ITEM_FAVORITES_FILTER)
-                return _items[ITEM_COMPLETED_FILTER];
-            if (idx < 2)
-                return _items[idx + 2];
-            if (cell)
-                return _items[ITEM_FAVORITES_FILTER];
+            target = FindEntry(row + 1, column);
             break;
     }
-    return nullptr;
+    return target >= 0 && target != idx ? _items[target] : nullptr;
 }
 
 void MenuBottomSheetView::SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken)
@@ -355,6 +395,10 @@ void MenuBottomSheetView::Activate(int index)
         case ITEM_DELETE:
             // faded on a folder and inert with it: the controller checks too
             _viewModel->RequestDeleteSelected();
+            break;
+        case ITEM_NEW_SAVE:
+            // faded and inert without a free save: the view model checks
+            _viewModel->StartNewSave();
             break;
         case ITEM_FAVORITES_FILTER:
             _viewModel->ToggleFavoritesFilter();

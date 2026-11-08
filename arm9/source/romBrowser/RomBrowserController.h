@@ -28,6 +28,11 @@ public:
     void NavigateToPath(const TCHAR* name) override;
     void LaunchFile(const FileInfo& fileInfo, const char* gameCode) override;
     void LaunchRandomGame() override;
+    void LaunchSaveSlot(u32 saveSlot) override;
+    void HideSavePicker() override;
+    bool SelectedHasSaveSlots() const override;
+    u32 FindNewSaveSlotOfSelected() const override;
+    void LaunchSelectedOnSaveSlot(u32 saveSlot) override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleFavoritesFilter() override;
@@ -58,6 +63,7 @@ public:
         return !_deleteHasSave ? "" : _deleteSaveInFolder ? _deleteFolderSaveFileName : _deleteSaveFileName;
     }
     bool DeleteKeepsSave() const override { return _deleteKeepsSave; }
+    u32 GetDeleteExtraSaveCount() const override { return _deleteExtraSaveCount; }
     void GotoSettingsScreen() override;
 
     void Update() override;
@@ -106,7 +112,26 @@ public:
 
     virtual const FileInfo& GetTriggerFileInfo() const override { return _triggerFileInfo; }
 
+    /// @brief What the toast says when the last launch was turned away.
+    const char* GetLaunchRefusedText() const { return _launchRefusedText; }
+
 private:
+    /// @brief Why the game about to launch is turned away.
+    enum class LaunchRefusal : u8
+    {
+        None,
+        /// @brief A DSi-only game on a DS or DS Lite.
+        DsiOnly,
+        /// @brief The path of the chosen save doesn't fit, so the loader would open the main save.
+        SaveNameTooLong,
+        /// @brief The rom header or its folder can't be read, so it isn't known where the
+        ///        chosen save goes.
+        RomUnreadable,
+        /// @brief The game's folder path is too long to read back, so no save can be
+        ///        pointed at.
+        FolderPathTooLong
+    };
+
     IAppSettingsService* _appSettingsService;
     IGameDataService* _gameDataService;
     IBgmService* _bgmService;
@@ -119,8 +144,12 @@ private:
 
     void FormatNowDateTime(TCHAR* buffer, u32 bufferLength) const;
     /// @brief Full path of a file in the current folder (f_getcwd + name).
-    void BuildCurrentFolderFilePath(const char* fileName,
+    /// @return What f_getcwd returned. When it isn't FR_OK the buffer holds "/" + name.
+    FRESULT BuildCurrentFolderFilePath(const char* fileName,
         TCHAR* buffer, u32 bufferLength) const;
+    /// @brief Which saves of the rom in the current folder are on the card, bit N for
+    ///        "<name>.savN", looking each one up. Slot 0 is not looked for.
+    u16 FindSaveSlotsOnCard(const char* romFileName) const;
     TCHAR _deleteRomFileName[256];
     TCHAR _deleteSaveFileName[256];
     /// @brief "saves/<name>.sav", or empty when the saves folder setting does not apply.
@@ -130,6 +159,11 @@ private:
     bool _deleteSaveInFolder = false;
     /// @brief Whether the save stays when the game goes, see RequestDeleteSelected.
     bool _deleteKeepsSave = false;
+    /// @brief Whether the slot saves (.sav1 to .sav9) go with the game. Only for games
+    ///        the loader keeps the save of, since only those have slots.
+    bool _deleteSaveSlots = false;
+    /// @brief How many slot saves were found, for the dialog's wording only.
+    u32 _deleteExtraSaveCount = 0;
     volatile bool _deleteCompleted = false;
 
     std::unique_ptr<SdFolder> _sdFolder;
@@ -144,11 +178,18 @@ private:
     TCHAR _navigateSelectName[256];
     FileInfo _triggerFileInfo;
     QueueTask<void> _navigateTask;
-    /// @brief Reads, on the io thread, whether the game about to launch is for
-    ///        the DSi only. Only set on a DS, where such a game cannot run.
+    /// @brief Finds out, on the io thread, whether the game about to launch can start, and
+    ///        where its save goes.
     QueueTask<void> _launchCheckTask;
     /// @brief The answer, written by the task before it completes.
-    volatile bool _launchDsiOnly = false;
+    volatile LaunchRefusal _launchRefusal = LaunchRefusal::None;
+    /// @brief Save slot of the game being launched, set on the main thread before the
+    ///        io task that builds the save path starts.
+    u32 _launchSaveSlot = 0;
+    /// @brief Save path for the loader, written by the launch check. Empty when the loader
+    ///        names the save itself.
+    char _launchSavePath[sizeof(pload_params_t::savePath)];
+    char _launchRefusedText[40] = "";
     bool _saveSettingsPending = false;
     std::unique_ptr<CoverRepository> _coverRepository;
     std::unique_ptr<IconRepository> _iconRepository;
@@ -161,12 +202,23 @@ private:
     void HandleFolderLoadDoneTrigger();
     void BackfillFavoritePaths();
     void HandleLaunchTrigger();
+    /// @brief The highlighted entry when it is a game, which is what the menu acts on.
+    const FileInfo* GetSelectedGame() const;
+    /// @brief The game code of an entry of the folder, when its file info is loaded.
+    const char* FindGameCode(int index) const;
+    /// @brief On a DS or DS Lite, an nds file may be a DSi-only game that can't run there.
+    bool IsDsiOnlyCheckNeeded() const;
     /// @brief Records the launch and hands the game to the loader.
     void BeginLaunch();
     void HandleChangeDisplayModeTrigger();
     void HandleGotoSettingsScreenTrigger();
     void UpdateLastUsedFilepath();
     void SetPicoLoaderParams() const;
-    void SetSavesFolderPath(pload_params_t* loadParams) const;
+    /// @brief Writes the save path for the game being launched to _launchSavePath.
+    LaunchRefusal ResolveSavePath();
+    bool SetSavesFolderPath(char* savePath, const TCHAR* gamePath, u32 folderLength,
+        const char* saveFileName) const;
+    /// @brief Deletes one save of the game being deleted, the one in the saves folder first.
+    static void DeleteSave(const char* folderSaveFileName, const char* saveFileName);
     void LoadCheats() const;
 };

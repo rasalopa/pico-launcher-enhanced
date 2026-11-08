@@ -26,10 +26,16 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
             .Trigger(RomBrowserStateTrigger::ShowStatistics).GoesTo(RomBrowserState::Statistics)
             .Trigger(RomBrowserStateTrigger::ShowDeleteConfirm).GoesTo(RomBrowserState::DeleteConfirm)
             .Trigger(RomBrowserStateTrigger::ShowMenu).GoesTo(RomBrowserState::Menu)
+            .Trigger(RomBrowserStateTrigger::ShowSavePicker).GoesTo(RomBrowserState::SavePicker)
+        .In(RomBrowserState::SavePicker)
+            .Trigger(RomBrowserStateTrigger::HideSavePicker).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::Launch).GoesTo(RomBrowserState::Launching)
         // The menu hands over to whatever is picked from it. A filter toggle
         // fires ChangeDisplayMode, which from here also means "and close the menu".
+        // New save launches the highlighted game straight from it.
         .In(RomBrowserState::Menu)
             .Trigger(RomBrowserStateTrigger::HideMenu).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::Launch).GoesTo(RomBrowserState::Launching)
             .Trigger(RomBrowserStateTrigger::ChangeDisplayMode).GoesTo(RomBrowserState::Browser)
             .Trigger(RomBrowserStateTrigger::ShowRecents).GoesTo(RomBrowserState::Recents)
             .Trigger(RomBrowserStateTrigger::ShowFavorites).GoesTo(RomBrowserState::Favorites)
@@ -57,8 +63,9 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
             .Trigger(RomBrowserStateTrigger::ChangeDisplayMode).GoesTo(RomBrowserState::DisplaySettings)
             .Trigger(RomBrowserStateTrigger::HideDisplaySettings).GoesTo(RomBrowserState::Browser)
             .Trigger(RomBrowserStateTrigger::GotoSettingsScreen).GoesTo(RomBrowserState::GoingToSettingsScreen)
-        // A launch the console cannot carry out (a DSi-only game on a DS) comes
-        // straight back, before anything about it was recorded.
+        // A launch that can't go as asked (a DSi-only game on a DS, or a save the
+        // loader can't be pointed at) comes straight back, before anything about it
+        // was recorded.
         .In(RomBrowserState::Launching)
             .Trigger(RomBrowserStateTrigger::LaunchRefused).GoesTo(RomBrowserState::Browser)
         .Check(newState))

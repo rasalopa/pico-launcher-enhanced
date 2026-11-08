@@ -21,6 +21,7 @@
 #define KEY_PLAY_MINUTES      "playMinutes"
 #define KEY_LAST_PLAYED       "lastPlayed"
 #define KEY_PATH              "path"
+#define KEY_SAVE_SLOT         "saveSlot"
 #define KEY_SESSION_GAME      "sessionGame"
 #define KEY_SESSION_GAME_CODE "sessionGameCode"
 #define KEY_SESSION_START     "sessionStart"
@@ -278,6 +279,21 @@ void JsonGameDataService::ClearSession()
     _version++;
 }
 
+bool JsonGameDataService::SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode)
+{
+    if (saveSlot > kMaxSaveSlot)
+        return false;
+    // slot 0 is what a game without an entry uses already: nothing to create
+    if (saveSlot == 0 && !Find(fileName))
+        return false;
+    auto* entry = GetOrCreateEntry(fileName, gameCode);
+    if (!entry)
+        return false;
+    entry->saveSlot = (u8)saveSlot;
+    _version++;
+    return true;
+}
+
 void JsonGameDataService::RemoveEntry(const char* fileName)
 {
     GameDataEntry* entry = Find(fileName);
@@ -309,7 +325,8 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
     {
         const auto& entry = _entries[i];
         // entries reset back to all-default state are pruned on write
-        if (!entry.favorite && !entry.completed && entry.launchCount == 0 && entry.playMinutes == 0)
+        if (!entry.favorite && !entry.completed && entry.launchCount == 0 && entry.playMinutes == 0 &&
+            entry.saveSlot == 0)
             continue;
         auto game = games[entry.fileName.GetString()].to<JsonObject>();
         if (entry.gameCode.GetString()[0] != 0)
@@ -326,6 +343,8 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
             game[KEY_LAST_PLAYED] = entry.lastPlayed.GetString();
         if (entry.path.GetString()[0] != 0)
             game[KEY_PATH] = entry.path.GetString();
+        if (entry.saveSlot != 0)
+            game[KEY_SAVE_SLOT] = entry.saveSlot;
     }
     if (_sessionStart.GetString()[0] != 0)
     {
@@ -477,6 +496,9 @@ void JsonGameDataService::Load()
         entry->playMinutes = item.value()[KEY_PLAY_MINUTES] | 0u;
         entry->lastPlayed = item.value()[KEY_LAST_PLAYED] | "";
         entry->path = item.value()[KEY_PATH] | "";
+        // a slot this build can't name a save for falls back to the regular one
+        u32 saveSlot = item.value()[KEY_SAVE_SLOT] | 0u;
+        entry->saveSlot = saveSlot <= kMaxSaveSlot ? (u8)saveSlot : 0;
     }
     _sessionGameFileName = json[KEY_SESSION_GAME] | "";
     _sessionGameCode = json[KEY_SESSION_GAME_CODE] | "";

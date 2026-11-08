@@ -21,24 +21,25 @@ A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by 
 Everything upstream Pico Launcher offers (display modes, [custom icons, banners & covers](docs/Customization.md) for games *and folders*, [themes](docs/Themes.md), [cheats](docs/Cheats.md), [file associations](docs/FileAssociations.md); see [Usage](docs/Usage.md)), plus:
 
 - **Go back to the launcher from inside a game** (optional): with Pico Loader Enhanced, the second zip in the release, hold L + R + Right + Select for a moment in a DS game; see [Installation](#optional-the-in-game-exit)
-- **A menu instead of a row of icons**: the app bar keeps back and display settings and gains a three-dot button; recently played, favorites, statistics, deletion and the two filters live in the sheet it opens, each with its name
+- **A menu instead of a row of icons**: the app bar keeps back and display settings and gains a three-dot button; recently played, favorites, statistics, deletion, a new save for the highlighted DS game and the two filters live in the sheet it opens, each with its name
 - **About sheet**: from the menu's title row: who made what, the exact build and the repository it came from, and a cheat sheet of the controls that have no button
 - **Jump by initial**: press L or R to jump to the next initial letter in a folder sorted by name; the letter you land on shows for a moment at the bottom of the touch screen
 - **Game count** of the current folder, at the top of the statistics panel
 - **Random game launch** with SELECT + A
 - **Favorites**: press X on a game; a heart shows on the top screen
 - **Completed games**: hold X on a game; a green check shows on the top screen
-- **Favorites and completed filters**: Only favorites and Only completed in the menu, each saying when it is on
+- **Favorites and completed filters**: Only favorites and Only completed in the menu, red or green while on
 - **Favorites panel**: every favorite across all folders, from the menu; tapping one jumps to it
 - **Recently played panel**: from the menu; tapping an entry jumps to the game
 - **Statistics panel**: totals, most-played games and the launcher version, from the menu
 - **Screenshots**: hold START for about half a second to save both screens to `/_pico/screenshots`
 - **Per-game launch tracking**: launch count and last-played date, kept per game; the recently played panel shows each game's date, and the statistics panel the counts of the three most launched games; can be switched off in `settings.json`
 - **Approximate play time**: per game, in the favorites panel
-- **Game deletion**: from the menu, with confirmation; removes the ROM, and its save for a DS or GBA game
+- **Game deletion**: from the menu, with confirmation; removes the ROM and, for a DS or GBA game, its save; a DS game's extra saves go too
 - **ROMs run by an emulator count as games**: GB, SNES or any ROM opened through a file association can be marked, deleted and picked at random; see [FileAssociations.md](docs/FileAssociations.md)
 - **Theme deletion**: from the theme selector, with confirmation; the theme in use and the two that come with the launcher are kept
 - **A saves folder**: set `"saveLocation": "saves"` in `settings.json` and DS saves live in a `saves` folder next to the games, the layout TWiLight Menu++ uses, so both launchers can share one card; see [Usage.md](docs/Usage.md#settings)
+- **Save slots**: up to nine extra saves per DS game, `.sav1` to `.sav9` as TWiLight Menu++ names them; A on a game that has any lets you pick the one to play, and New save in the menu starts the game on a new one; see [Save slots](docs/Enhanced.md#save-slots)
 - **Brightness control**: set the DS Lite's backlight level from display settings
 - **Hide empty folders**: optional; folders with nothing playable inside are left out of the listing
 - **Cheats list that reads better**: the list wraps around at both ends, and X turns every cheat off at once

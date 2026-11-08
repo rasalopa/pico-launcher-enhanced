@@ -11,12 +11,12 @@ These controls are available in the rom browser, on top of the standard ones (se
 | X (hold ~half a second) | Toggle completed for the highlighted game |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
-| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game and the two filters (see [The menu](#the-menu)) |
+| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save and the two filters (see [The menu](#the-menu)) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 
 ## The menu
-The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: **Recently played**, **Favorites**, **Statistics** and **Delete game** in two columns, and under them the two filters, **Only favorites** and **Only completed**, each saying `on` or `off`. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), and the two filters side by side, Only favorites and Only completed, whose name turns red or green while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
@@ -52,7 +52,7 @@ Favorites marked before this feature existed appear in the panel after you toggl
 Hold X on a highlighted game for about half a second to mark it as completed (hold again to unmark). Completed games show a small green check on the top screen when highlighted, next to the heart. Like favorites, the mark belongs to the ROM file.
 
 ## Favorites and completed filters
-**Only favorites** in the menu filters the browser down to favorites, and **Only completed** to completed games. Each row says `on` while its filter is active, in red and green, and the browser behind it updates as soon as the menu closes. With both filters on, only games that are favorite *and* completed remain. The filters apply per folder, and folders themselves always stay visible.
+**Only favorites** in the menu filters the browser down to favorites, and **Only completed** to completed games. While a filter is on, its name in the menu is red or green, and so is its icon except while the filter is highlighted, when the icon takes the theme's primary color; the browser behind it updates as soon as the menu closes. With both filters on, only games that are favorite *and* completed remain. The filters apply per folder, and folders themselves always stay visible.
 
 Marks, play counts and play time all belong to the ROM file, so what the top screen shows and what the filter matches are always the same thing (see [GameData.md](GameData.md)). Two copies of a game are marked separately, and a ROM hack no longer inherits its base game's mark. Renaming a ROM outside the launcher starts it over, and games whose file name is longer than 96 bytes cannot be marked at all (accented characters count double).
 
@@ -70,7 +70,7 @@ Play time is approximate: a session starts when a game is launched and ends the 
 - Time spent in sleep mode counts as play time.
 - A session is lost if the console is powered off without booting back into the launcher.
 
-If you would rather the launcher kept no record of your launches, set `"launchTracking": false` in `settings.json` (see [Usage.md](/docs/Usage.md#settings)). Launching a game then writes nothing to the game data: no launch count, no play time, no last played date. (The launcher still remembers the last game you launched, as it always did, so it can highlight it on the next boot.) The recently played list, the statistics panel and the star of the most launched game keep showing what was recorded before, and favorites and completed marks keep working.
+If you would rather the launcher kept no record of your launches, set `"launchTracking": false` in `settings.json` (see [Usage.md](/docs/Usage.md#settings)). Launching a game then writes nothing to the game data: no launch count, no play time, no last played date. The one thing still written is which save a game with extra saves was started on, when it changes, so the save sheet opens on it next time. (The launcher still remembers the last game you launched, as it always did, so it can highlight it on the next boot.) The recently played list, the statistics panel and the star of the most launched game keep showing what was recorded before, and favorites and completed marks keep working.
 
 ## Recently played
 **Recently played** in the menu opens a list of up to 20 recently played games, most recent first, each with the date and time it was last played. Tap an entry (or highlight it and press A) to jump to that game's folder with the game preselected. Press B to close the panel.
@@ -96,11 +96,16 @@ A few things worth knowing:
 
 Deleting a DS or GBA game also deletes its save file (same name with a `.sav` extension, next to the ROM) and removes the game's entry from `gamedata.json`. Deleting any other ROM opened through a file association, such as a GB or SNES ROM, removes the ROM and its entry but keeps its save: the emulator may name its save its own way, and a `.sav` with the same name may belong to a DS game. When there is one, the confirmation names it as kept. Note that saves are matched by name without the extension: if `Game.gba` and `Game.nds` sit in the same folder, they share `Game.sav`, and deleting either game deletes it. With `saveLocation` set to `saves` (see [Usage.md](/docs/Usage.md#settings)), deleting a DS game deletes its save in the `saves` folder when there is one, and a save still next to the ROM is then left alone. When the folder has none, because the game was not launched since the setting was turned on, the save next to the ROM is deleted as before. The confirmation names the file that will go.
 
+Deleting a DS game also deletes its [save slots](#save-slots), `.sav1` to `.sav9`, each by the same rule as the regular save: from the `saves` folder when it is there, otherwise next to the ROM. The confirmation says how many slot saves go with it. Only DS games have slots, so deleting a GBA game or any other ROM leaves `.sav1` files with the same name alone.
+
 ## Deleting themes
 
 In the theme selector, the trash button at the bottom of the app bar deletes the highlighted theme's folder, with everything in it. A confirmation sheet opens first, naming the theme and its folder, since two themes can share a name: press **X** to confirm, or A or B to cancel. The selector then starts again without it, on the theme that took its place.
 
 The theme you are using and the two that come with the launcher, `material` and `raspberry`, can't be deleted; the button is faded on them. A folder whose `theme.json` can't be read shows under its folder name and can be deleted too. Nothing is deleted when a file in the folder is read-only, when it has more than four levels of folders or 1024 files and folders, when a name can't be read back, or when the card looks damaged around it; the sheet says why, and the folder can still be deleted on a computer. The theme's `theme.json` goes first, so if a delete is cut short, what is left shows as a folder name and can be deleted again.
+
+## Save slots
+A DS game can have up to nine extra saves, `<game name>.sav1` to `<game name>.sav9`, the names TWiLight Menu++ gives them. Pressing A on a game that has any opens a sheet with the game's name and its saves: **Main save** (`<game name>.sav`, listed even before the file exists), each extra save and, while one of the nine names is free, **+ New save**, which uses the lowest free one. A or a tap on a save starts the game on it, and B closes the sheet. When the folder and file name are long enough that `<game name>.sav3` next to the game would pass about 250 bytes (a Japanese character takes 3), picking Save 3 shows `Name too long for Save 3` and the game doesn't start; a shorter file or folder name fixes it. Main save is not affected. A game in a folder whose own path is that long shows `Folder path too long` for every save, and a game can also be turned away with `Couldn't read the game` when the card fails to read at that moment. The sheet opens on the save the game was started on last time. SELECT + A opens it too when the random pick has extra saves. A game without extra saves starts right away; to give it its first one, highlight it and pick **New save** in the menu, which names the save it will use (`Save 1`) and starts the game on it. New save is only in the menu while a DS game is highlighted, and is faded when all nine names are taken. Deleting the game deletes its extra saves too (see [Deleting games](#deleting-games)).
 
 ## Cheats
 The cheat list wraps around at both ends: pressing up on the first entry jumps to the last
@@ -137,7 +142,7 @@ Custom themes can provide night variants of their backgrounds: place `topbg_nigh
 `tools/make_night_bg.py` can generate night variants from a theme's existing backgrounds; see [Tools.md](Tools.md).
 
 ## Data storage
-Favorites, completed marks, launch counts, play time and the recents list are all stored in a single file, `/_pico/gamedata.json`, written by the launcher itself. Saves are atomic, and if the file ever fails to parse the launcher refuses to overwrite it rather than starting over. Deleting the file resets all favorites and statistics.
+Favorites, completed marks, launch counts, play time, the recents list and each game's save slot are all stored in a single file, `/_pico/gamedata.json`, written by the launcher itself. Saves are atomic, and if the file ever fails to parse the launcher refuses to overwrite it rather than starting over. Deleting the file resets all favorites and statistics.
 
 **Each entry belongs to one ROM file, identified by its file name.** That single rule explains most surprises:
 

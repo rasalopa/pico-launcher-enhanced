@@ -31,6 +31,7 @@
 #include "romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.h"
 #include "romBrowser/views/menu/MenuBottomSheetView.h"
 #include "romBrowser/views/about/AboutBottomSheetView.h"
+#include "romBrowser/views/savepicker/SavePickerBottomSheetView.h"
 #include "romBrowser/views/DisplaySettingsBottomSheetView.h"
 #include "bgm/AudioStreamPlayer.h"
 #include "bgm/BgmService.h"
@@ -344,16 +345,24 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
     switch (trigger)
     {
         case RomBrowserStateTrigger::None:
-        case RomBrowserStateTrigger::Launch:
         case RomBrowserStateTrigger::GotoSettingsScreen:
         {
+            break;
+        }
+        case RomBrowserStateTrigger::Launch:
+        {
+            // the picker or the menu goes with the launch: a refused one comes back to the
+            // browser, and the sheet must not stay up over it
+            auto previousState = _romBrowserController.GetStateMachine().GetPreviousState();
+            if (previousState == RomBrowserState::SavePicker || previousState == RomBrowserState::Menu)
+                _dialogPresenter.CloseDialog();
             break;
         }
         case RomBrowserStateTrigger::LaunchRefused:
         {
             // the browser is back where it was, so say why the game did not start
             if (_toast)
-                _toast->Show("Needs a DSi or 3DS");
+                _toast->Show(_romBrowserController.GetLaunchRefusedText());
             break;
         }
         case RomBrowserStateTrigger::ShowGameInfo:
@@ -434,6 +443,16 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
         case RomBrowserStateTrigger::HideAbout:
         {
             HandleHideAboutTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::ShowSavePicker:
+        {
+            HandleShowSavePickerTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideSavePicker:
+        {
+            HandleHideSavePickerTrigger();
             break;
         }
         case RomBrowserStateTrigger::Navigate:
@@ -584,6 +603,21 @@ void App::HandleHideAboutTrigger()
 }
 
 void App::HandleHideMenuTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowSavePickerTrigger()
+{
+    auto savePickerViewModel = SharedPtr<SavePickerViewModel>::MakeShared(&_romBrowserController);
+    auto savePickerDialog = SavePickerBottomSheetView::CreateShared(
+        std::move(savePickerViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(savePickerDialog));
+}
+
+void App::HandleHideSavePickerTrigger()
 {
     _dialogPresenter.CloseDialog();
     if (!_dialogPresenter.GetOldFocus())
