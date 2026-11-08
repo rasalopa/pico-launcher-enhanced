@@ -9,6 +9,7 @@ These controls are available in the rom browser, on top of the standard ones (se
 | L / R | Jump to the previous or next initial (see [Jumping by initial](#jumping-by-initial)) |
 | X (short press) | Toggle favorite for the highlighted game |
 | X (hold ~half a second) | Toggle completed for the highlighted game |
+| A on a DS game with extra saves | Pick the save to start (see [Save slots](#save-slots)) |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
 | Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save and the two filters (see [The menu](#the-menu)) |
