@@ -1,5 +1,5 @@
 # Game Data File
-Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time, save slots; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
+Pico Launcher Enhanced stores per-game data (custom title and credits, favorites, launch counts, play time, save slots; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
 
 Regular users never need to edit this file. Deleting it simply resets all favorites and statistics.
 
@@ -18,6 +18,9 @@ Regular users never need to edit this file. Deleting it simply resets all favori
       "saveSlot": 2
     },
     "tetris.gb": {
+      "title": "Tetris",
+      "publisher": "Nintendo",
+      "developer": "Nintendo R&D1",
       "launchCount": 2,
       "lastPlayed": "2026-07-10 18:40",
       "path": "/Games/gb/tetris.gb"
@@ -35,6 +38,9 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | Key | Type | Written when | Meaning |
 |---|---|---|---|
 | `gameCode` | string | non-empty | Internal game code from the NDS/GBA header, stored as information only: it is never used to identify an entry. Written when it is printable ASCII and not the `####` toolchain placeholder (homebrew ROMs often carry garbage or the placeholder there). |
+| `title` | string | non-empty | Title set in the **Game info** sheet, shown instead of the file name or the title from the ROM header. |
+| `publisher` | string | non-empty | Publisher set in the **Game info** sheet, shown on the second line under the title. |
+| `developer` | string | non-empty | Developer set in the **Game info** sheet, shown on the third line. |
 | `favorite` | bool | `true` | Marked as favorite. Absent means not a favorite; `false` is never written. |
 | `completed` | bool | `true` | Marked as completed (finished). Absent means not completed; `false` is never written. |
 | `launchCount` | number | > 0 | How many times the game was launched. |
@@ -43,7 +49,7 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
 | `saveSlot` | number | 1 to 9 | The save the game was started on last time, `<game name>.sav<N>`; the save picker opens on it (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
 
-An entry whose `favorite` and `completed` are both false, whose `launchCount` and `playMinutes` are both 0 and that has no `saveSlot` is pruned on the next write. Deleting a game through the launcher also removes its entry.
+An entry whose `favorite` and `completed` are both false, whose `launchCount` and `playMinutes` are both 0, that has no `saveSlot` and whose `title`, `publisher` and `developer` are all empty is pruned on the next write. Deleting a game through the launcher also removes its entry.
 
 ## Session keys (root level)
 While a play session is open, the root object holds:
@@ -86,6 +92,9 @@ Other values longer than these are truncated (lengths in bytes, so accented char
 
 - entry key / `sessionGame` (file name): 96 (longer names are refused, see above)
 - `gameCode`: 8
+- `title`: 48
+- `publisher`: 32
+- `developer`: 32
 - `lastPlayed` / `sessionStart`: 20
 - `path`: 256
 

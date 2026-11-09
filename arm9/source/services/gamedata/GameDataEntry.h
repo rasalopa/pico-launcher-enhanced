@@ -3,17 +3,32 @@
 #include "core/String.h"
 
 /// @brief Persisted data for ONE rom file, keyed by its file name (same
-///        convention as the /_pico/icons|covers/user folders). Marks and play
+///        convention as the /_pico/icons|covers|user folders). Marks and play
 ///        statistics belong to the file, so two copies of a game are tracked
 ///        separately and renaming a rom starts it over.
 struct GameDataEntry
 {
+    /// @brief Longest strings the game info sheet can store. The editor uses
+    ///        the same limits, so it never offers more than is kept.
+    static constexpr u32 kMaxTitleLength = 48;
+    static constexpr u32 kMaxPublisherLength = 32;
+    static constexpr u32 kMaxDeveloperLength = 32;
+
     String<char, 96> fileName;
     /// @brief Internal game code (NDS/GBA header), empty when the file has
     ///        none. Stored as information only - it is never used to look an
     ///        entry up, because the browser filter only ever sees file names and
     ///        the two would then disagree (issue #7).
     String<char, 8> gameCode;
+    /// @brief The title the user set, shown instead of the file name or the
+    ///        title in the rom's header. Empty means "show the automatic one".
+    String<char, kMaxTitleLength> title;
+    /// @brief The publisher the user set, shown on the second line under the
+    ///        title. Empty means no publisher line.
+    String<char, kMaxPublisherLength> publisher;
+    /// @brief The developer the user set, shown on the third line. Empty means
+    ///        no developer line.
+    String<char, kMaxDeveloperLength> developer;
     u32 launchCount = 0;
     /// @brief Accumulated play time. A session spans from launching the game
     ///        until the next launcher boot, so it is an approximation.
@@ -32,7 +47,23 @@ struct GameDataEntry
     /// @brief Full path of the file at its last launch, empty when never
     ///        launched. Used by the recents list to navigate back to it.
     String<char, 256> path;
+
+    bool HasDisplayMetadata() const
+    {
+        return title.GetString()[0] != 0
+            || publisher.GetString()[0] != 0
+            || developer.GetString()[0] != 0;
+    }
 };
+
+/// @brief The title to show for a file: the user's title when set, the file
+///        name otherwise. Never null, so callers can hand it to a label.
+inline const char* GameDataDisplayTitle(const GameDataEntry* entry, const char* fileName)
+{
+    if (entry && entry->title.GetString()[0] != 0)
+        return entry->title.GetString();
+    return fileName;
+}
 
 /// @brief Orders games by launches, ties by file name regardless of case, so
 ///        the star on the top screen and the statistics panel's list are built
