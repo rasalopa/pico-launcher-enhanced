@@ -53,6 +53,10 @@ public:
     void HideMenu() override;
     void ShowAbout() override;
     void HideAbout() override;
+    void ShowExitCombo() override;
+    void HideExitCombo() override;
+    u16 GetLoaderExitCombo() const override;
+    void SetLoaderExitCombo(u16 combo) override;
     bool CanDeleteSelected() const override;
     void RequestDeleteSelected() override;
     void CancelDelete() override;

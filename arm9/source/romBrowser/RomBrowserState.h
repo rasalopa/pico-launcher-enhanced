@@ -15,5 +15,6 @@ enum class RomBrowserState
     DeleteConfirm,
     Menu,
     About,
-    SavePicker
+    SavePicker,
+    ExitCombo
 };

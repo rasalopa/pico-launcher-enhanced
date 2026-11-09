@@ -21,6 +21,7 @@
 #include "heartIcon.h"
 #include "checkIcon.h"
 #include "infoIcon.h"
+#include "settingsIcon.h"
 #include "MenuBottomSheetView.h"
 
 // Placed from the sheet's top edge, which rests at y 32 once the sheet is open.
@@ -28,19 +29,19 @@
 #define TITLE_Y             16
 
 // The about button shares the title row, where the display settings sheet
-// keeps its theme button.
+// keeps its theme button. The exit combo is an entry in the grid now, so the
+// title row has the one button again.
 #define ABOUT_BUTTON_X      212
 #define ABOUT_BUTTON_Y      (TITLE_Y - 7)
 
 // Two cells per row over the 224 px the recents list uses, or one full row.
-// Rows sit 26 apart so the 24 px items keep a hairline between them; the
-// fourth ends at 142, screen y 174, with the sheet's rounded edge below it. A
-// fifth would end past the screen, so the filters share a row.
+// Rows sit 24 apart so the 24 px items keep a hairline between them; five rows
+// (while New save is shown) end at 156, inside the sheet's rounded edge.
 #define ITEMS_X             16
 #define CELL_WIDTH          112
 #define ROW_WIDTH           224
-#define ROWS_Y              40
-#define ROW_SPACING         26
+#define ROWS_Y              36
+#define ROW_SPACING         24
 
 // Inside an item.
 #define ICON_DX             4
@@ -74,8 +75,9 @@ static constexpr MenuEntry kEntries[] =
     { "Statistics", 1, 0 },
     { "Delete game", 1, 1 },
     { "New save", 2, -1 },
-    { "Only favorites", 3, 0 },
-    { "Only completed", 3, 1 }
+    { "Quit combo", 3, 0 },
+    { "Only favorites", 3, 1 },
+    { "Only completed", 4, 0 }
 };
 
 MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
@@ -247,12 +249,14 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (!objVramManager)
         return;
+    // In item order: the four panels, New save, the exit combo (the cog the
+    // title row used to hold), then the two filters.
     static const unsigned int* const kTiles[ITEM_COUNT] =
         { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, plusIconTiles,
-          heartIconTiles, checkIconTiles };
+          settingsIconTiles, heartIconTiles, checkIconTiles };
     static const u32 kTilesLength[ITEM_COUNT] =
         { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, plusIconTilesLen,
-          heartIconTilesLen, checkIconTilesLen };
+          settingsIconTilesLen, heartIconTilesLen, checkIconTilesLen };
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
@@ -335,7 +339,7 @@ SharedPtr<View> MenuBottomSheetView::MoveFocus(const SharedPtr<View>& currentFoc
     if (currentFocus.GetPointer() == _aboutButton.GetPointer())
     {
         if (direction == FocusMoveDirection::Down)
-            return _items[ITEM_FAVORITES];
+            return _items[ITEM_DELETE];
         return nullptr;
     }
     int idx = -1;
@@ -399,6 +403,9 @@ void MenuBottomSheetView::Activate(int index)
         case ITEM_NEW_SAVE:
             // faded and inert without a free save: the view model checks
             _viewModel->StartNewSave();
+            break;
+        case ITEM_EXIT_COMBO:
+            _viewModel->ShowExitCombo();
             break;
         case ITEM_FAVORITES_FILTER:
             _viewModel->ToggleFavoritesFilter();

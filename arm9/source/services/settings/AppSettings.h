@@ -20,6 +20,11 @@ public:
     ///        play time, last played). Off, nothing about launches is
     ///        written; favorites and completed marks keep working.
     bool launchTracking = true;
+    /// @brief Keys held to exit a DS game, as names ("Select+L+R+Right").
+    ///        Empty means the loader's own default. The combo only reaches a
+    ///        loader that reports API version 4; older ones keep the combo
+    ///        they were built with.
+    String<char, 32> loaderExitCombo = "";
     RomBrowserDisplaySettings romBrowserDisplaySettings;
 
     std::unique_ptr<FileAssociation[]> fileAssociations;

@@ -12,12 +12,13 @@ These controls are available in the rom browser, on top of the standard ones (se
 | A on a DS game with extra saves | Pick the save to start (see [Save slots](#save-slots)) |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
-| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save and the two filters (see [The menu](#the-menu)) |
+| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save, the quit combo and the two filters (see [The menu](#the-menu)) |
+| Quit combo (menu) | Pick the buttons held to leave a DS game (see [In-game exit combo](#in-game-exit-combo)) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 
 ## The menu
-The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), and the two filters side by side, Only favorites and Only completed, whose name turns red or green while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), then **Quit combo** (the keys held to leave a DS game, see [In-game exit combo](#in-game-exit-combo)) beside **Only favorites**, with **Only completed** under them, the filters' names turning red or green while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
@@ -40,6 +41,15 @@ sorted by, so the jump always follows the order on screen. This means a game who
 name starts with an article or a number is filed under that, not under its title.
 
 L and R keep paging in the cheats, favorites and recently played lists.
+
+## In-game exit combo
+Holding L, R, Right and SELECT together in a DS game asks Pico Loader to close it and come back to the launcher. That combination is now a setting: **Quit combo** in the menu opens a sheet with the combination in use, A starts picking a new one, and Y puts the default back.
+
+Hold the buttons you want together and keep them held for about a second. A combination has to be two to four buttons and include SELECT, so it cannot fire by accident; SELECT on its own is never enough. The sheet shows the buttons as they go down and says what is still missing, and B cancels while picking. START is allowed and never saves a screenshot while the sheet is picking.
+
+The change reaches the loader at the next launch; a game that is already running keeps the combination it started with. It needs the enhanced Pico Loader (v1.1 or newer, Pico Loader API v4). With another loader the setting is saved, but L + R + Right + SELECT stays. Games the loader cannot patch to exit (DSi mode, DSi-enhanced games, DSiWare, homebrew and games with NAND saves) ignore the setting, just as they ignore the built-in combination.
+
+A combination a game uses itself still fires during play if held that long, so avoid the buttons a game needs for its own shortcuts.
 
 ## Favorites
 Press X on a highlighted game to mark it as a favorite (press again to unmark). Favorites show a small heart on the top screen when highlighted. The mark belongs to that ROM **file**: moving it to another folder keeps it, renaming it starts over, and a second copy of the same game is marked separately. See [Data storage](#data-storage) if a mark is not where you expect it.
