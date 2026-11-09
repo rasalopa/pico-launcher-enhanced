@@ -513,7 +513,7 @@ New files:
 
 A DS game can have up to nine extra saves, `<game name>.sav1` to `.sav9` as TWiLight Menu++ names them, in the folder `saveLocation` says. A on a game that has any opens a sheet to pick the save: Main save, each extra save and, while one of the nine names is free, + New save. It opens on the save the game was started on last time. A game without extra saves starts right away, and New save in the menu starts the highlighted DS game on the lowest free name. Y opens the cheats as before. When a save's path doesn't fit, or the game's folder can't be read at that moment, the launch is turned away with a message instead of starting on another save. Deleting a game deletes its extra saves too, and the confirmation names the save on its own line.
 
-- **Commits:** `c26788f`, `2fdfef3`, `62dc9e4`, `b303762`, `edf4d82`, `ade9fd5`, `c440700`, `5d17ada`, `9e0a943`, `e00db06`, `c82ef11`, `d0f7baf`, `7b51b84`, `2394031`, `cb089ce`
+- **Commits:** `c26788f`, `2fdfef3`, `62dc9e4`, `b303762`, `edf4d82`, `ade9fd5`, `c440700`, `5d17ada`, `9e0a943`, `e00db06`, `c82ef11`, `d0f7baf`, `7b51b84`, `2394031`, `cb089ce`, `91c041d`
 - **Upstream:** Open as [LNH-team/pico-launcher#92](https://github.com/LNH-team/pico-launcher/pull/92) by BigBrainAFK, who brought it to the fork as `c26788f`. It uses the same save names, but there Y opens a details sheet where L and R pick the slot, kept in `/_pico/saveslots.txt` by full path. Here A asks which save to start, and the last one started is `saveSlot` in `gamedata.json`, keyed by file name like every other mark. Merging #92 conflicts in `IRomBrowserController.h`, `RomBrowserController.cpp`, `RomBrowserController.h` and `CheatsBottomSheetView.cpp`, and would bring its details sheet back on Y; keep this side.
 - **Settings and data:** `saveSlot` per game in `gamedata.json`, 1 to 9: the save the game was started on last time, written when a launch changes it, with launch tracking off too; absent for the main save.
 - **Fork issues:** PR [#32](https://github.com/rasalopa/pico-launcher-enhanced/pull/32)
@@ -1088,8 +1088,8 @@ New files:
 
 Commits with no feature of their own, listed so every commit is accounted for. Two of them could still go upstream on their own: the error log and the VRAM offset fix.
 
-- **Fork documentation (readme, docs pages, screenshots, contributing).** The fork's readme, its docs pages and the contributing guide. `ebddb97`, `37b5a5d`, `50acb27`, `34e04db`, `cd5ce1a`, `95bfbca`, `5557e97`, `e07bfb9`, `799148e`, `4e7a08a`, `f58f427`, `0fa6943`
-- **Changelog release rolls.** Release headings in the changelog, and the version bump with the last one. `d8a7744`, `0b51e82`, `7bd4a5b`, `6fd0165`, `ad218ea`, `83e5c03`
+- **Fork documentation (readme, docs pages, screenshots, contributing).** The fork's readme, its docs pages and the contributing guide. `ebddb97`, `37b5a5d`, `50acb27`, `34e04db`, `cd5ce1a`, `95bfbca`, `5557e97`, `e07bfb9`, `799148e`, `4e7a08a`, `f58f427`, `0fa6943`, `a861a3a`, `368b8f7`, `10f0d11`
+- **Changelog release rolls.** Release headings in the changelog, and the version bump with the last one. `d8a7744`, `0b51e82`, `7bd4a5b`, `6fd0165`, `ad218ea`, `83e5c03`, `dbf1cce`
 - **Error log on the SD card.** Errors go to `/_pico/launcher.log` on real hardware, so what was logged before a crash can be read afterwards; the crash itself is not recorded, and the next boot that logs an error starts the file again. `3a4ce98`
 - **Enhanced line in the cartridge banner.** The boot banner's second line says Enhanced, so tools can tell the fork from the stock launcher. `1966ccd`
 - **Icon button VRAM offset initialized.** An icon button's selector offset starts at zero instead of whatever was in memory; nothing changes on screen. From marlooonxdd ([#24](https://github.com/rasalopa/pico-launcher-enhanced/pull/24)). `47e8944`, `12e9203`
