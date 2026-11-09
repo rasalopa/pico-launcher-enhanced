@@ -142,6 +142,10 @@ Custom themes can provide night variants of their backgrounds: place `topbg_nigh
 
 `tools/make_night_bg.py` can generate night variants from a theme's existing backgrounds; see [Tools.md](Tools.md).
 
+## Scrolling titles
+
+A game's title that is wider than the title line scrolls through the whole name, using the same scrolling the file name line already had: it waits a moment, moves to the end, pauses, then starts again. Titles that fit stay still. It is always on, for every game and theme, with no setting.
+
 ## Data storage
 Favorites, completed marks, launch counts, play time, the recents list and each game's save slot are all stored in a single file, `/_pico/gamedata.json`, written by the launcher itself. Saves are atomic, and if the file ever fails to parse the launcher refuses to overwrite it rather than starting over. Deleting the file resets all favorites and statistics.
 
