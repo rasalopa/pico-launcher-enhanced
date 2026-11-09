@@ -21,6 +21,11 @@ The app bar has three buttons: back, the menu (three dots) and display settings.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
+## Game publishers
+A GBA, Game Boy, Game Boy Color, NES or SNES game now reads its publisher from the cartridge header: the maker code on GBA, the licensee code on Game Boy, the developer ID or expanded maker code on SNES, and the optional Nintendo header on NES. Only codes with a known company are named, so a game from a small publisher names none, and many NES games carry no Nintendo header at all. The browser shows the publisher on the second line, under the game's title; the title line itself is unchanged.
+
+Game Boy and Game Boy Color roms are read when they are opened through a file association for `.gb` or `.gbc`, NES through `.nes`, and SNES through `.sfc` or `.smc`; they already needed an association to be listed at all.
+
 ## Jumping by initial
 In a folder with hundreds of games, paging through the list a screen at a time takes a
 while. L and R now jump to where the previous or next initial starts, so crossing a large
