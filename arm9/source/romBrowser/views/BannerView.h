@@ -1,4 +1,5 @@
 #pragma once
+#include "core/StringUtil.h"
 #include "gui/views/ViewContainer.h"
 #include "../FileType/FileIcon.h"
 
@@ -22,6 +23,40 @@ public:
     }
 
     void SetGameTitleAsync(TaskQueueBase* taskQueue, const char16_t* gameTitle);
+
+    /// @brief Shows a title the user set, on one line. The text is copied at
+    ///        once, so a buffer that does not outlive the call is fine.
+    void SetTitleText(const char* title)
+    {
+        _lines = 1;
+        SetFirstLineAsync(nullptr, title, true);
+        SetSecondLineAsync(nullptr, u"", 0);
+        SetThirdLineAsync(nullptr, u"", 0);
+    }
+
+    /// @brief Shows the publisher on the second line and the developer on the
+    ///        third. Empty strings leave their row as the title left it, which
+    ///        is how a game without custom credits keeps its own lines.
+    void SetCredits(const char* publisher, const char* developer)
+    {
+        if (publisher && publisher[0] != 0)
+        {
+            char16_t widePublisher[33] = {};
+            StringUtil::Copy(widePublisher, publisher,
+                sizeof(widePublisher) / sizeof(widePublisher[0]));
+            if (_lines < 2)
+                _lines = 2;
+            SetSecondLineAsync(nullptr, widePublisher);
+        }
+        if (developer && developer[0] != 0)
+        {
+            char16_t wideDeveloper[33] = {};
+            StringUtil::Copy(wideDeveloper, developer,
+                sizeof(wideDeveloper) / sizeof(wideDeveloper[0]));
+            _lines = 3;
+            SetThirdLineAsync(nullptr, wideDeveloper);
+        }
+    }
 
     void SetIcon(std::unique_ptr<FileIcon> icon)
     {

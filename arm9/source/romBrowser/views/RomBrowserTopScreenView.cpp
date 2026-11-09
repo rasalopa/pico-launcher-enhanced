@@ -132,9 +132,15 @@ void RomBrowserTopScreenView::Update()
             const auto& item = fileInfoManager.GetItem(selectedItem);
             auto info = fileInfoManager.GetInternalFileInfo(selectedItem);
 
+            const auto* entry = _gameDataService->GetEntry(item.GetFileName());
             bool fileNameAsTitle = true;
             const char16_t* gameTitle = info ? info->GetGameTitle() : nullptr;
-            if (gameTitle && gameTitle[0] != 0)
+            if (entry && entry->title.GetString()[0] != 0)
+            {
+                _fileInfoView->SetTitleText(entry->title.GetString());
+                fileNameAsTitle = false;
+            }
+            else if (gameTitle && gameTitle[0] != 0)
             {
                 _fileInfoView->SetGameTitleAsync(_viewModel->GetBgTaskQueue(), gameTitle);
                 fileNameAsTitle = false;
@@ -152,6 +158,11 @@ void RomBrowserTopScreenView::Update()
             }
             _fileInfoView->SetIcon(std::move(_selectedFileIcon));
             _fileInfoView->SetFileNameAsync(_viewModel->GetBgTaskQueue(), item.GetFileName(), fileNameAsTitle);
+            if (entry)
+            {
+                _fileInfoView->SetCredits(entry->publisher.GetString(),
+                    entry->developer.GetString());
+            }
 
             _lastSelectedItem = selectedItem;
 

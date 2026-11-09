@@ -251,6 +251,33 @@ void RomBrowserController::HideGameInfo()
     _stateMachine.Fire(RomBrowserStateTrigger::HideGameInfo);
 }
 
+bool RomBrowserController::CanEditSelected() const
+{
+    return GetSelectedGame() != nullptr;
+}
+
+void RomBrowserController::ShowGameInfoEdit()
+{
+    const FileInfo* game = GetSelectedGame();
+    if (!game)
+        return;
+    _triggerFileInfo = FileInfo(*game);
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowGameInfoEdit);
+}
+
+void RomBrowserController::SetGameMetadata(const char* title, const char* publisher,
+    const char* developer)
+{
+    const char* fileName = _triggerFileInfo.GetFileName();
+    _gameDataService->SetGameMetadata(fileName, title, publisher, developer);
+    _gameDataService->SaveAsync(_ioTaskQueue);
+    // Rebuild the browser the way a display-mode change does, but land on the
+    // game that was just edited so the list and top screen keep their place.
+    StringUtil::Copy(_refreshSelectName, fileName,
+        sizeof(_refreshSelectName) / sizeof(_refreshSelectName[0]));
+    _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+}
+
 void RomBrowserController::ShowDisplaySettings()
 {
     _stateMachine.Fire(RomBrowserStateTrigger::ShowDisplaySettings);
@@ -884,7 +911,9 @@ void RomBrowserController::BeginLaunch()
 void RomBrowserController::HandleChangeDisplayModeTrigger()
 {
     LOG_DEBUG("RomBrowserStateTrigger::ChangeDisplayMode\n");
-    _romBrowserViewModel = SharedPtr<RomBrowserViewModel>::MakeShared(this);
+    _romBrowserViewModel = SharedPtr<RomBrowserViewModel>::MakeShared(this,
+        _refreshSelectName[0] != 0 ? _refreshSelectName : nullptr);
+    _refreshSelectName[0] = 0;
 }
 
 void RomBrowserController::HandleGotoSettingsScreenTrigger()

@@ -12,12 +12,19 @@ These controls are available in the rom browser, on top of the standard ones (se
 | A on a DS game with extra saves | Pick the save to start (see [Save slots](#save-slots)) |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
-| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save and the two filters (see [The menu](#the-menu)) |
+| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, Game info, a new save and the two filters (see [The menu](#the-menu)) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 
 ## The menu
-The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), and the two filters side by side, Only favorites and Only completed, whose name turns red or green while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **Game info** on its own row, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), and the two filters side by side, Only favorites and Only completed, whose name turns red or green while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+
+## Game info
+**Game info** in the menu edits the three lines shown for the highlighted game: the title, the publisher under it and the developer under that. It works for any game, and is mainly for roms without a banner, such as GB, GBC, GBA and SNES games run through an emulator, whose only title is the file name. Game info is faded on folders and support files.
+
+The title replaces the file name or the title from the rom's own header. The publisher fills the second line and the developer the third; either can be left empty, and an empty title puts the automatic one back. The values are stored per file in `gamedata.json` (see [GameData.md](GameData.md)), so they survive a reboot and follow the file through the browser, recently played, favorites and statistics. Deleting the game removes them with the rest of its entry.
+
+On the sheet, up and down pick a line, A edits it and B or Select saves and closes. While editing, the shared on-screen keyboard takes A to type the focused character, B to delete the last character, X for a space and Y to swap between capitals and lower case. The page key switches between capitals, lower case, digits and punctuation, then the remaining symbols. Select returns to the three lines without closing the sheet. Saving rebuilds the browser on the same game, so the new values show at once.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 

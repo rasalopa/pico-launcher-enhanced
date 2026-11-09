@@ -15,6 +15,9 @@
 #define GAME_DATA_TEMP_PATH   "/_pico/gamedata.tmp"
 #define KEY_GAMES             "games"
 #define KEY_GAME_CODE         "gameCode"
+#define KEY_TITLE             "title"
+#define KEY_PUBLISHER         "publisher"
+#define KEY_DEVELOPER         "developer"
 #define KEY_FAVORITE          "favorite"
 #define KEY_COMPLETED         "completed"
 #define KEY_LAUNCH_COUNT      "launchCount"
@@ -33,8 +36,8 @@
 // JSON_RESERVED_SIZE like settings.json uses.
 // The per-entry budget is generous on purpose. Strings are LINKED, not copied:
 // every key and value here is a const char* that ArduinoJson stores as a pointer
-// (StringStoragePolicy::Link), so an entry only costs its ~8 16-byte VariantSlots
-// - on the order of 128 bytes, not the 440 reserved. Do NOT "correct" this by
+// (StringStoragePolicy::Link), so an entry only costs its ~11 16-byte VariantSlots
+// - on the order of 176 bytes, not the 440 reserved. Do NOT "correct" this by
 // adding the fileName and path lengths: those bytes live in _entries and in the
 // parse buffer, never in the pool.
 #define JSON_POOL_BASE_SIZE       4096
@@ -237,6 +240,18 @@ void JsonGameDataService::RecordLaunch(const char* fileName, const char* gameCod
     _version++;
 }
 
+void JsonGameDataService::SetGameMetadata(const char* fileName, const char* title,
+    const char* publisher, const char* developer)
+{
+    auto* entry = GetOrCreateEntry(fileName, nullptr);
+    if (!entry)
+        return;
+    entry->title = title ? title : "";
+    entry->publisher = publisher ? publisher : "";
+    entry->developer = developer ? developer : "";
+    _version++;
+}
+
 bool JsonGameDataService::CloseOpenSession(const char* nowDateTime)
 {
     if (_sessionStart.GetString()[0] == 0)
@@ -326,11 +341,17 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
         const auto& entry = _entries[i];
         // entries reset back to all-default state are pruned on write
         if (!entry.favorite && !entry.completed && entry.launchCount == 0 && entry.playMinutes == 0 &&
-            entry.saveSlot == 0)
+            entry.saveSlot == 0 && !entry.HasDisplayMetadata())
             continue;
         auto game = games[entry.fileName.GetString()].to<JsonObject>();
         if (entry.gameCode.GetString()[0] != 0)
             game[KEY_GAME_CODE] = entry.gameCode.GetString();
+        if (entry.title.GetString()[0] != 0)
+            game[KEY_TITLE] = entry.title.GetString();
+        if (entry.publisher.GetString()[0] != 0)
+            game[KEY_PUBLISHER] = entry.publisher.GetString();
+        if (entry.developer.GetString()[0] != 0)
+            game[KEY_DEVELOPER] = entry.developer.GetString();
         if (entry.favorite)
             game[KEY_FAVORITE] = true;
         if (entry.completed)
@@ -406,9 +427,13 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
             // truncate it replaces, a complete replacement is already on the card.
             f_unlink(GAME_DATA_FILE_PATH);
             if (f_rename(GAME_DATA_TEMP_PATH, GAME_DATA_FILE_PATH) != FR_OK)
+            {
                 LOG_ERROR("Couldn't swap in the new game data file\n");
+            }
             else
+            {
                 LOG_DEBUG("Game data file written\n");
+            }
         }
         else
         {
@@ -490,6 +515,9 @@ void JsonGameDataService::Load()
         // collision; it would be unreachable from the browser anyway
         if (!entry)
             continue;
+        entry->title = item.value()[KEY_TITLE] | "";
+        entry->publisher = item.value()[KEY_PUBLISHER] | "";
+        entry->developer = item.value()[KEY_DEVELOPER] | "";
         entry->favorite = item.value()[KEY_FAVORITE] | false;
         entry->completed = item.value()[KEY_COMPLETED] | false;
         entry->launchCount = item.value()[KEY_LAUNCH_COUNT] | 0u;

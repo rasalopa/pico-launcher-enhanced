@@ -31,6 +31,7 @@
 #include "romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.h"
 #include "romBrowser/views/menu/MenuBottomSheetView.h"
 #include "romBrowser/views/about/AboutBottomSheetView.h"
+#include "romBrowser/views/gameinfo/GameInfoEditBottomSheetView.h"
 #include "romBrowser/views/savepicker/SavePickerBottomSheetView.h"
 #include "romBrowser/views/DisplaySettingsBottomSheetView.h"
 #include "bgm/AudioStreamPlayer.h"
@@ -375,6 +376,11 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
             HandleHideGameInfoTrigger();
             break;
         }
+        case RomBrowserStateTrigger::ShowGameInfoEdit:
+        {
+            HandleShowGameInfoEditTrigger();
+            break;
+        }
         case RomBrowserStateTrigger::ShowDisplaySettings:
         {
             HandleShowDisplaySettingsTrigger();
@@ -494,6 +500,15 @@ void App::HandleHideGameInfoTrigger()
     _dialogPresenter.CloseDialog();
     if (!_dialogPresenter.GetOldFocus())
         _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowGameInfoEditTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto gameInfoViewModel = SharedPtr<GameInfoEditViewModel>::MakeShared(&_romBrowserController);
+    auto gameInfoDialog = GameInfoEditBottomSheetView::CreateShared(
+        std::move(gameInfoViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(gameInfoDialog));
 }
 
 void App::HandleShowDisplaySettingsTrigger()
@@ -630,7 +645,8 @@ void App::HandleHideSavePickerTrigger()
 // meanwhile, so nothing can navigate away under a sheet that is still queued.
 void App::CloseSheetIfLeavingMenu()
 {
-    if (_romBrowserController.GetStateMachine().GetPreviousState() == RomBrowserState::Menu)
+    auto previousState = _romBrowserController.GetStateMachine().GetPreviousState();
+    if (previousState == RomBrowserState::Menu || previousState == RomBrowserState::GameInfoEdit)
         _dialogPresenter.CloseDialog();
 }
 
