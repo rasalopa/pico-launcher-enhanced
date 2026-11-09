@@ -1,5 +1,6 @@
 #include "common.h"
 #include "../FileInfoManager.h"
+#include "../RomInfoText.h"
 #include "core/task/TaskQueue.h"
 #include "../views/BannerListItemView.h"
 #include "../Theme/IRomBrowserViewFactory.h"
@@ -31,15 +32,22 @@ TaskResult<void> BannerListFileRecyclerAdapter::BindView(SharedPtr<View> view, i
     auto listItemView = static_cast<BannerListItemView*>(view.GetPointer());
     listItemView->GetViewModel().SetIndex(index);
     const auto& fileInfo = _fileInfoManager->GetItem(index);
+    // A title in the header (an NDS banner) is shown as it always was. A game
+    // without one is shown by its cleaned file name, and anything else keeps its
+    // name as it is, extension included.
+    const char16_t* gameTitle = internalFileInfo ? internalFileInfo->GetGameTitle() : nullptr;
     bool fileNameAsTitle = true;
-    if (internalFileInfo)
+    if (gameTitle && gameTitle[0] != 0)
     {
-        const char16_t* gameTitle = internalFileInfo->GetGameTitle();
-        if (gameTitle && gameTitle[0] != 0)
-        {
-            listItemView->SetGameTitle(gameTitle);
-            fileNameAsTitle = false;
-        }
+        listItemView->SetGameTitle(gameTitle);
+        fileNameAsTitle = false;
+    }
+    else if (fileInfo.GetFileType()->GetClassification() == FileTypeClassification::Game)
+    {
+        char16_t title[128];
+        BuildRomTitle(title, sizeof(title) / sizeof(title[0]), fileInfo.GetFileName());
+        listItemView->SetGameTitle(title);
+        fileNameAsTitle = false;
     }
     listItemView->SetFileName(fileInfo.GetFileName(), fileNameAsTitle);
     auto icon = internalFileInfo ? internalFileInfo->CreateGameIcon() : nullptr;
