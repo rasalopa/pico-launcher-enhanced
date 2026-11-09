@@ -247,12 +247,16 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (!objVramManager)
         return;
-    static const unsigned int* const kTiles[ITEM_COUNT] =
-        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, plusIconTiles,
-          heartIconTiles, checkIconTiles };
-    static const u32 kTilesLength[ITEM_COUNT] =
-        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, plusIconTilesLen,
-          heartIconTilesLen, checkIconTilesLen };
+    // In item order. The arrays are left unsized so the static_asserts below
+    // catch an entry added to the enum without its icon.
+    static const unsigned int* const kTiles[] =
+        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles,
+          infoIconTiles, plusIconTiles, heartIconTiles, checkIconTiles };
+    static const u32 kTilesLength[] =
+        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen,
+          infoIconTilesLen, plusIconTilesLen, heartIconTilesLen, checkIconTilesLen };
+    static_assert(std::size(kTiles) == ITEM_COUNT, "one icon per item");
+    static_assert(std::size(kTilesLength) == ITEM_COUNT, "one icon length per item");
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
