@@ -5,6 +5,7 @@ enum class RomBrowserState
     Start,
     Browser,
     GameInfo,
+    GameInfoEdit,
     LoadingFolder,
     Launching,
     DisplaySettings,

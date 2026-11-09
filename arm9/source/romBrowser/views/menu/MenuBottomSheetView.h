@@ -81,14 +81,15 @@ private:
 /// @brief The sheet behind the app bar's "more" button: what the bar used to
 ///        hold as icons, and behind long presses, written out.
 ///
-/// Recently played, favorites, statistics and delete in two columns, New save
-/// as a full row that names the save it would start, then the two filters side
-/// by side, in their color while on. Picking a panel replaces this sheet with
-/// it; a filter closes the sheet through the display mode change it triggers;
-/// New save launches the highlighted game. Delete is faded while a folder is
-/// highlighted. New save is only there for a DS game, the filters moving up into
-/// its row otherwise, and is faded when all its saves are taken. A small button
-/// at the right of the title opens the about sheet.
+/// Recently played, favorites, statistics and delete in two columns, Game info
+/// as a full row, New save as a full row that names the save it would start,
+/// then the two filters side by side, in their color while on. Picking a panel
+/// replaces this sheet with it; a filter closes the sheet through the display
+/// mode change it triggers; New save launches the highlighted game. Delete and
+/// Game info are faded while a folder is highlighted. New save is only there for
+/// a DS game, the filters moving up into its row otherwise, and is faded when
+/// all its saves are taken. A small button at the right of the title opens the
+/// about sheet.
 class MenuBottomSheetView : public BottomSheetView, public IMenuItemHost
 {
     SHARED_ONLY(MenuBottomSheetView)
@@ -117,6 +118,7 @@ private:
         ITEM_FAVORITES,
         ITEM_STATISTICS,
         ITEM_DELETE,
+        ITEM_GAME_INFO,
         ITEM_NEW_SAVE,
         ITEM_FAVORITES_FILTER,
         ITEM_COMPLETED_FILTER,

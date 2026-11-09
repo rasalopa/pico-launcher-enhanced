@@ -33,14 +33,13 @@
 #define ABOUT_BUTTON_Y      (TITLE_Y - 7)
 
 // Two cells per row over the 224 px the recents list uses, or one full row.
-// Rows sit 26 apart so the 24 px items keep a hairline between them; the
-// fourth ends at 142, screen y 174, with the sheet's rounded edge below it. A
-// fifth would end past the screen, so the filters share a row.
+// Rows sit 24 apart so the 24 px items keep a hairline between them; the
+// filters share the last row, and New save can add one before it.
 #define ITEMS_X             16
 #define CELL_WIDTH          112
 #define ROW_WIDTH           224
-#define ROWS_Y              40
-#define ROW_SPACING         26
+#define ROWS_Y              32
+#define ROW_SPACING         24
 
 // Inside an item.
 #define ICON_DX             4
@@ -73,9 +72,10 @@ static constexpr MenuEntry kEntries[] =
     { "Favorites", 0, 1 },
     { "Statistics", 1, 0 },
     { "Delete game", 1, 1 },
-    { "New save", 2, -1 },
-    { "Only favorites", 3, 0 },
-    { "Only completed", 3, 1 }
+    { "Game info", 2, -1 },
+    { "New save", 3, -1 },
+    { "Only favorites", 4, 0 },
+    { "Only completed", 4, 1 }
 };
 
 MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
@@ -301,6 +301,7 @@ void MenuBottomSheetView::Update()
         _items[i]->SetPosition(x, y + ROWS_Y + GetRow(i) * ROW_SPACING);
     }
     _items[ITEM_DELETE]->SetEnabled(_viewModel->CanDeleteSelected());
+    _items[ITEM_GAME_INFO]->SetEnabled(_viewModel->CanEditSelected());
     _items[ITEM_FAVORITES_FILTER]->SetActive(_viewModel->IsFavoritesFilterEnabled());
     _items[ITEM_COMPLETED_FILTER]->SetActive(_viewModel->IsCompletedFilterEnabled());
     BottomSheetView::Update();
@@ -395,6 +396,9 @@ void MenuBottomSheetView::Activate(int index)
         case ITEM_DELETE:
             // faded on a folder and inert with it: the controller checks too
             _viewModel->RequestDeleteSelected();
+            break;
+        case ITEM_GAME_INFO:
+            _viewModel->ShowGameInfoEdit();
             break;
         case ITEM_NEW_SAVE:
             // faded and inert without a free save: the view model checks

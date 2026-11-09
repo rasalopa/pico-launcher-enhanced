@@ -150,6 +150,7 @@ private:
     void HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState);
     void HandleShowGameInfoTrigger();
     void HandleHideGameInfoTrigger();
+    void HandleShowGameInfoEditTrigger();
     void HandleShowDisplaySettingsTrigger();
     void HandleHideDisplaySettingsTrigger();
     void HandleShowRecentsTrigger();

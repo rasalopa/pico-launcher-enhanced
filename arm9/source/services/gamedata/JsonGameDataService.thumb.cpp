@@ -36,8 +36,8 @@
 // JSON_RESERVED_SIZE like settings.json uses.
 // The per-entry budget is generous on purpose. Strings are LINKED, not copied:
 // every key and value here is a const char* that ArduinoJson stores as a pointer
-// (StringStoragePolicy::Link), so an entry only costs its ~8 16-byte VariantSlots
-// - on the order of 128 bytes, not the 440 reserved. Do NOT "correct" this by
+// (StringStoragePolicy::Link), so an entry only costs its ~11 16-byte VariantSlots
+// - on the order of 176 bytes, not the 440 reserved. Do NOT "correct" this by
 // adding the fileName and path lengths: those bytes live in _entries and in the
 // parse buffer, never in the pool.
 #define JSON_POOL_BASE_SIZE       4096

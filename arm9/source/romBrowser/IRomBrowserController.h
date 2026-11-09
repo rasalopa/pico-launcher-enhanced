@@ -47,6 +47,16 @@ public:
     virtual bool IsCompletedFilterEnabled() const = 0;
     virtual void ShowGameInfo(const FileInfo& fileInfo) = 0;
     virtual void HideGameInfo() = 0;
+    /// @brief The Game info sheet, reached from the menu: edits the title,
+    ///        publisher and developer shown for the highlighted game.
+    virtual void ShowGameInfoEdit() = 0;
+    /// @brief Stores the edited values for the game the sheet was opened on and
+    ///        rebuilds the browser on the same game. Empty strings clear a field.
+    virtual void SetGameMetadata(const char* title, const char* publisher,
+        const char* developer) = 0;
+    /// @brief Whether the highlighted entry has game info worth editing. Games
+    ///        yes, folders and support files no.
+    virtual bool CanEditSelected() const = 0;
     virtual void ShowDisplaySettings() = 0;
     virtual void HideDisplaySettings() = 0;
     virtual void ShowRecents() = 0;

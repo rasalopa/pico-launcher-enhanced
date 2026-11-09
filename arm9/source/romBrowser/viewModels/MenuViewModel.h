@@ -37,6 +37,8 @@ public:
     bool IsCompletedFilterEnabled() const { return _romBrowserController->IsCompletedFilterEnabled(); }
 
     void ShowAbout() { _romBrowserController->ShowAbout(); }
+    void ShowGameInfoEdit() { _romBrowserController->ShowGameInfoEdit(); }
+    bool CanEditSelected() const { return _romBrowserController->CanEditSelected(); }
 
     void Close() { _romBrowserController->HideMenu(); }
 
