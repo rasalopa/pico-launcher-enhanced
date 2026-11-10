@@ -128,7 +128,79 @@ bool KeyboardView::IsSpecialCell(int row, int col) const
 
 bool KeyboardView::IsUsableCell(int row, int col) const
 {
-    return IsSpecialCell(row, col) || CellChar(_page, row, col) != 0;
+    if (IsSpecialCell(row, col))
+    {
+        int special = col - (kKeyColumns - kSpecialCount);
+        if (special == 0)
+            return IsCharacterAllowed(' ');
+        if (special == 2)
+            return AllowedPageCount() > 1;
+        return true;
+    }
+    return IsCharacterAllowed(CellChar(_page, row, col));
+}
+
+bool KeyboardView::IsPageAllowed(int page) const
+{
+    return page >= 0 && page < kPageCount && (_rules.allowedPages & (1u << page)) != 0;
+}
+
+bool KeyboardView::IsCharacterAllowed(char c) const
+{
+    if (c == 0)
+        return false;
+    if (!_rules.allowedCharacters)
+        return true;
+    return strchr(_rules.allowedCharacters, c) != nullptr;
+}
+
+int KeyboardView::FirstAllowedPage() const
+{
+    for (int page = 0; page < kPageCount; page++)
+    {
+        if (IsPageAllowed(page))
+            return page;
+    }
+    return 0;
+}
+
+int KeyboardView::AllowedPageCount() const
+{
+    int count = 0;
+    for (int page = 0; page < kPageCount; page++)
+    {
+        if (IsPageAllowed(page))
+            count++;
+    }
+    return count;
+}
+
+void KeyboardView::SetRules(const Rules& rules)
+{
+    _rules = rules;
+    _rules.allowedPages &= kAllPagesMask;
+    if (_rules.allowedPages == 0)
+        _rules.allowedPages = kAllPagesMask;
+    if (!IsPageAllowed(_rules.initialPage))
+        _rules.initialPage = FirstAllowedPage();
+    _page = _rules.initialPage;
+    RefreshKeys();
+}
+
+void KeyboardView::CyclePage()
+{
+    if (AllowedPageCount() <= 1)
+        return;
+    for (int step = 1; step <= kPageCount; step++)
+    {
+        int page = (_page + step) % kPageCount;
+        if (IsPageAllowed(page))
+        {
+            _page = page;
+            RefreshKeys();
+            return;
+        }
+    }
 }
 
 void KeyboardView::Draw(GraphicsContext& graphicsContext)
@@ -202,10 +274,13 @@ bool KeyboardView::HandleInput(const InputProvider& inputProvider, FocusManager&
     }
     if (inputProvider.Triggered(InputKey::Y))
     {
-        // the case swap, so a name needs no trip to the page key; from the
-        // symbol pages it lands on lower case, the one after capitals
-        _page = (_page == 1) ? 0 : 1;
-        RefreshKeys();
+        // The case swap, so a name needs no trip to the page key. It only acts
+        // while both letter pages are allowed; a digits-only field stays put.
+        if (IsPageAllowed(0) && IsPageAllowed(1))
+        {
+            _page = (_page == 1) ? 0 : 1;
+            RefreshKeys();
+        }
         return true;
     }
     // Start and Select belong to the screen the keyboard sits on, so they keep
@@ -258,7 +333,19 @@ SharedPtr<View> KeyboardView::MoveFocus(
 
 void KeyboardView::Focus(FocusManager& focusManager)
 {
-    // a key, so the d-pad moves around the grid and A bubbles up here
+    // A usable key, so the d-pad moves around the grid and A bubbles up here.
+    // A restricted page can leave the first cells empty.
+    for (int r = 0; r < kKeyRows; r++)
+    {
+        for (int c = 0; c < kKeyColumns; c++)
+        {
+            if (IsUsableCell(r, c))
+            {
+                focusManager.Focus(_keyLabels[r][c]);
+                return;
+            }
+        }
+    }
     focusManager.Focus(_keyLabels[0][0]);
 }
 
@@ -291,8 +378,7 @@ void KeyboardView::ActivateKey(int index)
                 Backspace();
                 break;
             case 2:
-                _page = (_page + 1) % kPageCount;
-                RefreshKeys();
+                CyclePage();
                 break;
         }
         return;
@@ -305,7 +391,7 @@ void KeyboardView::ActivateKey(int index)
 
 void KeyboardView::Append(char c)
 {
-    if (!_buffer || _capacity == 0)
+    if (!_buffer || _capacity == 0 || !IsCharacterAllowed(c))
         return;
     u32 length = strlen(_buffer);
     if (length >= _capacity)

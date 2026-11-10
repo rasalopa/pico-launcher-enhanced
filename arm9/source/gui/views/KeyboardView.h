@@ -55,6 +55,22 @@ public:
     /// Space, delete and the page switch, in the last cells of the bottom row.
     static constexpr int kSpecialCount = 3;
     static constexpr int kPageCount = 4;
+    /// @brief The page with the digits and common punctuation.
+    static constexpr int kDigitsPage = 2;
+    static constexpr u32 kAllPagesMask = (1u << kPageCount) - 1;
+
+    /// @brief What the owner allows on this keyboard.
+    ///
+    /// A caller that needs a restricted field can pick the first page, keep the
+    /// player on a subset of pages, and reject characters that do not belong in
+    /// the field. The defaults are the full keyboard, opening on the capitals.
+    struct Rules
+    {
+        int initialPage = 0;
+        u32 allowedPages = kAllPagesMask;
+        /// @brief Characters Append accepts, or null for every character.
+        const char* allowedCharacters = nullptr;
+    };
 
     void InitVram(const VramContext& vramContext) override;
     void Update() override;
@@ -85,6 +101,10 @@ public:
 
     void SetColors(const Colors& colors) { _colors = colors; }
 
+    /// @brief Applies the owner's page and character rules. An initial page
+    ///        that is not allowed falls back to the first allowed page.
+    void SetRules(const Rules& rules);
+
     /// @brief Hidden while the owner is not editing, so the keys leave its sheet.
     void SetVisible(bool visible) { _visible = visible; }
 
@@ -99,6 +119,7 @@ private:
     u32 _capacity = 0;
     TextChangedCallback _textChanged = nullptr;
     void* _textChangedArg = nullptr;
+    Rules _rules;
     int _page = 0;
     bool _visible = true;
     /// @brief The highlight bar behind the focused key, 0xFFFFFFFF until uploaded.
@@ -109,6 +130,11 @@ private:
     int FocusIndex(const SharedPtr<View>& currentFocus) const;
     bool IsSpecialCell(int row, int col) const;
     bool IsUsableCell(int row, int col) const;
+    bool IsPageAllowed(int page) const;
+    bool IsCharacterAllowed(char c) const;
+    int FirstAllowedPage() const;
+    int AllowedPageCount() const;
+    void CyclePage();
     void ActivateKey(int index);
     void Append(char c);
     void Backspace();
