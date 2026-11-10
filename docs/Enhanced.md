@@ -41,7 +41,7 @@ The settings are:
 
 Every switch is stored separately, and every action asks the controller whether it is allowed where the action happens, not only where the menu draws it faded. With **Allow save slots** off, a DS game with several saves still starts on its main save rather than opening the picker; with **Allow cheating** off, Y does nothing. Favourites and completion are off by default only if you turn them off; a fresh setup allows everything until you choose what to take away.
 
-**Kid saves** starts every DS game on `<game>.sav10` instead of the regular save or a picker slot, and turns **Allow save slots** off so the picker and **New save** cannot switch to another save. The regular save and `.sav1` to `.sav9` are left untouched, and `.sav10` is not written to the game's `saveSlot` in `gamedata.json`. Turning restricted mode off returns launches to the original save behavior; turning Kid saves off returns them to the last save the player picked.
+**Kid saves** starts every DS game on `<game>.sav10` instead of the regular save or a picker slot, and turns **Allow save slots** off so the picker and **New save** cannot switch to another save. The regular save and `.sav1` to `.sav9` are left untouched, and `.sav10` is not written to the game's `saveSlot` in `gamedata.json`. Turning restricted mode off returns launches to the original save behavior. Turning Kid saves off leaves **Allow save slots** off, so turn that back on to pick a slot again; until then the ordinary save starts.
 
 The settings are plain text in `settings.json`. This is a lock against someone using the launcher, not against someone with the SD card. To change the PIN or turn the lock off without it, edit the file directly:
 

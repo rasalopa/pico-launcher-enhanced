@@ -13,7 +13,7 @@ class IFontRepository;
 ///
 /// With no PIN it opens on setup; with a PIN and the lock on it asks for that
 /// PIN first. Once unlocked it lists the master switch, one permission for each
-/// action, and Change PIN. The PIN is typed on the shared KeyboardView and must
+/// action, Kid saves, and Change PIN. The PIN is typed on the shared KeyboardView and must
 /// be entered twice when it is created or changed. The sheet owns only its
 /// working buffers; the stored PIN and switches live in AppSettings.
 class ParentalControlsBottomSheetView : public BottomSheetView
