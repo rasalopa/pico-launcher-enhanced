@@ -43,7 +43,7 @@ private:
     };
 
 public:
-    static constexpr int kRowCount = 8;
+    static constexpr int kRowCount = 9;
     static constexpr int kFeatureCount = 6;
 
 private:

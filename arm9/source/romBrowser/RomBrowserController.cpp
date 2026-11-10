@@ -67,10 +67,13 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
 
 void RomBrowserController::LaunchSaveSlot(u32 saveSlot)
 {
-    // The main save is still a launch; only a different slot changes saves.
-    if (saveSlot != 0 && IsBlocked(ParentalFeature::SaveSlots))
+    // Kid saves replace whatever slot was picked, including the main save. They
+    // are the one slot that still starts while the save-slot permission is off.
+    bool kidSaves = _appSettingsService->GetAppSettings().parentalControls.UsesKidSaves();
+    u32 launchSaveSlot = kidSaves ? kKidSaveSlot : saveSlot;
+    if (!kidSaves && launchSaveSlot != 0 && IsBlocked(ParentalFeature::SaveSlots))
         return;
-    _launchSaveSlot = saveSlot;
+    _launchSaveSlot = launchSaveSlot;
     _stateMachine.Fire(RomBrowserStateTrigger::Launch);
 }
 
@@ -499,6 +502,10 @@ void RomBrowserController::SetParentalEnabled(bool enabled)
     if (parentalControls.enabled == enabled)
         return;
     parentalControls.enabled = enabled;
+    // Kid saves already lock save slots; enforce that even when a card set the
+    // lock on while the old permission still said it was allowed.
+    if (enabled && parentalControls.kidSaves)
+        parentalControls.allowSaveSlots = false;
     _saveSettingsPending = true;
 }
 
@@ -514,9 +521,20 @@ void RomBrowserController::SetParentalPin(const char* pin)
 void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bool allowed)
 {
     auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (feature == ParentalFeature::SaveSlots && allowed && parentalControls.kidSaves)
+        return;
     if (parentalControls.IsAllowed(feature) == allowed)
         return;
     parentalControls.SetAllowed(feature, allowed);
+    _saveSettingsPending = true;
+}
+
+void RomBrowserController::SetParentalKidSaves(bool enabled)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (parentalControls.kidSaves == enabled)
+        return;
+    parentalControls.SetKidSaves(enabled);
     _saveSettingsPending = true;
 }
 
@@ -926,7 +944,10 @@ void RomBrowserController::BeginLaunch()
     if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
     {
         const auto* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
-        if ((entry ? entry->saveSlot : 0) != _launchSaveSlot)
+        // .sav10 is not one of the picker's slots, so it must not replace the
+        // save remembered in gamedata.json. Turning Kid saves off then returns
+        // to the save the player was using before.
+        if (_launchSaveSlot != kKidSaveSlot && (entry ? entry->saveSlot : 0) != _launchSaveSlot)
         {
             gameDataChanged = _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
                 _launchSaveSlot, _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr);

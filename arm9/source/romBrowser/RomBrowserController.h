@@ -63,6 +63,7 @@ public:
     void SetParentalEnabled(bool enabled) override;
     void SetParentalPin(const char* pin) override;
     void SetParentalFeatureAllowed(ParentalFeature feature, bool allowed) override;
+    void SetParentalKidSaves(bool enabled) override;
     bool IsBlocked(ParentalFeature feature) const override
     {
         return !_appSettingsService->GetAppSettings().parentalControls.Allows(feature);

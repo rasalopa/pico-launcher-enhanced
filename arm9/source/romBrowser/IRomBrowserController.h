@@ -71,6 +71,9 @@ public:
     virtual void SetParentalEnabled(bool enabled) = 0;
     virtual void SetParentalPin(const char* pin) = 0;
     virtual void SetParentalFeatureAllowed(ParentalFeature feature, bool allowed) = 0;
+    /// @brief Turns Kid saves on or off. On, every DS game launches on .sav10
+    ///        and save slots are locked; off, launches use the normal save.
+    virtual void SetParentalKidSaves(bool enabled) = 0;
     /// @brief Whether parental controls take a feature away right now. Every
     ///        action a blocked feature can be reached by asks this, not just
     ///        the menu that draws it faded. The lock itself is the

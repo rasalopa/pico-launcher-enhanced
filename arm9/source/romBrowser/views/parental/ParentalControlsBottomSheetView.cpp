@@ -23,10 +23,10 @@
 #define PIN_Y               48
 #define PIN_WIDTH           224
 
-// Eight compact rows: the master switch, six permissions and Change PIN.
+// Nine compact rows: the master switch, six permissions, Kid saves and Change PIN.
 #define ROW_X               20
-#define ROW_Y               36
-#define ROW_STEP            14
+#define ROW_Y               32
+#define ROW_STEP            12
 #define ROW_WIDTH           224
 #define ROW_NAME_WIDTH      150
 #define ROW_STATE_X         174
@@ -36,7 +36,7 @@
 #define KEYBOARD_Y          76
 
 #define HINT_X              20
-#define HINT_Y              138
+#define HINT_Y              142
 #define HINT_WIDTH          224
 #define HINT_MAX_CHARS      64
 
@@ -49,6 +49,7 @@ static const char* const kRowNames[ParentalControlsBottomSheetView::kRowCount] =
     "Allow favourites",
     "Allow completion",
     "Allow game info",
+    "Kid saves",
     "Change PIN"
 };
 
@@ -81,9 +82,9 @@ ParentalControlsBottomSheetView::ParentalControlsBottomSheetView(
     for (int i = 0; i < kRowCount; i++)
     {
         _rowLabels[i] = AddLabel(fontRepository, FontType::Regular10,
-            ROW_NAME_WIDTH, 14, 24, kRowNames[i], Alignment::Start);
+            ROW_NAME_WIDTH, 12, 24, kRowNames[i], Alignment::Start);
         _stateLabels[i] = AddLabel(fontRepository, FontType::Medium7_5,
-            ROW_STATE_WIDTH, 14, 8, "", Alignment::End);
+            ROW_STATE_WIDTH, 12, 8, "", Alignment::End);
     }
 
     _keyboard = KeyboardView::CreateShared(fontRepository->GetFont(FontType::Medium11));
@@ -167,7 +168,13 @@ void ParentalControlsBottomSheetView::Refresh()
 
     _stateLabels[0]->SetText(parentalControls.enabled ? "On" : "Off");
     for (int i = 0; i < kFeatureCount; i++)
-        _stateLabels[i + 1]->SetText(parentalControls.IsAllowed(kFeatures[i]) ? "On" : "Off");
+    {
+        bool allowed = parentalControls.IsAllowed(kFeatures[i]);
+        if (kFeatures[i] == ParentalFeature::SaveSlots && parentalControls.kidSaves)
+            allowed = false;
+        _stateLabels[i + 1]->SetText(allowed ? "On" : "Off");
+    }
+    _stateLabels[kFeatureCount + 1]->SetText(parentalControls.kidSaves ? "On" : "Off");
     _stateLabels[kRowCount - 1]->SetText("");
 }
 
@@ -252,6 +259,11 @@ void ParentalControlsBottomSheetView::ActivateRow(FocusManager& focusManager)
     {
         ParentalFeature feature = kFeatures[_row - 1];
         _controller->SetParentalFeatureAllowed(feature, !parentalControls.IsAllowed(feature));
+    }
+    else if (_row == kFeatureCount + 1)
+    {
+        // Turning this on also turns Allow save slots off in the controller.
+        _controller->SetParentalKidSaves(!parentalControls.kidSaves);
     }
     else
     {

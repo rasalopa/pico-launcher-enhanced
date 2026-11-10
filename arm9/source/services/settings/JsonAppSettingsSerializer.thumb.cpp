@@ -27,6 +27,7 @@
 #define KEY_PARENTAL_ALLOW_FAVORITES "parentalAllowFavorites"
 #define KEY_PARENTAL_ALLOW_COMPLETED "parentalAllowCompletion"
 #define KEY_PARENTAL_ALLOW_GAME_INFO "parentalAllowGameInfo"
+#define KEY_PARENTAL_KID_SAVES       "parentalKidSaves"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
 
@@ -188,6 +189,7 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
     json[KEY_PARENTAL_ALLOW_FAVORITES] = appSettings->parentalControls.allowFavorites;
     json[KEY_PARENTAL_ALLOW_COMPLETED] = appSettings->parentalControls.allowCompletion;
     json[KEY_PARENTAL_ALLOW_GAME_INFO] = appSettings->parentalControls.allowGameInfo;
+    json[KEY_PARENTAL_KID_SAVES] = appSettings->parentalControls.kidSaves;
     serializeFileAssociations(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
@@ -273,6 +275,8 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
         json[KEY_PARENTAL_ALLOW_COMPLETED] | appSettings->parentalControls.allowCompletion;
     appSettings->parentalControls.allowGameInfo =
         json[KEY_PARENTAL_ALLOW_GAME_INFO] | appSettings->parentalControls.allowGameInfo;
+    appSettings->parentalControls.SetKidSaves(
+        json[KEY_PARENTAL_KID_SAVES] | appSettings->parentalControls.kidSaves);
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }
 

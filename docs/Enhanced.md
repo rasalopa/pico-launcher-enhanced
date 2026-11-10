@@ -33,12 +33,15 @@ The settings are:
 | Allow deleting games | Deleting a game, its save and its save slots. |
 | Allow cheats | The cheats sheet opened with Y or a long press. |
 | Allow save slots | Choosing a save when a game starts, and the menu's New save. |
+| Kid saves | Every DS game starts on `.sav10`; also turns Allow save slots off. |
 | Allow favourites | Toggling a game's favourite mark with X. |
 | Allow completion | Toggling a game's completed mark by holding X. |
 | Allow game info | The Game info editor, when that sheet is part of the build. |
 | Change PIN | Replaces the PIN, asking for the new one twice. |
 
 Every switch is stored separately, and every action asks the controller whether it is allowed where the action happens, not only where the menu draws it faded. With **Allow save slots** off, a DS game with several saves still starts on its main save rather than opening the picker; with **Allow cheating** off, Y does nothing. Favourites and completion are off by default only if you turn them off; a fresh setup allows everything until you choose what to take away.
+
+**Kid saves** starts every DS game on `<game>.sav10` instead of the regular save or a picker slot, and turns **Allow save slots** off so the picker and **New save** cannot switch to another save. The regular save and `.sav1` to `.sav9` are left untouched, and `.sav10` is not written to the game's `saveSlot` in `gamedata.json`. Turning restricted mode off returns launches to the original save behavior; turning Kid saves off returns them to the last save the player picked.
 
 The settings are plain text in `settings.json`. This is a lock against someone using the launcher, not against someone with the SD card. To change the PIN or turn the lock off without it, edit the file directly:
 
@@ -50,7 +53,8 @@ The settings are plain text in `settings.json`. This is a lock against someone u
 "parentalAllowSaveSlots": true,
 "parentalAllowFavorites": true,
 "parentalAllowCompletion": true,
-"parentalAllowGameInfo": true
+"parentalAllowGameInfo": true,
+"parentalKidSaves": false
 ```
 
 Set `"restrictedMode": false` to turn the lock off, or change `parentalPin` to a new value. The old `"parentalControls": true` key is still read so a card set up with an earlier test build keeps its lock, but new saves write `restrictedMode`.

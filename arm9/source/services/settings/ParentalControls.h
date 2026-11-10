@@ -38,6 +38,8 @@ public:
     bool allowFavorites = true;
     bool allowCompletion = true;
     bool allowGameInfo = true;
+    /// @brief Launch every DS game on .sav10 while restricted mode is on.
+    bool kidSaves = false;
 
     bool HasPin() const
     {
@@ -52,7 +54,19 @@ public:
     /// @brief Whether a feature is available right now.
     bool Allows(ParentalFeature feature) const
     {
-        return !enabled || IsAllowed(feature);
+        if (!enabled)
+            return true;
+        // Kid saves own the save choice, so the slot picker and New save stay
+        // away even if a card still says the old permission is on.
+        if (feature == ParentalFeature::SaveSlots && kidSaves)
+            return false;
+        return IsAllowed(feature);
+    }
+
+    /// @brief Whether games launch on .sav10 right now.
+    bool UsesKidSaves() const
+    {
+        return enabled && kidSaves;
     }
 
     /// @brief The stored permission, whether or not the lock is on.
@@ -75,6 +89,14 @@ public:
             default:
                 return true;
         }
+    }
+
+    /// @brief Turns Kid saves on or off; turning them on also locks save slots.
+    void SetKidSaves(bool value)
+    {
+        kidSaves = value;
+        if (value)
+            allowSaveSlots = false;
     }
 
     void SetAllowed(ParentalFeature feature, bool allowed)
