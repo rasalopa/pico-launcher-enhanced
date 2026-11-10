@@ -478,16 +478,15 @@ void RomBrowserController::ShowParentalControls()
 
 void RomBrowserController::HideParentalControls()
 {
-    if (_saveSettingsPending)
-    {
-        _saveSettingsPending = false;
-        _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
-        {
-            _appSettingsService->Save();
-            return TaskResult<void>::Completed();
-        });
-    }
     _stateMachine.Fire(RomBrowserStateTrigger::HideParentalControls);
+}
+
+void RomBrowserController::SaveParentalControls()
+{
+    // Persist each change at once. Waiting for HideParentalControls lost the
+    // PIN and switches when the sheet closed another way or the console was
+    // powered off before a queued save could run.
+    _appSettingsService->Save();
 }
 
 bool RomBrowserController::VerifyParentalPin(const char* pin) const
@@ -506,7 +505,7 @@ void RomBrowserController::SetRestrictedMode(bool enabled)
     // set the lock on while the old permission still said it was allowed.
     if (enabled && parentalControls.saveSandboxing)
         parentalControls.allowSaveSlots = false;
-    _saveSettingsPending = true;
+    SaveParentalControls();
 }
 
 void RomBrowserController::SetParentalPin(const char* pin)
@@ -515,7 +514,7 @@ void RomBrowserController::SetParentalPin(const char* pin)
     if (strcmp(parentalControls.pin.GetString(), pin ? pin : "") == 0)
         return;
     parentalControls.pin = pin ? pin : "";
-    _saveSettingsPending = true;
+    SaveParentalControls();
 }
 
 void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bool allowed)
@@ -526,7 +525,7 @@ void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bo
     if (parentalControls.IsAllowed(feature) == allowed)
         return;
     parentalControls.SetAllowed(feature, allowed);
-    _saveSettingsPending = true;
+    SaveParentalControls();
 }
 
 void RomBrowserController::SetParentalSaveSandboxing(bool enabled)
@@ -535,7 +534,7 @@ void RomBrowserController::SetParentalSaveSandboxing(bool enabled)
     if (parentalControls.saveSandboxing == enabled)
         return;
     parentalControls.SetSaveSandboxing(enabled);
-    _saveSettingsPending = true;
+    SaveParentalControls();
 }
 
 void RomBrowserController::HideDisplaySettings()

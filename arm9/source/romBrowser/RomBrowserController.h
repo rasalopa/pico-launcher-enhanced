@@ -240,4 +240,5 @@ private:
     /// @brief Deletes one save of the game being deleted, the one in the saves folder first.
     static void DeleteSave(const char* folderSaveFileName, const char* saveFileName);
     void LoadCheats() const;
+    void SaveParentalControls();
 };
