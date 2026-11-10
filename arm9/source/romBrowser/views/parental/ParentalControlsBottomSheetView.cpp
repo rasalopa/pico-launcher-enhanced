@@ -23,7 +23,7 @@
 #define PIN_Y               48
 #define PIN_WIDTH           224
 
-// Nine compact rows: the master switch, six permissions, Kid saves and Change PIN.
+// Eight compact rows: the master switch, five permissions, Kid saves and Change PIN.
 #define ROW_X               20
 #define ROW_Y               32
 #define ROW_STEP            12
@@ -42,12 +42,11 @@
 
 static const char* const kRowNames[ParentalControlsBottomSheetView::kRowCount] =
 {
-    "Restricted mode",
+    "Parental controls",
     "Allow deleting games",
     "Allow cheats",
     "Allow save slots",
-    "Allow favourites",
-    "Allow completion",
+    "Allow badges",
     "Allow game info",
     "Kid saves",
     "Change PIN"
@@ -58,8 +57,7 @@ static const ParentalFeature kFeatures[ParentalControlsBottomSheetView::kFeature
     ParentalFeature::Delete,
     ParentalFeature::Cheats,
     ParentalFeature::SaveSlots,
-    ParentalFeature::Favorites,
-    ParentalFeature::Completion,
+    ParentalFeature::Badges,
     ParentalFeature::GameInfo
 };
 
@@ -89,6 +87,14 @@ ParentalControlsBottomSheetView::ParentalControlsBottomSheetView(
 
     _keyboard = KeyboardView::CreateShared(fontRepository->GetFont(FontType::Medium11));
     _keyboard->SetBuffer(_pin, kMaxPinLength);
+    // The PIN is digits only. The number page is the one page this keyboard
+    // may open, and the character rule also drops the punctuation beside the
+    // digits and the space key.
+    KeyboardView::Rules pinRules;
+    pinRules.initialPage = KeyboardView::kDigitsPage;
+    pinRules.allowedPages = 1u << KeyboardView::kDigitsPage;
+    pinRules.allowedCharacters = "0123456789";
+    _keyboard->SetRules(pinRules);
     _keyboard->SetTextChangedCallback(&ParentalControlsBottomSheetView::OnKeyboardTextChanged, this);
     _keyboard->SetVisible(false);
     AddChildTail(_keyboard.GetPointer());
@@ -99,7 +105,7 @@ ParentalControlsBottomSheetView::ParentalControlsBottomSheetView(
     const auto& parentalControls = _controller->GetParentalControls();
     if (!parentalControls.HasPin())
         _mode = Mode::SetupPin;
-    else if (parentalControls.enabled)
+    else if (parentalControls.restrictedMode)
         _mode = Mode::Unlock;
     else
         _mode = Mode::Settings;
@@ -128,7 +134,7 @@ void ParentalControlsBottomSheetView::ApplyMode(Mode mode, FocusManager* focusMa
         _pin[0] = 0;
         _maskedPin[0] = 0;
         _hintLabel->SetText(PIN_HINT);
-        _promptLabel->SetText(_mode == Mode::SetupPin ? "Create a 4-8 character PIN"
+        _promptLabel->SetText(_mode == Mode::SetupPin ? "Create a 4-8 digit PIN"
             : _mode == Mode::ConfirmPin ? "Re-enter the PIN"
             : _mode == Mode::ChangePin ? "Enter the new PIN"
             : _mode == Mode::ConfirmChangePin ? "Re-enter the new PIN"
@@ -166,15 +172,15 @@ void ParentalControlsBottomSheetView::Refresh()
         return;
     }
 
-    _stateLabels[0]->SetText(parentalControls.enabled ? "On" : "Off");
+    _stateLabels[0]->SetText(parentalControls.restrictedMode ? "On" : "Off");
     for (int i = 0; i < kFeatureCount; i++)
     {
         bool allowed = parentalControls.IsAllowed(kFeatures[i]);
-        if (kFeatures[i] == ParentalFeature::SaveSlots && parentalControls.kidSaves)
+        if (kFeatures[i] == ParentalFeature::SaveSlots && parentalControls.saveSandboxing)
             allowed = false;
         _stateLabels[i + 1]->SetText(allowed ? "On" : "Off");
     }
-    _stateLabels[kFeatureCount + 1]->SetText(parentalControls.kidSaves ? "On" : "Off");
+    _stateLabels[kFeatureCount + 1]->SetText(parentalControls.saveSandboxing ? "On" : "Off");
     _stateLabels[kRowCount - 1]->SetText("");
 }
 
@@ -188,7 +194,7 @@ void ParentalControlsBottomSheetView::SubmitPin(FocusManager& focusManager)
     u32 length = strlen(_pin);
     if (length < kMinPinLength)
     {
-        StringUtil::Copy(_message, "PIN must be 4 to 8 characters", sizeof(_message));
+        StringUtil::Copy(_message, "PIN must be 4 to 8 digits", sizeof(_message));
         _promptLabel->SetText(_message);
         return;
     }
@@ -231,7 +237,7 @@ void ParentalControlsBottomSheetView::SubmitPin(FocusManager& focusManager)
     _controller->SetParentalPin(_pin);
     if (_mode == Mode::ConfirmPin)
     {
-        _controller->SetParentalEnabled(true);
+        _controller->SetRestrictedMode(true);
         _row = 0;
         ApplyMode(Mode::Settings, &focusManager);
     }
@@ -248,12 +254,12 @@ void ParentalControlsBottomSheetView::ActivateRow(FocusManager& focusManager)
 
     if (_row == 0)
     {
-        if (!parentalControls.enabled && !parentalControls.HasPin())
+        if (!parentalControls.restrictedMode && !parentalControls.HasPin())
         {
             ApplyMode(Mode::SetupPin, &focusManager);
             return;
         }
-        _controller->SetParentalEnabled(!parentalControls.enabled);
+        _controller->SetRestrictedMode(!parentalControls.restrictedMode);
     }
     else if (_row >= 1 && _row <= kFeatureCount)
     {
@@ -263,7 +269,7 @@ void ParentalControlsBottomSheetView::ActivateRow(FocusManager& focusManager)
     else if (_row == kFeatureCount + 1)
     {
         // Turning this on also turns Allow save slots off in the controller.
-        _controller->SetParentalKidSaves(!parentalControls.kidSaves);
+        _controller->SetParentalSaveSandboxing(!parentalControls.saveSandboxing);
     }
     else
     {
@@ -307,12 +313,13 @@ void ParentalControlsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         for (int i = 0; i < kRowCount; i++)
         {
             bool selected = !IsTyping() && i == _row;
+            // Keep the theme-colour row highlight, but do not invert the text
+            // to white: the white antialiasing around the glyphs was what made
+            // the selected label hard to read on hardware.
             _rowLabels[i]->SetBackgroundColor(selected ? _materialColorScheme->primary : back);
-            _rowLabels[i]->SetForegroundColor(selected ? _materialColorScheme->onPrimary
-                : _materialColorScheme->onSurface);
+            _rowLabels[i]->SetForegroundColor(_materialColorScheme->onSurface);
             _stateLabels[i]->SetBackgroundColor(selected ? _materialColorScheme->primary : back);
-            _stateLabels[i]->SetForegroundColor(selected ? _materialColorScheme->onPrimary
-                : _materialColorScheme->onSurfaceVariant);
+            _stateLabels[i]->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
             if (IsTyping())
             {
                 _rowLabels[i]->SetText("");

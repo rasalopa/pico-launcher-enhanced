@@ -2,14 +2,14 @@
 #include <string.h>
 #include "services/gamedata/IGameDataService.h"
 
-/// @brief The save slot Kid saves use: .sav10, apart from the picker's 1 to 9.
-inline constexpr u32 kKidSaveSlot = 10;
+/// @brief The save slot save sandboxing uses: .sav10, apart from the picker's 1 to 9.
+inline constexpr u32 kSandboxSaveSlot = 10;
 
 /// @brief Builds the save file name for a rom file name and save slot: the name without its
 ///        extension plus ".sav" for slot 0, the loader's own default, ".sav1" to ".sav9"
-///        for the picker's slots, or ".sav10" for Kid saves.
+///        for the picker's slots, or ".sav10" for save sandboxing.
 /// @param romFileName The rom file name, without a folder.
-/// @param saveSlot The save slot, 0 to kKidSaveSlot.
+/// @param saveSlot The save slot, 0 to kSandboxSaveSlot.
 /// @param buffer The buffer to write the save file name to.
 /// @param bufferLength The length of \p buffer.
 /// @return \c false when the name does not fit: a shortened name would be another file,
@@ -20,7 +20,7 @@ inline bool BuildSaveFileName(const char* romFileName, u32 saveSlot, char* buffe
     u32 baseLength = extension ? extension - romFileName : strlen(romFileName);
     u32 slotLength = saveSlot == 0 ? 0 : saveSlot >= 10 ? 2 : 1;
     u32 length = baseLength + 4 + slotLength;
-    if (saveSlot > kKidSaveSlot || length + 1 > bufferLength)
+    if (saveSlot > kSandboxSaveSlot || length + 1 > bufferLength)
     {
         return false;
     }

@@ -34,18 +34,11 @@ std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
         {
             continue;
         }
-        if (filterSortParams.favoritesOnly && filterSortParams.gameDataService &&
+        if (filterSortParams.badgesOnly && filterSortParams.gameDataService &&
             classification != FileTypeClassification::Folder)
         {
             const auto* entry = filterSortParams.gameDataService->GetEntry(file->GetFileName());
-            if (!entry || !entry->favorite)
-                continue;
-        }
-        if (filterSortParams.completedOnly && filterSortParams.gameDataService &&
-            classification != FileTypeClassification::Folder)
-        {
-            const auto* entry = filterSortParams.gameDataService->GetEntry(file->GetFileName());
-            if (!entry || !entry->completed)
+            if (!entry || (!entry->favorite && !entry->completed))
                 continue;
         }
         if (filterSortParams.hideEmptyFolders &&

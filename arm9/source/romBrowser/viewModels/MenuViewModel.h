@@ -31,10 +31,8 @@ public:
     void ShowStatistics() { _romBrowserController->ShowStatistics(); }
     bool CanDeleteSelected() const { return _romBrowserController->CanDeleteSelected(); }
     void RequestDeleteSelected() { _romBrowserController->RequestDeleteSelected(); }
-    void ToggleFavoritesFilter() { _romBrowserController->ToggleFavoritesFilter(); }
-    bool IsFavoritesFilterEnabled() const { return _romBrowserController->IsFavoritesFilterEnabled(); }
-    void ToggleCompletedFilter() { _romBrowserController->ToggleCompletedFilter(); }
-    bool IsCompletedFilterEnabled() const { return _romBrowserController->IsCompletedFilterEnabled(); }
+    void ToggleBadgesFilter() { _romBrowserController->ToggleBadgesFilter(); }
+    bool IsBadgesFilterEnabled() const { return _romBrowserController->IsBadgesFilterEnabled(); }
 
     void ShowAbout() { _romBrowserController->ShowAbout(); }
     void ShowParentalControls() { _romBrowserController->ShowParentalControls(); }

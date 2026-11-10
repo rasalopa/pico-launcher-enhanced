@@ -67,11 +67,11 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
 
 void RomBrowserController::LaunchSaveSlot(u32 saveSlot)
 {
-    // Kid saves replace whatever slot was picked, including the main save. They
-    // are the one slot that still starts while the save-slot permission is off.
-    bool kidSaves = _appSettingsService->GetAppSettings().parentalControls.UsesKidSaves();
-    u32 launchSaveSlot = kidSaves ? kKidSaveSlot : saveSlot;
-    if (!kidSaves && launchSaveSlot != 0 && IsBlocked(ParentalFeature::SaveSlots))
+    // Save sandboxing replaces whatever slot was picked, including the main save.
+    // It is the one slot that still starts while the save-slot permission is off.
+    bool saveSandboxing = _appSettingsService->GetAppSettings().parentalControls.UsesSaveSandboxing();
+    u32 launchSaveSlot = saveSandboxing ? kSandboxSaveSlot : saveSlot;
+    if (!saveSandboxing && launchSaveSlot != 0 && IsBlocked(ParentalFeature::SaveSlots))
         return;
     _launchSaveSlot = launchSaveSlot;
     _stateMachine.Fire(RomBrowserStateTrigger::Launch);
@@ -211,7 +211,7 @@ u16 RomBrowserController::FindSaveSlotsOnCard(const char* romFileName) const
 
 void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* gameCode)
 {
-    if (IsBlocked(ParentalFeature::Favorites))
+    if (IsBlocked(ParentalFeature::Badges))
         return;
     // the path makes the entry navigable from the favorites panel even for
     // games that were marked but never launched
@@ -220,38 +220,32 @@ void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* 
         sizeof(fullPath) / sizeof(fullPath[0]));
     _gameDataService->ToggleFavorite(fileInfo.GetFileName(), gameCode, fullPath);
     _gameDataService->SaveAsync(_ioTaskQueue);
-    if (_favoritesFilter)
+    if (_badgesFilter)
     {
-        // an unfavorited game must drop out of the filtered view
+        // The rebuilt filter keeps a game that still has its other badge.
         _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
     }
 }
 
 void RomBrowserController::ToggleCompleted(const FileInfo& fileInfo, const char* gameCode)
 {
-    if (IsBlocked(ParentalFeature::Completion))
+    if (IsBlocked(ParentalFeature::Badges))
         return;
     TCHAR fullPath[256];
     BuildCurrentFolderFilePath(fileInfo.GetFileName(), fullPath,
         sizeof(fullPath) / sizeof(fullPath[0]));
     _gameDataService->ToggleCompleted(fileInfo.GetFileName(), gameCode, fullPath);
     _gameDataService->SaveAsync(_ioTaskQueue);
-    if (_completedFilter)
+    if (_badgesFilter)
     {
-        // a game unmarked as completed must drop out of the filtered view
+        // The rebuilt filter keeps a game that still has its other badge.
         _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
     }
 }
 
-void RomBrowserController::ToggleFavoritesFilter()
+void RomBrowserController::ToggleBadgesFilter()
 {
-    _favoritesFilter = !_favoritesFilter;
-    _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
-}
-
-void RomBrowserController::ToggleCompletedFilter()
-{
-    _completedFilter = !_completedFilter;
+    _badgesFilter = !_badgesFilter;
     _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
 }
 
@@ -496,15 +490,15 @@ bool RomBrowserController::VerifyParentalPin(const char* pin) const
     return !parentalControls.HasPin() || parentalControls.MatchesPin(pin);
 }
 
-void RomBrowserController::SetParentalEnabled(bool enabled)
+void RomBrowserController::SetRestrictedMode(bool enabled)
 {
     auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
-    if (parentalControls.enabled == enabled)
+    if (parentalControls.restrictedMode == enabled)
         return;
-    parentalControls.enabled = enabled;
-    // Kid saves already lock save slots; enforce that even when a card set the
-    // lock on while the old permission still said it was allowed.
-    if (enabled && parentalControls.kidSaves)
+    parentalControls.restrictedMode = enabled;
+    // Save sandboxing already locks save slots; enforce that even when a card
+    // set the lock on while the old permission still said it was allowed.
+    if (enabled && parentalControls.saveSandboxing)
         parentalControls.allowSaveSlots = false;
     _saveSettingsPending = true;
 }
@@ -521,7 +515,7 @@ void RomBrowserController::SetParentalPin(const char* pin)
 void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bool allowed)
 {
     auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
-    if (feature == ParentalFeature::SaveSlots && allowed && parentalControls.kidSaves)
+    if (feature == ParentalFeature::SaveSlots && allowed && parentalControls.saveSandboxing)
         return;
     if (parentalControls.IsAllowed(feature) == allowed)
         return;
@@ -529,12 +523,12 @@ void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bo
     _saveSettingsPending = true;
 }
 
-void RomBrowserController::SetParentalKidSaves(bool enabled)
+void RomBrowserController::SetParentalSaveSandboxing(bool enabled)
 {
     auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
-    if (parentalControls.kidSaves == enabled)
+    if (parentalControls.saveSandboxing == enabled)
         return;
-    parentalControls.SetKidSaves(enabled);
+    parentalControls.SetSaveSandboxing(enabled);
     _saveSettingsPending = true;
 }
 
@@ -830,7 +824,7 @@ void RomBrowserController::HandleNavigateTrigger()
                         continue;
                     // Deliberately NOT filter-aware. Emptiness means "has no
                     // content at all", the same answer whatever the favorites or
-                    // completed filter is doing, for two reasons: a filter-aware
+                    // badges filter is doing, for two reasons: a filter-aware
                     // probe cannot stop at the first game it finds, so a folder
                     // of 200 unmarked roms cost 200 reads and ate the whole
                     // budget (every folder after it then failed open and came
@@ -945,9 +939,9 @@ void RomBrowserController::BeginLaunch()
     {
         const auto* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
         // .sav10 is not one of the picker's slots, so it must not replace the
-        // save remembered in gamedata.json. Turning Kid saves off then returns
-        // to the save the player was using before.
-        if (_launchSaveSlot != kKidSaveSlot && (entry ? entry->saveSlot : 0) != _launchSaveSlot)
+        // save remembered in gamedata.json. Turning save sandboxing off then
+        // returns to the save the player was using before.
+        if (_launchSaveSlot != kSandboxSaveSlot && (entry ? entry->saveSlot : 0) != _launchSaveSlot)
         {
             gameDataChanged = _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
                 _launchSaveSlot, _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr);

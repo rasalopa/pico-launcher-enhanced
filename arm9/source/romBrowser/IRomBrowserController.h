@@ -41,10 +41,8 @@ public:
     virtual void LaunchSelectedOnSaveSlot(u32 saveSlot) = 0;
     virtual void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
-    virtual void ToggleFavoritesFilter() = 0;
-    virtual bool IsFavoritesFilterEnabled() const = 0;
-    virtual void ToggleCompletedFilter() = 0;
-    virtual bool IsCompletedFilterEnabled() const = 0;
+    virtual void ToggleBadgesFilter() = 0;
+    virtual bool IsBadgesFilterEnabled() const = 0;
     virtual void ShowGameInfo(const FileInfo& fileInfo) = 0;
     virtual void HideGameInfo() = 0;
     virtual void ShowDisplaySettings() = 0;
@@ -68,12 +66,12 @@ public:
     virtual const ParentalControls& GetParentalControls() const = 0;
     /// @brief Whether the PIN is the stored one. No PIN means anything unlocks.
     virtual bool VerifyParentalPin(const char* pin) const = 0;
-    virtual void SetParentalEnabled(bool enabled) = 0;
+    virtual void SetRestrictedMode(bool enabled) = 0;
     virtual void SetParentalPin(const char* pin) = 0;
     virtual void SetParentalFeatureAllowed(ParentalFeature feature, bool allowed) = 0;
-    /// @brief Turns Kid saves on or off. On, every DS game launches on .sav10
-    ///        and save slots are locked; off, launches use the normal save.
-    virtual void SetParentalKidSaves(bool enabled) = 0;
+    /// @brief Turns save sandboxing on or off. On, every DS game launches on
+    ///        .sav10 and save slots are locked; off, launches use the normal save.
+    virtual void SetParentalSaveSandboxing(bool enabled) = 0;
     /// @brief Whether parental controls take a feature away right now. Every
     ///        action a blocked feature can be reached by asks this, not just
     ///        the menu that draws it faded. The lock itself is the

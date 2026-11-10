@@ -11,10 +11,8 @@ enum class ParentalFeature
     Cheats,
     /// @brief Choosing or creating a save slot.
     SaveSlots,
-    /// @brief Toggling a game's favourite mark.
-    Favorites,
-    /// @brief Toggling a game's completed mark.
-    Completion,
+    /// @brief Toggling a game's favourite or completed badge.
+    Badges,
     /// @brief Editing a game's title, publisher or developer.
     GameInfo
 };
@@ -28,18 +26,17 @@ enum class ParentalFeature
 class ParentalControls
 {
 public:
-    bool enabled = false;
-    /// @brief Plain-text PIN, 4 to 8 characters when set through the launcher.
+    bool restrictedMode = false;
+    /// @brief Plain-text PIN, 4 to 8 digits when set through the launcher.
     String<char, 16> pin = "";
 
     bool allowDelete = true;
     bool allowCheats = true;
     bool allowSaveSlots = true;
-    bool allowFavorites = true;
-    bool allowCompletion = true;
+    bool allowBadges = true;
     bool allowGameInfo = true;
     /// @brief Launch every DS game on .sav10 while restricted mode is on.
-    bool kidSaves = false;
+    bool saveSandboxing = false;
 
     bool HasPin() const
     {
@@ -54,19 +51,19 @@ public:
     /// @brief Whether a feature is available right now.
     bool Allows(ParentalFeature feature) const
     {
-        if (!enabled)
+        if (!restrictedMode)
             return true;
-        // Kid saves own the save choice, so the slot picker and New save stay
-        // away even if a card still says the old permission is on.
-        if (feature == ParentalFeature::SaveSlots && kidSaves)
+        // Save sandboxing owns the save choice, so the slot picker and New save
+        // stay away even if a card still says the old permission is on.
+        if (feature == ParentalFeature::SaveSlots && saveSandboxing)
             return false;
         return IsAllowed(feature);
     }
 
     /// @brief Whether games launch on .sav10 right now.
-    bool UsesKidSaves() const
+    bool UsesSaveSandboxing() const
     {
-        return enabled && kidSaves;
+        return restrictedMode && saveSandboxing;
     }
 
     /// @brief The stored permission, whether or not the lock is on.
@@ -80,10 +77,8 @@ public:
                 return allowCheats;
             case ParentalFeature::SaveSlots:
                 return allowSaveSlots;
-            case ParentalFeature::Favorites:
-                return allowFavorites;
-            case ParentalFeature::Completion:
-                return allowCompletion;
+            case ParentalFeature::Badges:
+                return allowBadges;
             case ParentalFeature::GameInfo:
                 return allowGameInfo;
             default:
@@ -91,10 +86,10 @@ public:
         }
     }
 
-    /// @brief Turns Kid saves on or off; turning them on also locks save slots.
-    void SetKidSaves(bool value)
+    /// @brief Turns save sandboxing on or off; turning it on also locks save slots.
+    void SetSaveSandboxing(bool value)
     {
-        kidSaves = value;
+        saveSandboxing = value;
         if (value)
             allowSaveSlots = false;
     }
@@ -112,11 +107,8 @@ public:
             case ParentalFeature::SaveSlots:
                 allowSaveSlots = allowed;
                 break;
-            case ParentalFeature::Favorites:
-                allowFavorites = allowed;
-                break;
-            case ParentalFeature::Completion:
-                allowCompletion = allowed;
+            case ParentalFeature::Badges:
+                allowBadges = allowed;
                 break;
             case ParentalFeature::GameInfo:
                 allowGameInfo = allowed;

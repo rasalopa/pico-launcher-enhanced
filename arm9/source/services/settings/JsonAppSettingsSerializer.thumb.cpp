@@ -24,10 +24,13 @@
 #define KEY_PARENTAL_ALLOW_DELETE    "parentalAllowDelete"
 #define KEY_PARENTAL_ALLOW_CHEATS    "parentalAllowCheats"
 #define KEY_PARENTAL_ALLOW_SAVES     "parentalAllowSaveSlots"
-#define KEY_PARENTAL_ALLOW_FAVORITES "parentalAllowFavorites"
-#define KEY_PARENTAL_ALLOW_COMPLETED "parentalAllowCompletion"
+#define KEY_PARENTAL_ALLOW_BADGES    "parentalAllowBadges"
 #define KEY_PARENTAL_ALLOW_GAME_INFO "parentalAllowGameInfo"
-#define KEY_PARENTAL_KID_SAVES       "parentalKidSaves"
+#define KEY_PARENTAL_SAVE_SANDBOXING "parentalSaveSandboxing"
+// Old keys, read only so a card set up with an earlier build keeps its choices.
+#define KEY_PARENTAL_ALLOW_FAVORITES_LEGACY "parentalAllowFavorites"
+#define KEY_PARENTAL_ALLOW_COMPLETED_LEGACY "parentalAllowCompletion"
+#define KEY_PARENTAL_KID_SAVES_LEGACY        "parentalKidSaves"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
 
@@ -180,16 +183,15 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
     // Parental controls are written in full so every switch can be edited on
     // the card as well as in the launcher. `restrictedMode` is the master flag;
     // parentalControls is only read for builds made before this key existed.
-    json[KEY_RESTRICTED_MODE] = appSettings->parentalControls.enabled;
+    json[KEY_RESTRICTED_MODE] = appSettings->parentalControls.restrictedMode;
     if (appSettings->parentalControls.pin.GetString()[0] != 0)
         json[KEY_PARENTAL_PIN] = appSettings->parentalControls.pin.GetString();
     json[KEY_PARENTAL_ALLOW_DELETE] = appSettings->parentalControls.allowDelete;
     json[KEY_PARENTAL_ALLOW_CHEATS] = appSettings->parentalControls.allowCheats;
     json[KEY_PARENTAL_ALLOW_SAVES] = appSettings->parentalControls.allowSaveSlots;
-    json[KEY_PARENTAL_ALLOW_FAVORITES] = appSettings->parentalControls.allowFavorites;
-    json[KEY_PARENTAL_ALLOW_COMPLETED] = appSettings->parentalControls.allowCompletion;
+    json[KEY_PARENTAL_ALLOW_BADGES] = appSettings->parentalControls.allowBadges;
     json[KEY_PARENTAL_ALLOW_GAME_INFO] = appSettings->parentalControls.allowGameInfo;
-    json[KEY_PARENTAL_KID_SAVES] = appSettings->parentalControls.kidSaves;
+    json[KEY_PARENTAL_SAVE_SANDBOXING] = appSettings->parentalControls.saveSandboxing;
     serializeFileAssociations(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
@@ -255,11 +257,11 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     }
     appSettings->launchTracking = json[KEY_LAUNCH_TRACKING] | appSettings->launchTracking;
 
-    bool restrictedMode = json[KEY_RESTRICTED_MODE] | appSettings->parentalControls.enabled;
+    bool restrictedMode = json[KEY_RESTRICTED_MODE] | appSettings->parentalControls.restrictedMode;
     // Before the screen existed the flag was called parentalControls. Read that
     // too, so a card set up with the first build keeps its lock.
     restrictedMode = json[KEY_PARENTAL_CONTROLS] | restrictedMode;
-    appSettings->parentalControls.enabled = restrictedMode;
+    appSettings->parentalControls.restrictedMode = restrictedMode;
     const char* parentalPin = json[KEY_PARENTAL_PIN].as<const char*>();
     if (parentalPin)
         appSettings->parentalControls.pin = parentalPin;
@@ -269,14 +271,25 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
         json[KEY_PARENTAL_ALLOW_CHEATS] | appSettings->parentalControls.allowCheats;
     appSettings->parentalControls.allowSaveSlots =
         json[KEY_PARENTAL_ALLOW_SAVES] | appSettings->parentalControls.allowSaveSlots;
-    appSettings->parentalControls.allowFavorites =
-        json[KEY_PARENTAL_ALLOW_FAVORITES] | appSettings->parentalControls.allowFavorites;
-    appSettings->parentalControls.allowCompletion =
-        json[KEY_PARENTAL_ALLOW_COMPLETED] | appSettings->parentalControls.allowCompletion;
+    if (json.containsKey(KEY_PARENTAL_ALLOW_BADGES))
+    {
+        appSettings->parentalControls.allowBadges =
+            json[KEY_PARENTAL_ALLOW_BADGES] | appSettings->parentalControls.allowBadges;
+    }
+    else
+    {
+        // Before badges were one category, favourites and completion were two
+        // permissions. One refusal keeps both off after the merge.
+        appSettings->parentalControls.allowBadges =
+            (json[KEY_PARENTAL_ALLOW_FAVORITES_LEGACY] | true) &&
+            (json[KEY_PARENTAL_ALLOW_COMPLETED_LEGACY] | true);
+    }
     appSettings->parentalControls.allowGameInfo =
         json[KEY_PARENTAL_ALLOW_GAME_INFO] | appSettings->parentalControls.allowGameInfo;
-    appSettings->parentalControls.SetKidSaves(
-        json[KEY_PARENTAL_KID_SAVES] | appSettings->parentalControls.kidSaves);
+    appSettings->parentalControls.SetSaveSandboxing(
+        json.containsKey(KEY_PARENTAL_SAVE_SANDBOXING)
+            ? json[KEY_PARENTAL_SAVE_SANDBOXING] | false
+            : json[KEY_PARENTAL_KID_SAVES_LEGACY] | false);
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }
 

@@ -35,10 +35,8 @@ public:
     void LaunchSelectedOnSaveSlot(u32 saveSlot) override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode) override;
-    void ToggleFavoritesFilter() override;
-    bool IsFavoritesFilterEnabled() const override { return _favoritesFilter; }
-    void ToggleCompletedFilter() override;
-    bool IsCompletedFilterEnabled() const override { return _completedFilter; }
+    void ToggleBadgesFilter() override;
+    bool IsBadgesFilterEnabled() const override { return _badgesFilter; }
     void ShowGameInfo(const FileInfo& fileInfo) override;
     void HideGameInfo() override;
     void ShowDisplaySettings() override;
@@ -60,10 +58,10 @@ public:
         return _appSettingsService->GetAppSettings().parentalControls;
     }
     bool VerifyParentalPin(const char* pin) const override;
-    void SetParentalEnabled(bool enabled) override;
+    void SetRestrictedMode(bool enabled) override;
     void SetParentalPin(const char* pin) override;
     void SetParentalFeatureAllowed(ParentalFeature feature, bool allowed) override;
-    void SetParentalKidSaves(bool enabled) override;
+    void SetParentalSaveSandboxing(bool enabled) override;
     bool IsBlocked(ParentalFeature feature) const override
     {
         return !_appSettingsService->GetAppSettings().parentalControls.Allows(feature);
@@ -152,8 +150,7 @@ private:
     IBgmService* _bgmService;
     TaskQueueBase* _ioTaskQueue;
     TaskQueueBase* _bgTaskQueue;
-    bool _favoritesFilter = false;
-    bool _completedFilter = false;
+    bool _badgesFilter = false;
     bool _bigStepJumpPending = false;
     TCHAR _triggerGameCode[8];
 

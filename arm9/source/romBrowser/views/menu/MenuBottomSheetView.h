@@ -82,14 +82,14 @@ private:
 ///        hold as icons, and behind long presses, written out.
 ///
 /// Recently played, favorites, statistics and delete in two columns, New save
-/// as a full row that names the save it would start, then the two filters side
-/// by side, in their color while on, and Parental controls as the last full row.
-/// Picking a panel replaces this sheet with it; a filter closes the sheet
-/// through the display mode change it triggers; New save launches the
-/// highlighted game. Delete is faded while a folder is highlighted or parental
-/// controls block it. New save is only there for a DS game, the rows below it
-/// moving up otherwise, and is faded when all its saves are taken or save slots
-/// are blocked. A small button at the right of the title opens the about sheet.
+/// as a full row that names the save it would start, then the badges filter
+/// and Parental controls as full rows. Picking a panel replaces this sheet
+/// with it; a filter closes the sheet through the display mode change it
+/// triggers; New save launches the highlighted game. Delete is faded while a
+/// folder is highlighted or parental controls block it. New save is only there
+/// for a DS game, the rows below it moving up otherwise, and is faded when all
+/// its saves are taken or save slots are blocked. A small button at the right
+/// of the title opens the about sheet.
 class MenuBottomSheetView : public BottomSheetView, public IMenuItemHost
 {
     SHARED_ONLY(MenuBottomSheetView)
@@ -119,8 +119,7 @@ private:
         ITEM_STATISTICS,
         ITEM_DELETE,
         ITEM_NEW_SAVE,
-        ITEM_FAVORITES_FILTER,
-        ITEM_COMPLETED_FILTER,
+        ITEM_BADGES_FILTER,
         ITEM_PARENTAL_CONTROLS,
         ITEM_COUNT
     };
