@@ -35,8 +35,10 @@ public:
     void LaunchSelectedOnSaveSlot(u32 saveSlot) override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode) override;
-    void ToggleBadgesFilter() override;
-    bool IsBadgesFilterEnabled() const override { return _badgesFilter; }
+    void ToggleFavoritesFilter() override;
+    bool IsFavoritesFilterEnabled() const override { return _favoritesFilter; }
+    void ToggleCompletedFilter() override;
+    bool IsCompletedFilterEnabled() const override { return _completedFilter; }
     void ShowGameInfo(const FileInfo& fileInfo) override;
     void HideGameInfo() override;
     void ShowDisplaySettings() override;
@@ -150,7 +152,8 @@ private:
     IBgmService* _bgmService;
     TaskQueueBase* _ioTaskQueue;
     TaskQueueBase* _bgTaskQueue;
-    bool _badgesFilter = false;
+    bool _favoritesFilter = false;
+    bool _completedFilter = false;
     bool _bigStepJumpPending = false;
     TCHAR _triggerGameCode[8];
 

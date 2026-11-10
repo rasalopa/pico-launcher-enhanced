@@ -12,12 +12,12 @@ These controls are available in the rom browser, on top of the standard ones (se
 | A on a DS game with extra saves | Pick the save to start (see [Save slots](#save-slots)) |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
-| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save and the badges filter (see [The menu](#the-menu)) |
+| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game, a new save and the two filters (see [The menu](#the-menu)) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 
 ## The menu
-The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), and an **Only badges** filter on its own row, whose name turns red while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: Recently played, Favorites, Statistics and Delete game in two columns, then **New save** on its own row when a DS game is highlighted (see [Save slots](#save-slots)), and the two filters side by side, Only favorites and Only completed, whose name turns red or green while on. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu; New save starts the game. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
@@ -88,13 +88,13 @@ Favorites marked before this feature existed appear in the panel after you toggl
 ## Completed games
 Hold X on a highlighted game for about half a second to mark it as completed (hold again to unmark). Completed games show a small green check on the top screen when highlighted, next to the heart. Like favorites, the mark belongs to the ROM file.
 
-## Badges filter
-**Only badges** in the menu filters the browser down to games with a favourite heart or a completed check, so either badge keeps a game in the list. While the filter is on, its name in the menu is red, and so is its icon except while it is highlighted, when the icon takes the theme's primary color; the browser behind it updates as soon as the menu closes. The filter applies per folder, and folders themselves always stay visible.
+## Favorites and completed filters
+**Only favorites** in the menu filters the browser down to favorites, and **Only completed** to completed games. While a filter is on, its name in the menu is red or green, and so is its icon except while the filter is highlighted, when the icon takes the theme's primary color; the browser behind it updates as soon as the menu closes. With both filters on, only games that are favorite *and* completed remain. The filters apply per folder, and folders themselves always stay visible.
 
 Marks, play counts and play time all belong to the ROM file, so what the top screen shows and what the filter matches are always the same thing (see [GameData.md](GameData.md)). Two copies of a game are marked separately, and a ROM hack no longer inherits its base game's mark. Renaming a ROM outside the launcher starts it over, and games whose file name is longer than 96 bytes cannot be marked at all (accented characters count double).
 
 ## Random game
-Hold SELECT and press A to launch a random game from the folder you are currently viewing. With the badges filter active, it picks a random game that has either badge. SELECT on its own does nothing, so the DSi brightness shortcut (SELECT + volume) stays free.
+Hold SELECT and press A to launch a random game from the folder you are currently viewing. With the favorites filter active, it picks a random favorite. SELECT on its own does nothing, so the DSi brightness shortcut (SELECT + volume) stays free.
 
 ## DSi-only games on a DS
 On a DS or DS Lite, a game made for the DSi only cannot run: the console never enters DSi mode, and launching it ends in a white screen. The launcher now checks the game's own header when you press A and, if the game is DSi-only, stays where it is and says `Needs a DSi or 3DS` at the bottom of the screen. DSiWare titles count as DSi-only too. Homebrew is left alone: many homebrew apps say DSi only in their header and still run on a DS. On a DSi or 3DS nothing changes.
@@ -166,7 +166,7 @@ The display settings sheet has a folder toggle that hides folders containing no 
 
 Subfolders are followed a few levels deep, so a folder containing only other empty folders is hidden too. Launcher support folders (names starting with `_`) are always kept.
 
-Emptiness means "has nothing in it", independently of the badges filter. With the filter on you can therefore still see a folder that turns out to hold nothing matching it. Checking the filter here meant reading every ROM in every folder on each navigation, which was slow enough that folders started reappearing.
+Emptiness means "has nothing in it", independently of the favorites and completed filters. With one of those filters on you can therefore still see a folder that turns out to hold nothing matching it. Checking the filters here meant reading every ROM in every folder on each navigation, which was slow enough that folders started reappearing.
 
 ## Per-folder music
 Place a `bgm.bcstm` file directly inside a folder to give it its own background music. It uses the same DSP-ADPCM `.bcstm` format as theme music (see [Themes](Themes.md)) and supports looping. The music starts when you enter the folder and switches back to the theme music when you leave. Each folder is checked independently: subfolders do not inherit their parent's music.

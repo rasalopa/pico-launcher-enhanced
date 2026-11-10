@@ -38,7 +38,7 @@ public:
     ///        depth cap - see the .cpp for why it's kept small: this runs on
     ///        the IO task's small fixed stack).
     ///
-    ///        NOT aware of the badges filter, deliberately. A
+    ///        NOT aware of the favorites/completed filters, deliberately. A
     ///        filter-aware answer cannot stop at the first game it finds, so a
     ///        folder of unmarked roms cost one read per rom and drained the
     ///        shared budget; and the answer is cached per navigation, so it

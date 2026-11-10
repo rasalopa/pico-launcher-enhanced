@@ -34,9 +34,9 @@
 #define ABOUT_BUTTON_Y      (TITLE_Y - 7)
 
 // Two cells per row over the 224 px the recents list uses, or one full row.
-// Rows sit 24 apart so five 24 px items fit inside the sheet: New save, the
-// badges filter and Parental controls each get a full row. When New save is
-// not shown the rows below it move up.
+// Rows sit 24 apart so five 24 px items fit inside the sheet; the filters share
+// a row and Parental controls gets the last full row. When New save is not
+// shown the rows below it move up.
 #define ITEMS_X             16
 #define CELL_WIDTH          112
 #define ROW_WIDTH           224
@@ -75,7 +75,8 @@ static constexpr MenuEntry kEntries[] =
     { "Statistics", 1, 0 },
     { "Delete game", 1, 1 },
     { "New save", 2, -1 },
-    { "Only badges", 3, -1 },
+    { "Only favorites", 3, 0 },
+    { "Only completed", 3, 1 },
     { "Parental controls", 4, -1 }
 };
 
@@ -233,7 +234,7 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
     {
         const char* stateText = i == ITEM_NEW_SAVE && newSaveSlot != 0 ? newSaveText : nullptr;
         _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].column < 0 ? ROW_WIDTH : CELL_WIDTH,
-            kEntries[i].name, stateText, kFavoriteRed,
+            kEntries[i].name, stateText, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
             materialColorScheme, fontRepository);
         if (i != ITEM_NEW_SAVE || _newSaveShown)
             AddChildTail(_items[i].GetPointer());
@@ -248,16 +249,12 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (!objVramManager)
         return;
-    // In item order. The arrays are left unsized so the static_asserts below
-    // catch an entry added to the enum without its icon.
-    static const unsigned int* const kTiles[] =
-        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles,
-          plusIconTiles, checkIconTiles, settingsIconTiles };
-    static const u32 kTilesLength[] =
-        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen,
-          plusIconTilesLen, checkIconTilesLen, settingsIconTilesLen };
-    static_assert(std::size(kTiles) == ITEM_COUNT, "one icon per item");
-    static_assert(std::size(kTilesLength) == ITEM_COUNT, "one icon length per item");
+    static const unsigned int* const kTiles[ITEM_COUNT] =
+        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, plusIconTiles,
+          heartIconTiles, checkIconTiles, settingsIconTiles };
+    static const u32 kTilesLength[ITEM_COUNT] =
+        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, plusIconTilesLen,
+          heartIconTilesLen, checkIconTilesLen, settingsIconTilesLen };
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
@@ -306,7 +303,8 @@ void MenuBottomSheetView::Update()
         _items[i]->SetPosition(x, y + ROWS_Y + GetRow(i) * ROW_SPACING);
     }
     _items[ITEM_DELETE]->SetEnabled(_viewModel->CanDeleteSelected());
-    _items[ITEM_BADGES_FILTER]->SetActive(_viewModel->IsBadgesFilterEnabled());
+    _items[ITEM_FAVORITES_FILTER]->SetActive(_viewModel->IsFavoritesFilterEnabled());
+    _items[ITEM_COMPLETED_FILTER]->SetActive(_viewModel->IsCompletedFilterEnabled());
     BottomSheetView::Update();
 }
 
@@ -404,8 +402,11 @@ void MenuBottomSheetView::Activate(int index)
             // faded and inert without a free save: the view model checks
             _viewModel->StartNewSave();
             break;
-        case ITEM_BADGES_FILTER:
-            _viewModel->ToggleBadgesFilter();
+        case ITEM_FAVORITES_FILTER:
+            _viewModel->ToggleFavoritesFilter();
+            break;
+        case ITEM_COMPLETED_FILTER:
+            _viewModel->ToggleCompletedFilter();
             break;
         case ITEM_PARENTAL_CONTROLS:
             _viewModel->ShowParentalControls();

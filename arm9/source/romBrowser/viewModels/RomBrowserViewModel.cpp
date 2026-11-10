@@ -29,7 +29,8 @@ RomBrowserViewModel::RomBrowserViewModel(IRomBrowserController* romBrowserContro
             break;
         }
     }
-    filterSortParams.badgesOnly = romBrowserController->IsBadgesFilterEnabled();
+    filterSortParams.favoritesOnly = romBrowserController->IsFavoritesFilterEnabled();
+    filterSortParams.completedOnly = romBrowserController->IsCompletedFilterEnabled();
     filterSortParams.hideEmptyFolders = romBrowserController->GetRomBrowserDisplaySettings().hideEmptyFolders;
     filterSortParams.hideSavesFolders = romBrowserController->GetSaveLocation() == SaveLocation::SavesFolder;
     filterSortParams.gameDataService = romBrowserController->GetGameDataService();

@@ -220,9 +220,9 @@ void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* 
         sizeof(fullPath) / sizeof(fullPath[0]));
     _gameDataService->ToggleFavorite(fileInfo.GetFileName(), gameCode, fullPath);
     _gameDataService->SaveAsync(_ioTaskQueue);
-    if (_badgesFilter)
+    if (_favoritesFilter)
     {
-        // The rebuilt filter keeps a game that still has its other badge.
+        // an unfavorited game must drop out of the filtered view
         _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
     }
 }
@@ -236,16 +236,22 @@ void RomBrowserController::ToggleCompleted(const FileInfo& fileInfo, const char*
         sizeof(fullPath) / sizeof(fullPath[0]));
     _gameDataService->ToggleCompleted(fileInfo.GetFileName(), gameCode, fullPath);
     _gameDataService->SaveAsync(_ioTaskQueue);
-    if (_badgesFilter)
+    if (_completedFilter)
     {
-        // The rebuilt filter keeps a game that still has its other badge.
+        // a game unmarked as completed must drop out of the filtered view
         _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
     }
 }
 
-void RomBrowserController::ToggleBadgesFilter()
+void RomBrowserController::ToggleFavoritesFilter()
 {
-    _badgesFilter = !_badgesFilter;
+    _favoritesFilter = !_favoritesFilter;
+    _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+}
+
+void RomBrowserController::ToggleCompletedFilter()
+{
+    _completedFilter = !_completedFilter;
     _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
 }
 
@@ -824,7 +830,7 @@ void RomBrowserController::HandleNavigateTrigger()
                         continue;
                     // Deliberately NOT filter-aware. Emptiness means "has no
                     // content at all", the same answer whatever the favorites or
-                    // badges filter is doing, for two reasons: a filter-aware
+                    // completed filter is doing, for two reasons: a filter-aware
                     // probe cannot stop at the first game it finds, so a folder
                     // of 200 unmarked roms cost 200 reads and ate the whole
                     // budget (every folder after it then failed open and came
