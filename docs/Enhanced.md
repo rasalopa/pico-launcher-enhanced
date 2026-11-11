@@ -66,10 +66,10 @@ On a DS or DS Lite, a game made for the DSi only cannot run: the console never e
 ## Launch tracking and play time
 Every launch is recorded automatically, unless you switch that off (see below). The favorite heart and the completed check sit above the game's icon, astride the card's edge, where a gold star also marks the most launched game, the one that heads the statistics panel.
 
-Play time is approximate: a session starts when a game is launched and ends the next time the launcher boots. Because of that:
-- Sessions longer than 6 hours are discarded: that was a power-off, not a play session.
-- Time spent in sleep mode counts as play time.
-- A session is lost if the console is powered off without booting back into the launcher.
+Play time is measured by the game itself, and only with the optional Pico Loader Enhanced: it counts the frames a DS game runs, and the launcher adds them up when you leave the game with the in-game exit. It shows in the statistics panel and in the favorites panel. Because of how it is counted:
+- Time with the console asleep is not counted. A game that keeps running with the lid closed keeps counting.
+- A session that ends by switching the console off adds nothing, and neither do games without the in-game exit, homebrew, GBA games through an emulator or the official Pico Loader.
+- Play time from earlier versions, which timed a session until the next launcher boot, stays in the game data but is not shown.
 
 If you would rather the launcher kept no record of your launches, set `"launchTracking": false` in `settings.json` (see [Usage.md](/docs/Usage.md#settings)). Launching a game then writes nothing to the game data: no launch count, no play time, no last played date. The one thing still written is which save a game with extra saves was started on, when it changes, so the save sheet opens on it next time. (The launcher still remembers the last game you launched, as it always did, so it can highlight it on the next boot.) The recently played list, the statistics panel and the star of the most launched game keep showing what was recorded before, and favorites and completed marks keep working.
 
@@ -77,7 +77,7 @@ If you would rather the launcher kept no record of your launches, set `"launchTr
 **Recently played** in the menu opens a list of up to 20 recently played games, most recent first, each with the date and time it was last played. Tap an entry (or highlight it and press A) to jump to that game's folder with the game preselected. Press B to close the panel.
 
 ## Statistics
-**Statistics** in the menu opens a summary panel: a row of four figures with an icon each (games in the folder you are in, played, favorites, completed), your three most launched games with their counts, and the last game you played with its date and time. File names show without their extension there. The launcher's version sits at the top-right of the panel. The version with the commit it was built from shows on the bottom screen while the launcher boots, and in the about sheet, for when you report something and need to say which build you have. The total launches and play time line is switched off in this version, for the reason given above. Press B to close it.
+**Statistics** in the menu opens a summary panel: a row of four figures with an icon each (games in the folder you are in, played, favorites, completed), your three most launched games with their counts and play time, the total play time next to their heading, and the last game you played with its date and time. File names show without their extension there. The launcher's version sits at the top-right of the panel. The version with the commit it was built from shows on the bottom screen while the launcher boots, and in the about sheet, for when you report something and need to say which build you have. Press B to close it.
 
 ## Screenshots
 Hold START for about half a second to save both screens to `/_pico/screenshots` on your SD card, as BMP files.

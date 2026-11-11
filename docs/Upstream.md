@@ -327,13 +327,12 @@ New files:
 
 ### Statistics panel
 
-Statistics in the menu opens a panel with four figures (the games in this folder, counting only what an active filter shows, then the games played, favorites and completed across the whole card), your three most launched games with their counts, the last game you played and the launcher version. The total launches and play time line is switched off because play time overstates.
+Statistics in the menu opens a panel with four figures (the games in this folder, counting only what an active filter shows, then the games played, favorites and completed across the whole card), your three most launched games with their counts and play time, the total play time, the last game you played and the launcher version.
 
 - **Commits:** `c9fa19b`, `8438b11`, `0be3b79`, `f2e5642`
 - **Upstream:** None found.
 - **Settings and data:** Reads `gamedata.json` only.
 - **Fork issues:** [#9](https://github.com/rasalopa/pico-launcher-enhanced/issues/9)
-- **Notes:** The totals line is switched off with `SHOW_STATISTICS_LAUNCHES_AND_TIME` in `StatisticsBottomSheetView.cpp`.
 
 <details><summary>Files: 14 upstream, 4 new</summary>
 
@@ -415,13 +414,13 @@ New files:
 
 ### Launch tracking and play time
 
-Every launch is recorded: launch count, last played date and a rough play time, which feed the recently played list, the statistics panel and the star. A game whose file name is longer than 96 bytes is left out. With `"launchTracking": false` in `settings.json` nothing new is recorded, while earlier records, favorites and completed marks stay.
+Every launch is recorded: launch count, last played date and the play time Pico Loader Enhanced measures, which feed the recently played list, the statistics panel and the star. A game whose file name is longer than 96 bytes is left out. With `"launchTracking": false` in `settings.json` nothing new is recorded, while earlier records, favorites and completed marks stay.
 
 - **Commits:** `c61d1f6`, `0b65c7e`
 - **Upstream:** [PR #37](https://github.com/LNH-team/pico-launcher/pull/37) has similar work: it records a launch count and the last launch date per game, in its own file.
-- **Settings and data:** `launchCount`, `lastPlayed`, `playMinutes` and the session keys in `gamedata.json`; `launchTracking` in `settings.json` (on by default).
+- **Settings and data:** `launchCount`, `lastPlayed`, `playSeconds`, `playMinutes` (from earlier versions) and the session keys in `gamedata.json`; `launchTracking` in `settings.json` (on by default).
 - **Fork issues:** [#9](https://github.com/rasalopa/pico-launcher-enhanced/issues/9)
-- **Notes:** The launch count and last played date came earlier, with `7e516f5` under Favorites; these commits add play time and the setting. Play time counts from launch until the launcher boots again, so it counts the clock and not play, and only a gap between 1 minute and 6 hours adds to it: a longer one is taken as the console being off. The top screen text and the statistics totals are switched off for that reason; the favorites panel still shows it per game as an approximate figure.
+- **Notes:** The launch count and last played date came earlier, with `7e516f5` under Favorites; these commits add play time and the setting. Play time is the frames the game itself counts, which Pico Loader Enhanced passes to the launcher after the in-game exit, kept in `playSeconds`; a session that ends with the console switched off adds nothing. Earlier versions timed a session until the next launcher boot; those minutes stay in `playMinutes` and are not shown. The statistics panel shows it per game and in total, and the favorites panel per game.
 
 <details><summary>Files: 5 upstream, 6 new</summary>
 

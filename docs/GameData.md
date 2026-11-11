@@ -12,7 +12,7 @@ Regular users never need to edit this file. Deleting it simply resets all favori
       "favorite": true,
       "completed": true,
       "launchCount": 12,
-      "playMinutes": 340,
+      "playSeconds": 20412,
       "lastPlayed": "2026-07-16 21:03",
       "path": "/Games/nds/Some Game.nds",
       "saveSlot": 2
@@ -38,12 +38,13 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `favorite` | bool | `true` | Marked as favorite. Absent means not a favorite; `false` is never written. |
 | `completed` | bool | `true` | Marked as completed (finished). Absent means not completed; `false` is never written. |
 | `launchCount` | number | > 0 | How many times the game was launched. |
-| `playMinutes` | number | > 0 | Accumulated play time in minutes (approximate, see below). |
+| `playSeconds` | number | > 0 | Play time in seconds, measured while the game runs (see below). |
+| `playMinutes` | number | > 0 | Play time in minutes from older versions, which timed a session until the next launcher boot. Kept as it was, but no longer added to or shown. |
 | `lastPlayed` | string | non-empty | `"YYYY-MM-DD HH:MM"`, 24-hour clock. Lexicographic order equals chronological order, so tools can sort these as plain strings. |
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
 | `saveSlot` | number | 1 to 9 | The save the game was started on last time, `<game name>.sav<N>`; the save picker opens on it (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
 
-An entry whose `favorite` and `completed` are both false, whose `launchCount` and `playMinutes` are both 0 and that has no `saveSlot` is pruned on the next write. Deleting a game through the launcher also removes its entry.
+An entry whose `favorite` and `completed` are both false, whose `launchCount`, `playSeconds` and `playMinutes` are all 0 and that has no `saveSlot` is pruned on the next write. Deleting a game through the launcher also removes its entry.
 
 ## Session keys (root level)
 While a play session is open, the root object holds:
@@ -54,7 +55,7 @@ While a play session is open, the root object holds:
 | `sessionGameCode` | session open and code known | Its game code. |
 | `sessionStart` | session open | Launch time, `"YYYY-MM-DD HH:MM"`. |
 
-A session opens when a game is launched and closes at the next launcher boot. On boot, the elapsed time since `sessionStart` is added to the game's `playMinutes` if it is between 1 minute and 6 hours (longer means the console was powered off, not playing), and the session keys are removed.
+A session opens when a game is launched and closes at the next launcher boot, which removes the session keys. With Pico Loader Enhanced, a DS game that is left with the in-game exit hands the launcher the frames it ran, counted by the game itself, so time the console spends asleep is not in them. On boot the launcher adds them to the game's `playSeconds`. A session that ends by switching the console off, a game without the in-game exit, or the official Pico Loader adds nothing.
 
 With `launchTracking` set to `false` in `settings.json`, a launch writes nothing here, and a session still open from before the switch is removed on the next boot without being credited. A save slot is still written when it changes, since the player picked it.
 
@@ -89,7 +90,7 @@ Other values longer than these are truncated (lengths in bytes, so accented char
 - `lastPlayed` / `sessionStart`: 20
 - `path`: 256
 
-Years in `lastPlayed` are written as `20YY`; dates before the year 2000 do not parse and are ignored for play-time accounting.
+Years in `lastPlayed` are written as `20YY`.
 
 ## Rules for external tools
 - **Unknown keys are not preserved.** The launcher rewrites the whole file on every change and serializes only the keys listed above. Do not store tool-specific data in this file.

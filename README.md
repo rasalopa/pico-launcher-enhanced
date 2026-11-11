@@ -30,7 +30,7 @@ Everything upstream Pico Launcher offers (display modes, [custom icons, banners 
 - **Statistics panel**: totals, most-played games and the launcher version, from the menu
 - **Screenshots**: hold START for about half a second to save both screens to `/_pico/screenshots`
 - **Per-game launch tracking**: launch count and last-played date, kept per game; the recently played panel shows each game's date, and the statistics panel the counts of the three most launched games; can be switched off in `settings.json`
-- **Approximate play time**: per game, in the favorites panel
+- **Play time** counted while you play, with Pico Loader Enhanced and its in-game exit: per game in the favorites and statistics panels, and the total in statistics
 - **Game deletion**: from the menu, with confirmation; removes the ROM and, for a DS or GBA game, its save; a DS game's extra saves go too
 - **ROMs run by an emulator count as games**: GB, SNES or any ROM opened through a file association can be marked, deleted and picked at random; see [FileAssociations.md](docs/FileAssociations.md)
 - **Theme deletion**: from the theme selector, with confirmation; the theme in use and the two that come with the launcher are kept
