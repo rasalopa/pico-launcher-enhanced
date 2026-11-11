@@ -4,13 +4,11 @@
 #include "gui/views/ViewContainer.h"
 #include "BannerView.h"
 #include "gui/views/LabelView.h"
-#include "gui/views/Label2DView.h"
 #include "../FileType/FileIcon.h"
 #include "../DisplayMode/RomBrowserDisplayMode.h"
 
 class RomBrowserViewModel;
 class IRomBrowserViewFactory;
-class IFontRepository;
 class IGameDataService;
 struct MaterialColorScheme;
 
@@ -40,7 +38,6 @@ private:
     SharedPtr<RomBrowserViewModel> _viewModel;
     const IThemeFileIconFactory* _themeFileIconFactory;
     SharedPtr<BannerView> _fileInfoView;
-    SharedPtr<Label2DView> _launchInfoLabel;
     IGameDataService* _gameDataService;
     std::unique_ptr<FileIcon> _selectedFileIcon;
     SharedPtr<FileCover> _selectedFileCover;
@@ -72,7 +69,6 @@ private:
         const RomBrowserDisplayMode* displayMode,
         const IThemeFileIconFactory* themeFileIconFactory,
         const IRomBrowserViewFactory* romBrowserViewFactory,
-        const IFontRepository* fontRepository,
         const MaterialColorScheme* materialColorScheme);
 
     void DrawChip(GraphicsContext& graphicsContext, int x, int y, int width, u32 paletteRow);
