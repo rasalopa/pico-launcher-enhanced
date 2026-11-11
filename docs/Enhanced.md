@@ -21,6 +21,9 @@ The app bar has three buttons: back, the menu (three dots) and display settings.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
+## Game titles
+A game whose header carries no title is shown by its file name, with the extension and the tags of a no-intro, GoodTools or romhack set taken off: `Pokemon - Emerald Version (USA, Europe)` reads as `Pokemon - Emerald Version`, and `Pokemon - Unbound (v2.1.1) (Hack)` reads as `Pokemon - Unbound`. An article that no-intro appends to the end is put back in front, so `Legend of Zelda, The - Link's Awakening` reads as `The Legend of Zelda - Link's Awakening`. A name is only cleaned when everything after its title is such a group, so `Mario (Classic)` keeps its parentheses; a name with no tags is shown without its extension. A rom whose header carries a title, like an NDS game, keeps showing that title exactly as before. Only the title line is involved: folders and other files keep their name as it is. There is no switch for this.
+
 ## Jumping by initial
 In a folder with hundreds of games, paging through the list a screen at a time takes a
 while. L and R now jump to where the previous or next initial starts, so crossing a large
