@@ -177,7 +177,7 @@ void RomBrowserTopScreenView::Update()
 // The star goes to the game launched most, by the same comparator that orders
 // the statistics panel's list (LaunchedMoreThan), so the two never disagree:
 // ties go to the name that sorts first, not to whichever was stored first. Play
-// time is not consulted: it counts the clock, not the game (issue #9).
+// time is not consulted: only games left with the in-game exit have any.
 void RomBrowserTopScreenView::RefreshMostPlayed(u32 gameDataVersion)
 {
     _mostPlayedFileName = "";

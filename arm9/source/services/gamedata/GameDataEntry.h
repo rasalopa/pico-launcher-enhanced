@@ -15,9 +15,11 @@ struct GameDataEntry
     ///        the two would then disagree (issue #7).
     String<char, 8> gameCode;
     u32 launchCount = 0;
-    /// @brief Accumulated play time. A session spans from launching the game
-    ///        until the next launcher boot, so it is an approximation.
+    /// @brief Play time from older versions, which timed the clock until the next
+    ///        launcher boot. Kept in the file, no longer added to or shown.
     u32 playMinutes = 0;
+    /// @brief Play time Pico Loader Enhanced measured, from the frames the game ran.
+    u32 playSeconds = 0;
     bool favorite = false;
     /// @brief Marked as finished by the user (long-press X in the browser).
     bool completed = false;

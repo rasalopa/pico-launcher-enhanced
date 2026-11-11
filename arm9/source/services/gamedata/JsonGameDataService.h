@@ -18,8 +18,7 @@ public:
         const char* fullPath, const char* lastPlayedDateTime) override;
     bool SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) override;
     void RemoveEntry(const char* fileName) override;
-    bool CloseOpenSession(const char* nowDateTime) override;
-    bool DiscardOpenSession() override;
+    bool CloseOpenSession(u32 playSeconds) override;
     u32 GetEntryCount() const override { return _entryCount; }
     const GameDataEntry& GetEntryByIndex(u32 index) const override { return _entries[index]; }
     u32 GetVersion() const override { return _version; }

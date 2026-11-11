@@ -56,16 +56,10 @@ public:
     ///        marks are stored.
     virtual void RemoveEntry(const char* fileName) = 0;
 
-    /// @brief Credits the session opened by the last RecordLaunch with the
-    ///        time elapsed until now (the next launcher boot). Sessions over
-    ///        6 hours are discarded: that is a power-off, not a play session.
-    /// @return True when play time was credited (the caller should save).
-    virtual bool CloseOpenSession(const char* nowDateTime) = 0;
-
-    /// @brief Forgets the session opened by the last RecordLaunch without
-    ///        crediting it, for when launch tracking was switched off since.
-    /// @return True when there was a session to forget (the caller should save).
-    virtual bool DiscardOpenSession() = 0;
+    /// @brief Closes the session opened by the last RecordLaunch and credits its
+    ///        game with \p playSeconds, which is 0 after a power-off.
+    /// @return True when there was a session to close (the caller should save).
+    virtual bool CloseOpenSession(u32 playSeconds) = 0;
 
     /// @brief Unordered access to all entries, for building derived lists
     ///        (e.g. recents). Indices are only valid until the next mutation.

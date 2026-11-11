@@ -8,6 +8,7 @@
 #include "gui/OamBuilder.h"
 #include "gui/input/InputProvider.h"
 #include "../MarkerColors.h"
+#include "../PlayTime.h"
 #include "RecentListItemView.h"
 
 #define HEART_X            4
@@ -43,14 +44,7 @@ void RecentListItemView::SetEntry(const GameDataEntry* entry, int index)
     char subtitle[16];
     if (_viewModel->GetKind() == GameListKind::Favorites)
     {
-        // favorites show accumulated play time (same format as the top strip)
-        u32 minutes = entry->playMinutes;
-        if (minutes >= 60)
-            mini_snprintf(subtitle, sizeof(subtitle), "%uh%02u", minutes / 60, minutes % 60);
-        else if (minutes > 0)
-            mini_snprintf(subtitle, sizeof(subtitle), "%um", minutes);
-        else
-            subtitle[0] = 0; // never played: no time to show
+        FormatPlayTime(subtitle, sizeof(subtitle), entry->playSeconds);
     }
     else
     {

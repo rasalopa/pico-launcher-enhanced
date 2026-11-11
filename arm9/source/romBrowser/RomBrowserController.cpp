@@ -512,21 +512,9 @@ void RomBrowserController::Update()
         case RomBrowserState::Start:
         {
             LOG_DEBUG("RomBrowserState::Start\n");
-            // a launcher boot ends the play session the last launch opened;
-            // with tracking switched off since, the session is dropped, not
-            // credited
-            bool sessionChanged;
-            if (_appSettingsService->GetAppSettings().launchTracking)
-            {
-                TCHAR now[20];
-                FormatNowDateTime(now, sizeof(now) / sizeof(now[0]));
-                sessionChanged = _gameDataService->CloseOpenSession(now);
-            }
-            else
-            {
-                sessionChanged = _gameDataService->DiscardOpenSession();
-            }
-            if (sessionChanged)
+            // a launcher boot closes the session the last launch opened, with the
+            // play time Pico Loader Enhanced measured
+            if (_gameDataService->CloseOpenSession(pload_getPlaySeconds()))
             {
                 _gameDataService->SaveAsync(_ioTaskQueue);
             }
@@ -870,6 +858,7 @@ void RomBrowserController::BeginLaunch()
             _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr, fullPath, lastPlayed);
         gameDataChanged = true;
     }
+    pload_setCountPlayTime(_appSettingsService->GetAppSettings().launchTracking);
     if (gameDataChanged)
         _gameDataService->SaveAsync(_ioTaskQueue);
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)

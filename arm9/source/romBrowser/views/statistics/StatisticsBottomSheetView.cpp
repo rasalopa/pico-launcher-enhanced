@@ -11,6 +11,7 @@
 #include "gui/input/InputProvider.h"
 #include "gui/FocusManager.h"
 #include "../MarkerColors.h"
+#include "../PlayTime.h"
 #include "folderIcon.h"
 #include "gamesIcon.h"
 #include "smallHeartIconFilled.h"
@@ -49,17 +50,22 @@
 #define HEADING_Y           70
 #define HEADING_WIDTH       160
 
+// The library's total play time, on the heading's line against the right edge.
+#define TOTAL_X             140
+#define TOTAL_WIDTH         96
+
 // Rank, name and count on one line, the count against the right edge so the
-// three numbers line up and read as a column.
+// three numbers line up and read as a column. The count carries the game's play
+// time after it when there is any, "12x  3h20".
 #define ROW_FIRST_Y         82
 #define ROW_SPACING         14
 #define RANK_X              20
 #define RANK_WIDTH          12
 #define NAME_X              32
-#define NAME_WIDTH          156
+#define NAME_WIDTH          132
 #define NAME_MAX_CHARS      120
-#define COUNT_X             196
-#define COUNT_WIDTH         40
+#define COUNT_X             172
+#define COUNT_WIDTH         64
 
 #define LAST_Y              132
 #define LAST_ICON_X         20
@@ -70,12 +76,6 @@
 #define DATE_DY             2
 
 #define ICON_SIZE           16
-
-// The totals line - "265 launches, 57h 24m played" - is switched off for now and
-// kept behind this rather than removed: the play time in it is the clock running
-// while a game was open, not time played (issue #9), so it overstates. Switched
-// on, it takes the place of the "Most played" heading, which it is the total of.
-#define SHOW_STATISTICS_LAUNCHES_AND_TIME 0
 
 StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewModel> viewModel,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
@@ -115,23 +115,15 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
         return;
     }
 
-#if SHOW_STATISTICS_LAUNCHES_AND_TIME
-    u32 playMinutes = _viewModel->GetTotalPlayMinutes();
-    if (playMinutes > 0)
-    {
-        mini_snprintf(text, sizeof(text), "%u launch%s, %uh %02um played",
-            _viewModel->GetTotalLaunches(), _viewModel->GetTotalLaunches() == 1 ? "" : "es",
-            playMinutes / 60, playMinutes % 60);
-    }
-    else
-    {
-        mini_snprintf(text, sizeof(text), "%u launch%s in total",
-            _viewModel->GetTotalLaunches(), _viewModel->GetTotalLaunches() == 1 ? "" : "es");
-    }
-    _headingLabel = AddLabel(fontRepository, FontType::Medium7_5, HEADING_WIDTH, 48, text);
-#else
     _headingLabel = AddLabel(fontRepository, FontType::Medium7_5, HEADING_WIDTH, 32, "Most played");
-#endif
+
+    char playTime[16];
+    FormatPlayTime(playTime, sizeof(playTime), _viewModel->GetTotalPlaySeconds());
+    if (playTime[0] != 0)
+    {
+        mini_snprintf(text, sizeof(text), "%s played", playTime);
+        _totalLabel = AddLabel(fontRepository, FontType::Medium7_5, TOTAL_WIDTH, 24, text, Alignment::End);
+    }
 
     char name[100];
     _topCount = std::min(_viewModel->GetTopCount(), TOP_COUNT);
@@ -142,8 +134,12 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
         _rankLabels[t] = AddLabel(fontRepository, FontType::Regular10, RANK_WIDTH, 3, text);
         CopyNameWithoutExtension(name, sizeof(name), entry.fileName.GetString());
         _nameLabels[t] = AddLabel(fontRepository, FontType::Regular10, NAME_WIDTH, NAME_MAX_CHARS, name);
-        mini_snprintf(text, sizeof(text), "%ux", entry.launchCount);
-        _countLabels[t] = AddLabel(fontRepository, FontType::Regular10, COUNT_WIDTH, 10, text, Alignment::End);
+        FormatPlayTime(playTime, sizeof(playTime), entry.playSeconds);
+        if (playTime[0] != 0)
+            mini_snprintf(text, sizeof(text), "%ux  %s", entry.launchCount, playTime);
+        else
+            mini_snprintf(text, sizeof(text), "%ux", entry.launchCount);
+        _countLabels[t] = AddLabel(fontRepository, FontType::Regular10, COUNT_WIDTH, 24, text, Alignment::End);
     }
 
     const char* lastPlayed = _viewModel->GetLastPlayed().lastPlayed.GetString();
@@ -228,6 +224,8 @@ void StatisticsBottomSheetView::Update()
     }
     if (_headingLabel)
         _headingLabel->SetPosition(HEADING_X, y + HEADING_Y);
+    if (_totalLabel)
+        _totalLabel->SetPosition(TOTAL_X, y + HEADING_Y);
     for (u32 t = 0; t < _topCount; t++)
     {
         int rowY = y + ROW_FIRST_Y + (int)t * ROW_SPACING;
@@ -291,6 +289,7 @@ void StatisticsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         }
 
         paint(_headingLabel, body);
+        paint(_totalLabel, faint);
         for (u32 t = 0; t < _topCount; t++)
         {
             paint(_rankLabels[t], faint);

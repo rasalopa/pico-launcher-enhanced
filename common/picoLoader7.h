@@ -83,6 +83,36 @@ typedef struct
     const pload_cheats_t* cheats;
 } pload_header7_v3_t;
 
+/// @brief Magic of the Pico Loader Enhanced part of the header ('PLE1').
+#define PLOAD_ENHANCED_MAGIC    0x31454C50
+
+/// @brief Start of the argument that hands the launcher the frames a game ran.
+#define PLOAD_PLAY_FRAMES_ARGUMENT  "playframes="
+
+/// @brief Flags of the Pico Loader Enhanced part of the header.
+typedef enum
+{
+    /// @brief Count the frames a DS game runs and hand them to the launcher
+    ///        as \see PLOAD_PLAY_FRAMES_ARGUMENT and the count after an in-game exit.
+    PLOAD_ENHANCED_FLAG_COUNT_PLAY_TIME = 1u << 0
+} PicoLoaderEnhancedFlags;
+
+/// @brief Struct representing the Pico Loader Enhanced part of the header of picoLoader7.bin.
+///        The official Pico Loader has no such part, so only write \see flags when
+///        \see magic is \see PLOAD_ENHANCED_MAGIC.
+/// @note  On a DSi or 3DS the arm7 can enter at the first byte of picoLoader7.bin and
+///        run the header as code with Z clear and C set, so every word before the
+///        entry point needs a condition that fails there: EQ for the flags as built
+///        (top four bits 0) and CC for the magic.
+typedef struct
+{
+    /// @brief Always \see PLOAD_ENHANCED_MAGIC (read-only).
+    const u32 magic;
+
+    /// @brief The flags, see \see PicoLoaderEnhancedFlags.
+    u32 flags;
+} pload_header7_enhanced_t;
+
 /// @brief Struct representing the header of picoLoader7.bin.
 typedef struct
 {
@@ -106,4 +136,11 @@ typedef struct
 
     /// @brief The API version 3 part of the header. Only access this when \see apiVersion >= 3.
     pload_header7_v3_t v3;
+
+    /// @brief Left free, as zeros, for the API version 4 and later parts of the official
+    ///        Pico Loader header, so the Enhanced part can stay at 0x480 when they come.
+    u32 reservedForOfficialParts[27];
+
+    /// @brief The Pico Loader Enhanced part of the header, see \see pload_header7_enhanced_t.
+    pload_header7_enhanced_t enhanced;
 } pload_header7_t;

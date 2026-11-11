@@ -19,14 +19,13 @@
 #define KEY_COMPLETED         "completed"
 #define KEY_LAUNCH_COUNT      "launchCount"
 #define KEY_PLAY_MINUTES      "playMinutes"
+#define KEY_PLAY_SECONDS      "playSeconds"
 #define KEY_LAST_PLAYED       "lastPlayed"
 #define KEY_PATH              "path"
 #define KEY_SAVE_SLOT         "saveSlot"
 #define KEY_SESSION_GAME      "sessionGame"
 #define KEY_SESSION_GAME_CODE "sessionGameCode"
 #define KEY_SESSION_START     "sessionStart"
-
-#define SESSION_MAX_MINUTES   (6 * 60)
 
 // ArduinoJson silently drops data when its pool is exhausted, so the pool is
 // sized from the entry count (write) or file size (read) instead of a fixed
@@ -44,43 +43,6 @@
 static u32 writePoolSize(u32 entryCount)
 {
     return JSON_POOL_BASE_SIZE + entryCount * JSON_POOL_PER_ENTRY;
-}
-
-/// @brief Parses "YYYY-MM-DD HH:MM" into absolute minutes (days-from-civil
-///        algorithm), so sessions crossing midnight or month ends work.
-static bool parseDateTime(const char* text, s64& totalMinutes)
-{
-    if (strlen(text) < 16)
-        return false;
-    auto number = [] (const char* p, int digits) -> int
-    {
-        int value = 0;
-        for (int i = 0; i < digits; i++)
-        {
-            if (p[i] < '0' || p[i] > '9')
-                return -1;
-            value = value * 10 + (p[i] - '0');
-        }
-        return value;
-    };
-    int year = number(text, 4);
-    int month = number(text + 5, 2);
-    int day = number(text + 8, 2);
-    int hour = number(text + 11, 2);
-    int minute = number(text + 14, 2);
-    if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31 ||
-        hour < 0 || hour > 23 || minute < 0 || minute > 59)
-    {
-        return false;
-    }
-    year -= month <= 2;
-    int era = year / 400;
-    u32 yearOfEra = year - era * 400;
-    u32 dayOfYear = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
-    u32 dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
-    s64 days = (s64)era * 146097 + dayOfEra;
-    totalMinutes = days * 1440 + hour * 60 + minute;
-    return true;
 }
 
 // A file name at or over the storage limit would be silently truncated into a
@@ -237,36 +199,14 @@ void JsonGameDataService::RecordLaunch(const char* fileName, const char* gameCod
     _version++;
 }
 
-bool JsonGameDataService::CloseOpenSession(const char* nowDateTime)
+bool JsonGameDataService::CloseOpenSession(u32 playSeconds)
 {
     if (_sessionStart.GetString()[0] == 0)
         return false;
 
-    s64 startMinutes = 0;
-    s64 nowMinutes = 0;
-    if (parseDateTime(_sessionStart.GetString(), startMinutes) &&
-        parseDateTime(nowDateTime, nowMinutes))
-    {
-        s64 minutes = nowMinutes - startMinutes;
-        // longer than the cap means the console was off, not playing
-        if (minutes >= 1 && minutes <= SESSION_MAX_MINUTES)
-        {
-            // by name, like every other lookup: if the rom was renamed since the
-            // launch there is nothing to credit and the minutes are dropped
-            // rather than invented onto a new entry
-            if (auto* entry = Find(_sessionGameFileName.GetString()))
-                entry->playMinutes += (u32)minutes;
-        }
-    }
-    ClearSession();
-    // the cleared session (and any credited time) must be persisted
-    return true;
-}
-
-bool JsonGameDataService::DiscardOpenSession()
-{
-    if (_sessionStart.GetString()[0] == 0)
-        return false;
+    // by name, like every other lookup: a rom renamed since its launch gets nothing
+    if (auto* entry = Find(_sessionGameFileName.GetString()))
+        entry->playSeconds += playSeconds;
     ClearSession();
     return true;
 }
@@ -326,7 +266,7 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
         const auto& entry = _entries[i];
         // entries reset back to all-default state are pruned on write
         if (!entry.favorite && !entry.completed && entry.launchCount == 0 && entry.playMinutes == 0 &&
-            entry.saveSlot == 0)
+            entry.playSeconds == 0 && entry.saveSlot == 0)
             continue;
         auto game = games[entry.fileName.GetString()].to<JsonObject>();
         if (entry.gameCode.GetString()[0] != 0)
@@ -339,6 +279,8 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
             game[KEY_LAUNCH_COUNT] = entry.launchCount;
         if (entry.playMinutes > 0)
             game[KEY_PLAY_MINUTES] = entry.playMinutes;
+        if (entry.playSeconds > 0)
+            game[KEY_PLAY_SECONDS] = entry.playSeconds;
         if (entry.lastPlayed.GetString()[0] != 0)
             game[KEY_LAST_PLAYED] = entry.lastPlayed.GetString();
         if (entry.path.GetString()[0] != 0)
@@ -494,6 +436,7 @@ void JsonGameDataService::Load()
         entry->completed = item.value()[KEY_COMPLETED] | false;
         entry->launchCount = item.value()[KEY_LAUNCH_COUNT] | 0u;
         entry->playMinutes = item.value()[KEY_PLAY_MINUTES] | 0u;
+        entry->playSeconds = item.value()[KEY_PLAY_SECONDS] | 0u;
         entry->lastPlayed = item.value()[KEY_LAST_PLAYED] | "";
         entry->path = item.value()[KEY_PATH] | "";
         // a slot this build can't name a save for falls back to the regular one

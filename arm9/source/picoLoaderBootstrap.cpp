@@ -2,6 +2,7 @@
 #include <nds/arm9/video.h>
 #include <nds/arm9/cache.h>
 #include "core/Environment.h"
+#include <stdlib.h>
 #include <string.h>
 #include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/mem/memVram.h>
@@ -16,12 +17,17 @@
 #define PICO_LOADER_9_PATH    "/_pico/picoLoader9.bin"
 #define PICO_LOADER_7_PATH    "/_pico/picoLoader7.bin"
 
+// the DS screen refreshes 59.8261 times a second
+#define FRAMES_PER_10000_SECONDS  598261
+
 typedef void (*pico_loader_9_func_t)(void);
 
 static pload_params_t sLoadParams;
 static char sLauncherPath[256] alignas(32);
 static PicoLoaderBootDrive sBootDrive;
 static const pload_cheats_t* sCheatData = nullptr;
+static bool sCountPlayTime = false;
+static u32 sPlayFrames = 0;
 
 pload_params_t* pload_getLoadParams()
 {
@@ -41,6 +47,25 @@ void pload_setLauncherPath(const char* launcherPath)
 void pload_setCheatData(const pload_cheats_t* cheatData)
 {
     sCheatData = cheatData;
+}
+
+void pload_setCountPlayTime(bool countPlayTime)
+{
+    sCountPlayTime = countPlayTime;
+}
+
+void pload_setPlayFramesArgument(const char* argument)
+{
+    constexpr u32 prefixLength = sizeof(PLOAD_PLAY_FRAMES_ARGUMENT) - 1;
+    if (strncmp(argument, PLOAD_PLAY_FRAMES_ARGUMENT, prefixLength) == 0)
+    {
+        sPlayFrames = strtoul(argument + prefixLength, nullptr, 10);
+    }
+}
+
+u32 pload_getPlaySeconds()
+{
+    return (u32)((u64)sPlayFrames * 10000 / FRAMES_PER_10000_SECONDS);
 }
 
 void pload_start()
@@ -101,6 +126,11 @@ void pload_start()
     if (header->apiVersion >= 3)
     {
         header->v3.cheats = sCheatData;
+    }
+    // only Pico Loader Enhanced has this part; the official loader has code there
+    if (header->enhanced.magic == PLOAD_ENHANCED_MAGIC)
+    {
+        header->enhanced.flags = sCountPlayTime ? PLOAD_ENHANCED_FLAG_COUNT_PLAY_TIME : 0;
     }
     mem_setVramCMapping(MEM_VRAM_C_ARM7_00000);
     mem_setVramDMapping(MEM_VRAM_D_ARM7_20000);

@@ -184,6 +184,10 @@ int main(int argc, char* argv[])
     {
         pload_setLauncherPath(argv[0]);
     }
+    if (argc >= 2)
+    {
+        pload_setPlayFramesArgument(argv[1]);
+    }
 
     memset(&gFatFs, 0, sizeof(gFatFs));
     if (dldi_init())

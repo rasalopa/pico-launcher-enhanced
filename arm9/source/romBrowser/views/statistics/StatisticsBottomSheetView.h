@@ -14,10 +14,10 @@ class IVramManager;
 ///
 /// A row of four figures, each with an icon: games in this folder, played,
 /// favorites, completed. Under it the three most launched games with their
-/// counts against the right edge, and the last game played next to the clock
-/// the panel is opened with. The launcher's version sits faint at the top-right;
-/// the build hash is on the boot page and in the about sheet. The total
-/// launches and play time line is switched off in the .cpp.
+/// counts and play time against the right edge, the library's total play time
+/// on the heading's line, and the last game played next to the clock the panel
+/// is opened with. The launcher's version sits faint at the top-right; the build
+/// hash is on the boot page and in the about sheet.
 class StatisticsBottomSheetView : public BottomSheetView
 {
     SHARED_ONLY(StatisticsBottomSheetView)
@@ -46,6 +46,8 @@ private:
     u32 _tileIconVramOffsets[TILE_COUNT] = {};
     /// "Most played" over the list, or the reason there is no list.
     SharedPtr<Label2DView> _headingLabel;
+    /// The library's total play time, absent when nothing was measured.
+    SharedPtr<Label2DView> _totalLabel;
     SharedPtr<Label2DView> _rankLabels[TOP_COUNT];
     SharedPtr<Label2DView> _nameLabels[TOP_COUNT];
     SharedPtr<Label2DView> _countLabels[TOP_COUNT];
