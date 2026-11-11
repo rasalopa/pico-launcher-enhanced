@@ -2,6 +2,18 @@
 
 ## Enhanced fork
 
+### [Unreleased]
+
+#### Changed
+- Play time is measured now, with Pico Loader Enhanced: the loader counts the frames a DS game
+  runs and hands them to the launcher when you leave the game with the in-game exit. Time asleep
+  is not counted, and a session that ends with the console switched off adds nothing, and neither
+  do games without the in-game exit or the official Pico Loader. It shows per game and in total in
+  the statistics panel, and per game in the favorites panel. The play time earlier versions
+  counted, the clock until the next launcher boot, stays in `gamedata.json` as `playMinutes` and
+  is no longer shown. Going back to v1.11.0 or earlier deletes `playSeconds` from `gamedata.json`
+  the first time it saves.
+
 ### [enhanced-v1.11.0]
 
 #### Added
