@@ -1,6 +1,5 @@
 #include "common.h"
 #include "../FileInfoManager.h"
-#include "core/task/TaskQueue.h"
 #include "../views/BannerListItemView.h"
 #include "../Theme/IRomBrowserViewFactory.h"
 #include "romBrowser/viewModels/RomBrowserItemViewModel.h"
@@ -25,11 +24,10 @@ void BannerListFileRecyclerAdapter::BindView(SharedPtr<View> view, int index) co
     FileRecyclerAdapter::BindView(view, index);
 }
 
-TaskResult<void> BannerListFileRecyclerAdapter::BindView(SharedPtr<View> view, int index,
-    const InternalFileInfo* internalFileInfo, const vu8& cancelRequested) const
+void BannerListFileRecyclerAdapter::BindView(SharedPtr<View> view, int index,
+    const InternalFileInfo* internalFileInfo) const
 {
     auto listItemView = static_cast<BannerListItemView*>(view.GetPointer());
-    listItemView->GetViewModel().SetIndex(index);
     const auto& fileInfo = _fileInfoManager->GetItem(index);
     bool fileNameAsTitle = true;
     if (internalFileInfo)
@@ -49,39 +47,22 @@ TaskResult<void> BannerListFileRecyclerAdapter::BindView(SharedPtr<View> view, i
     }
     if (icon != nullptr)
     {
-        if (cancelRequested)
-        {
-            icon.reset();
-            _fileInfoManager->ReleaseFileInfo(index);
-            return TaskResult<void>::Canceled();
-        }
         icon->SetAnimFrame(_iconFrameCounter);
         listItemView->SetIcon(std::move(icon));
         listItemView->UploadIconGraphics();
-        if (cancelRequested)
-        {
-            listItemView->SetIcon(nullptr);
-            _fileInfoManager->ReleaseFileInfo(index);
-            return TaskResult<void>::Canceled();
-        }
     }
-    return TaskResult<void>::Completed();
 }
 
-void BannerListFileRecyclerAdapter::SetQueueTask(const SharedPtr<View>& view, QueueTask<void> queueTask) const
+IRomBrowserItemViewModel& BannerListFileRecyclerAdapter::GetViewModel(const SharedPtr<View>& view) const
 {
-    auto listItemView = static_cast<BannerListItemView*>(view.GetPointer());
-    listItemView->GetViewModel().SetQueueTask(std::move(queueTask));
+    return static_cast<BannerListItemView*>(view.GetPointer())->GetViewModel();
 }
 
-void BannerListFileRecyclerAdapter::ReleaseView(SharedPtr<View> view, int index) const
+void BannerListFileRecyclerAdapter::UnbindView(const SharedPtr<View>& view, int index) const
 {
-    LOG_DEBUG("Releasing %d\n", index);
     auto listItemView = static_cast<BannerListItemView*>(view.GetPointer());
     listItemView->SetIcon(nullptr);
     listItemView->SetGameTitle(u"");
-    listItemView->GetViewModel().SetIndex(-1);
-    listItemView->GetViewModel().CancelQueueTask();
     _fileInfoManager->ReleaseFileInfo(index);
 }
 

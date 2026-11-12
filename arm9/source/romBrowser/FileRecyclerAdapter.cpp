@@ -5,6 +5,7 @@
 #include "FileType/FileType.h"
 #include "services/settings/RomBrowserDisplaySettings.h"
 #include "FileInfoManager.h"
+#include "viewModels/IRomBrowserItemViewModel.h"
 #include "FileRecyclerAdapter.h"
 
 /// @brief The character a name is filed under. Folded the same way the sort
@@ -107,16 +108,42 @@ void FileRecyclerAdapter::BindView(SharedPtr<View> view, int index) const
         }
 
         LOG_DEBUG("Started task to load %d\n", index);
+        _bindingView = view.GetPointer();
+        _bindingIndex = index;
         _fileInfoManager->LoadFileInfo(index);
-        auto internalFileInfo = _fileInfoManager->GetInternalFileInfo(index);
-        if (cancelRequested)
+        if (!cancelRequested)
         {
-            _fileInfoManager->ReleaseFileInfo(index);
-            return TaskResult<void>::Canceled();
+            GetViewModel(view).SetIndex(index);
+            BindView(view, index, _fileInfoManager->GetInternalFileInfo(index));
         }
-        return BindView(view, index, internalFileInfo, cancelRequested);
+        // IRQs off: a cancel between this check and clearing the marks would leave nobody to unbind.
+        u32 irqs = rtos_disableIrqs();
+        bool canceled = cancelRequested;
+        if (canceled)
+        {
+            rtos_restoreIrqs(irqs);
+            UnbindView(view, index);
+            GetViewModel(view).SetIndex(-1);
+            irqs = rtos_disableIrqs();
+        }
+        _bindingView = nullptr;
+        _bindingIndex = -1;
+        rtos_restoreIrqs(irqs);
+        return canceled ? TaskResult<void>::Canceled() : TaskResult<void>::Completed();
     });
-    SetQueueTask(view, std::move(queueTask));
+    GetViewModel(view).SetQueueTask(std::move(queueTask));
+}
+
+void FileRecyclerAdapter::ReleaseView(SharedPtr<View> view, int index) const
+{
+    LOG_DEBUG("Releasing %d\n", index);
+    auto& viewModel = GetViewModel(view);
+    viewModel.SetIndex(-1);
+    viewModel.CancelQueueTask();
+    if (view.GetPointer() != _bindingView && index != _bindingIndex)
+    {
+        UnbindView(view, index); // else the canceled bind task unbinds them
+    }
 }
 
 void FileRecyclerAdapter::ViewsReleased() const

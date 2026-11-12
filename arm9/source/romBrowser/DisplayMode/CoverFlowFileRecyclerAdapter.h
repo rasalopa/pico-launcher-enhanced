@@ -20,7 +20,6 @@ public:
 
     void GetViewSize(int& width, int& height) const override;
     SharedPtr<View> CreateView() const override;
-    void ReleaseView(SharedPtr<View> view, int index) const override;
 
     void InitVram(const VramContext& vramContext) override;
 
@@ -29,7 +28,8 @@ private:
     VBlankTextureLoader* _vblankTextureLoader;
     const ICoverRepository* _coverRepository;
 
-    TaskResult<void> BindView(SharedPtr<View> view, int index,
-        const InternalFileInfo* internalFileInfo, const vu8& cancelRequested) const override;
-    void SetQueueTask(const SharedPtr<View>& view, QueueTask<void> queueTask) const override;
+    void BindView(SharedPtr<View> view, int index,
+        const InternalFileInfo* internalFileInfo) const override;
+    IRomBrowserItemViewModel& GetViewModel(const SharedPtr<View>& view) const override;
+    void UnbindView(const SharedPtr<View>& view, int index) const override;
 };

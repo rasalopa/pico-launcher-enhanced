@@ -1,6 +1,5 @@
 #include "common.h"
 #include "../FileInfoManager.h"
-#include "core/task/TaskQueue.h"
 #include "../views/CoverView.h"
 #include "../Theme/IRomBrowserViewFactory.h"
 #include "../FileType/UnknownFileCover.h"
@@ -20,41 +19,23 @@ SharedPtr<View> CoverFlowFileRecyclerAdapter::CreateView() const
         std::make_unique<RomBrowserItemViewModel>(_romBrowserController), _vblankTextureLoader);
 }
 
-TaskResult<void> CoverFlowFileRecyclerAdapter::BindView(SharedPtr<View> view, int index,
-    const InternalFileInfo* internalFileInfo, const vu8& cancelRequested) const
+void CoverFlowFileRecyclerAdapter::BindView(SharedPtr<View> view, int index,
+    const InternalFileInfo* internalFileInfo) const
 {
     auto coverView = static_cast<CoverView*>(view.GetPointer());
-    coverView->GetViewModel().SetIndex(index);
-    auto cover = _fileInfoManager->GetFileCover(index);
-    if (cancelRequested)
-    {
-        _fileInfoManager->ReleaseFileInfo(index);
-        return TaskResult<void>::Canceled();
-    }
-    coverView->SetCover(std::move(cover));
+    coverView->SetCover(_fileInfoManager->GetFileCover(index));
     coverView->UploadCoverGraphics();
-    if (cancelRequested)
-    {
-        coverView->ClearCover();
-        _fileInfoManager->ReleaseFileInfo(index);
-        return TaskResult<void>::Canceled();
-    }
-    return TaskResult<void>::Completed();
 }
 
-void CoverFlowFileRecyclerAdapter::SetQueueTask(const SharedPtr<View>& view, QueueTask<void> queueTask) const
+IRomBrowserItemViewModel& CoverFlowFileRecyclerAdapter::GetViewModel(const SharedPtr<View>& view) const
 {
-    auto coverView = static_cast<CoverView*>(view.GetPointer());
-    coverView->GetViewModel().SetQueueTask(std::move(queueTask));
+    return static_cast<CoverView*>(view.GetPointer())->GetViewModel();
 }
 
-void CoverFlowFileRecyclerAdapter::ReleaseView(SharedPtr<View> view, int index) const
+void CoverFlowFileRecyclerAdapter::UnbindView(const SharedPtr<View>& view, int index) const
 {
-    LOG_DEBUG("Releasing %d\n", index);
     auto coverView = static_cast<CoverView*>(view.GetPointer());
     coverView->ClearCover();
-    coverView->GetViewModel().SetIndex(-1);
-    coverView->GetViewModel().CancelQueueTask();
     _fileInfoManager->ReleaseFileInfo(index);
 }
 
