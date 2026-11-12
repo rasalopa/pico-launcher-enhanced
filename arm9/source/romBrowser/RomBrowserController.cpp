@@ -49,7 +49,8 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
     _triggerFileInfo = FileInfo(fileInfo);
     StringUtil::Copy(_triggerGameCode, gameCode ? gameCode : "",
         sizeof(_triggerGameCode) / sizeof(_triggerGameCode[0]));
-    if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
+    if (_triggerFileInfo.GetFileType()->UsesLoaderSave() &&
+        !IsBlocked(ParentalFeature::SaveSlots))
     {
         // the picker must list every save, and the ones noted when the folder was read
         // can miss some when its saves folder couldn't be read to the end
@@ -66,7 +67,13 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo, const char* game
 
 void RomBrowserController::LaunchSaveSlot(u32 saveSlot)
 {
-    _launchSaveSlot = saveSlot;
+    // Save sandboxing replaces whatever slot was picked, including the main save.
+    // It is the one slot that still starts while the save-slot permission is off.
+    bool saveSandboxing = _appSettingsService->GetAppSettings().parentalControls.UsesSaveSandboxing();
+    u32 launchSaveSlot = saveSandboxing ? kSandboxSaveSlot : saveSlot;
+    if (!saveSandboxing && launchSaveSlot != 0 && IsBlocked(ParentalFeature::SaveSlots))
+        return;
+    _launchSaveSlot = launchSaveSlot;
     _stateMachine.Fire(RomBrowserStateTrigger::Launch);
 }
 
@@ -77,6 +84,8 @@ void RomBrowserController::HideSavePicker()
 
 bool RomBrowserController::SelectedHasSaveSlots() const
 {
+    if (IsBlocked(ParentalFeature::SaveSlots))
+        return false;
     const FileInfo* game = GetSelectedGame();
     return game && game->GetFileType()->UsesLoaderSave();
 }
@@ -100,6 +109,8 @@ u32 RomBrowserController::FindNewSaveSlotOfSelected() const
 
 void RomBrowserController::LaunchSelectedOnSaveSlot(u32 saveSlot)
 {
+    if (IsBlocked(ParentalFeature::SaveSlots))
+        return;
     const FileInfo* game = GetSelectedGame();
     if (!game)
         return;
@@ -200,6 +211,8 @@ u16 RomBrowserController::FindSaveSlotsOnCard(const char* romFileName) const
 
 void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* gameCode)
 {
+    if (IsBlocked(ParentalFeature::Badges))
+        return;
     // the path makes the entry navigable from the favorites panel even for
     // games that were marked but never launched
     TCHAR fullPath[256];
@@ -216,6 +229,8 @@ void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo, const char* 
 
 void RomBrowserController::ToggleCompleted(const FileInfo& fileInfo, const char* gameCode)
 {
+    if (IsBlocked(ParentalFeature::Badges))
+        return;
     TCHAR fullPath[256];
     BuildCurrentFolderFilePath(fileInfo.GetFileName(), fullPath,
         sizeof(fullPath) / sizeof(fullPath[0]));
@@ -242,6 +257,9 @@ void RomBrowserController::ToggleCompletedFilter()
 
 void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
 {
+    // this sheet is the cheats sheet; parental controls can take it away
+    if (IsBlocked(ParentalFeature::Cheats))
+        return;
     _triggerFileInfo = FileInfo(fileInfo);
     _stateMachine.Fire(RomBrowserStateTrigger::ShowGameInfo);
 }
@@ -287,6 +305,10 @@ void RomBrowserController::ShowStatistics()
 // the action can never disagree about what is deletable.
 bool RomBrowserController::CanDeleteSelected() const
 {
+    // the menu entry is drawn faded from this, but RequestDeleteSelected and
+    // ConfirmDelete ask it too, so no other route can delete while blocked
+    if (IsBlocked(ParentalFeature::Delete))
+        return false;
     return GetSelectedGame() != nullptr;
 }
 
@@ -368,6 +390,10 @@ void RomBrowserController::CancelDelete()
 
 void RomBrowserController::ConfirmDelete()
 {
+    // the sheet can only be here because RequestDeleteSelected let it, but the
+    // lock is checked again at the point the file actually goes
+    if (IsBlocked(ParentalFeature::Delete))
+        return;
     _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
     {
         FRESULT result = f_unlink(_deleteRomFileName);
@@ -443,6 +469,72 @@ void RomBrowserController::ShowAbout()
 void RomBrowserController::HideAbout()
 {
     _stateMachine.Fire(RomBrowserStateTrigger::HideAbout);
+}
+
+void RomBrowserController::ShowParentalControls()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowParentalControls);
+}
+
+void RomBrowserController::HideParentalControls()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::HideParentalControls);
+}
+
+void RomBrowserController::SaveParentalControls()
+{
+    // Persist each change at once. Waiting for HideParentalControls lost the
+    // PIN and switches when the sheet closed another way or the console was
+    // powered off before a queued save could run.
+    _appSettingsService->Save();
+}
+
+bool RomBrowserController::VerifyParentalPin(const char* pin) const
+{
+    const auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    return !parentalControls.HasPin() || parentalControls.MatchesPin(pin);
+}
+
+void RomBrowserController::SetRestrictedMode(bool enabled)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (parentalControls.restrictedMode == enabled)
+        return;
+    parentalControls.restrictedMode = enabled;
+    // Save sandboxing already locks save slots; enforce that even when a card
+    // set the lock on while the old permission still said it was allowed.
+    if (enabled && parentalControls.saveSandboxing)
+        parentalControls.allowSaveSlots = false;
+    SaveParentalControls();
+}
+
+void RomBrowserController::SetParentalPin(const char* pin)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (strcmp(parentalControls.pin.GetString(), pin ? pin : "") == 0)
+        return;
+    parentalControls.pin = pin ? pin : "";
+    SaveParentalControls();
+}
+
+void RomBrowserController::SetParentalFeatureAllowed(ParentalFeature feature, bool allowed)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (feature == ParentalFeature::SaveSlots && allowed && parentalControls.saveSandboxing)
+        return;
+    if (parentalControls.IsAllowed(feature) == allowed)
+        return;
+    parentalControls.SetAllowed(feature, allowed);
+    SaveParentalControls();
+}
+
+void RomBrowserController::SetParentalSaveSandboxing(bool enabled)
+{
+    auto& parentalControls = _appSettingsService->GetAppSettings().parentalControls;
+    if (parentalControls.saveSandboxing == enabled)
+        return;
+    parentalControls.SetSaveSandboxing(enabled);
+    SaveParentalControls();
 }
 
 void RomBrowserController::HideDisplaySettings()
@@ -839,7 +931,10 @@ void RomBrowserController::BeginLaunch()
     if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
     {
         const auto* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
-        if ((entry ? entry->saveSlot : 0) != _launchSaveSlot)
+        // .sav10 is not one of the picker's slots, so it must not replace the
+        // save remembered in gamedata.json. Turning save sandboxing off then
+        // returns to the save the player was using before.
+        if (_launchSaveSlot != kSandboxSaveSlot && (entry ? entry->saveSlot : 0) != _launchSaveSlot)
         {
             gameDataChanged = _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
                 _launchSaveSlot, _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr);

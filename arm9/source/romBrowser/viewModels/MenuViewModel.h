@@ -37,6 +37,7 @@ public:
     bool IsCompletedFilterEnabled() const { return _romBrowserController->IsCompletedFilterEnabled(); }
 
     void ShowAbout() { _romBrowserController->ShowAbout(); }
+    void ShowParentalControls() { _romBrowserController->ShowParentalControls(); }
 
     void Close() { _romBrowserController->HideMenu(); }
 

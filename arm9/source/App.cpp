@@ -31,6 +31,7 @@
 #include "romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.h"
 #include "romBrowser/views/menu/MenuBottomSheetView.h"
 #include "romBrowser/views/about/AboutBottomSheetView.h"
+#include "romBrowser/views/parental/ParentalControlsBottomSheetView.h"
 #include "romBrowser/views/savepicker/SavePickerBottomSheetView.h"
 #include "romBrowser/views/DisplaySettingsBottomSheetView.h"
 #include "bgm/AudioStreamPlayer.h"
@@ -447,6 +448,16 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
             HandleHideAboutTrigger();
             break;
         }
+        case RomBrowserStateTrigger::ShowParentalControls:
+        {
+            HandleShowParentalControlsTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideParentalControls:
+        {
+            HandleHideParentalControlsTrigger();
+            break;
+        }
         case RomBrowserStateTrigger::ShowSavePicker:
         {
             HandleShowSavePickerTrigger();
@@ -598,6 +609,21 @@ void App::HandleShowAboutTrigger()
 }
 
 void App::HandleHideAboutTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowParentalControlsTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto parentalControlsDialog = ParentalControlsBottomSheetView::CreateShared(
+        &_romBrowserController, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(parentalControlsDialog));
+}
+
+void App::HandleHideParentalControlsTrigger()
 {
     _dialogPresenter.CloseDialog();
     if (!_dialogPresenter.GetOldFocus())

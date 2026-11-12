@@ -53,6 +53,21 @@ public:
     void HideMenu() override;
     void ShowAbout() override;
     void HideAbout() override;
+    void ShowParentalControls() override;
+    void HideParentalControls() override;
+    const ParentalControls& GetParentalControls() const override
+    {
+        return _appSettingsService->GetAppSettings().parentalControls;
+    }
+    bool VerifyParentalPin(const char* pin) const override;
+    void SetRestrictedMode(bool enabled) override;
+    void SetParentalPin(const char* pin) override;
+    void SetParentalFeatureAllowed(ParentalFeature feature, bool allowed) override;
+    void SetParentalSaveSandboxing(bool enabled) override;
+    bool IsBlocked(ParentalFeature feature) const override
+    {
+        return !_appSettingsService->GetAppSettings().parentalControls.Allows(feature);
+    }
     bool CanDeleteSelected() const override;
     void RequestDeleteSelected() override;
     void CancelDelete() override;
@@ -197,6 +212,10 @@ private:
     ExtensionFileTypeProvider _fileTypeProvider;
     std::unique_ptr<ICheatRepository> _cheatRepository;
 
+    /// @brief Whether the highlighted entry is a game at all: the question
+    ///        delete and game info share, before parental controls are asked.
+    bool IsSelectedGame() const;
+
     void HandleTrigger();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
@@ -221,4 +240,5 @@ private:
     /// @brief Deletes one save of the game being deleted, the one in the saves folder first.
     static void DeleteSave(const char* folderSaveFileName, const char* saveFileName);
     void LoadCheats() const;
+    void SaveParentalControls();
 };
