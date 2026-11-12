@@ -14,6 +14,15 @@
   is no longer shown. Going back to v1.11.0 or earlier deletes `playSeconds` from `gamedata.json`
   the first time it saves.
 
+#### Fixed
+- Titles in the file list could come out blank, repeated, mixed up or from the folder just left
+  after scrolling fast with L and R or going to the parent folder. From the same cause, holding L
+  and Down while pressing B over and over made the folders disappear one by one until the
+  launcher stopped taking input (#56). cgimenes found both causes (#42).
+- Scrolling fast through a big folder could garble a title or an icon: an item that scrolled away
+  had its file info freed while it was still loading. Changing the view, the sort or a filter
+  during a load had the same problem. cgimenes found it (#40).
+
 ### [enhanced-v1.11.0]
 
 #### Added
