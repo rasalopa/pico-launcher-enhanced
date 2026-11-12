@@ -130,7 +130,8 @@ public:
         u32 irqs = rtos_disableIrqs();
         if (task->IsCompleted())
         {
-            if (task->link.prev != nullptr || task->link.next != nullptr)
+            // canceled before it ran, so still queued: behind another task or at the head
+            if (task->link.prev != nullptr || _taskList.GetHead() == task)
             {
                 _taskList.Remove(task);
             }
