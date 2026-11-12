@@ -3,6 +3,9 @@
 #include "UnknownFileType.h"
 #include "Nds/NdsFileType.h"
 #include "Gba/GbaFileType.h"
+#include "Gb/GbFileType.h"
+#include "Nes/NesFileType.h"
+#include "Snes/SnesFileType.h"
 #include "ExtensionFileTypeProvider.h"
 
 static bool isNdsExtension(const char* extension)
@@ -16,6 +19,17 @@ static bool isGbaExtension(const char* extension)
 {
     return !strcasecmp(extension, "gba")
         || !strcasecmp(extension, "agb");
+}
+
+static bool isNesExtension(const char* extension)
+{
+    return !strcasecmp(extension, "nes");
+}
+
+static bool isSnesExtension(const char* extension)
+{
+    return !strcasecmp(extension, "sfc")
+        || !strcasecmp(extension, "smc");
 }
 
 // A file opened through a file association counts as a game, so the roms of any system
@@ -48,9 +62,31 @@ ExtensionFileTypeProvider::ExtensionFileTypeProvider(const AppSettings& appSetti
     for (u32 i = 0; i < appSettings.numberOfFileAssociations; i++)
     {
         const FileType* baseFileType = nullptr;
-        if (isGbaExtension(appSettings.fileAssociations[i].extension))
+        const char* extension = appSettings.fileAssociations[i].extension;
+        if (isGbaExtension(extension))
         {
             baseFileType = &GbaFileType::sInstance;
+        }
+        else if (!strcasecmp(extension, "gbc"))
+        {
+            baseFileType = &GbFileType::sGbcInstance;
+        }
+        else if (!strcasecmp(extension, "gb"))
+        {
+            // The header is where a Game Boy rom keeps its title and publisher. Without a
+            // file type of its own it has no internal file info and the browser can only
+            // show the file name.
+            baseFileType = &GbFileType::sGbInstance;
+        }
+        else if (isNesExtension(extension))
+        {
+            baseFileType = &NesFileType::sInstance;
+        }
+        else if (isSnesExtension(extension))
+        {
+            baseFileType = !strcasecmp(extension, "smc")
+                ? &SnesFileType::sSmcInstance
+                : &SnesFileType::sSfcInstance;
         }
         _customFileTypes[i] = CustomFileType(&appSettings.fileAssociations[i], baseFileType,
             isNonGameExtension(appSettings.fileAssociations[i].extension)

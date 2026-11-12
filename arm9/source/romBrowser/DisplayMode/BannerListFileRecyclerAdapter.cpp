@@ -40,6 +40,14 @@ void BannerListFileRecyclerAdapter::BindView(SharedPtr<View> view, int index,
         }
     }
     listItemView->SetFileName(fileInfo.GetFileName(), fileNameAsTitle);
+    if (fileNameAsTitle && internalFileInfo)
+    {
+        const char16_t* publisher = internalFileInfo->GetPublisher();
+        if (publisher && publisher[0] != 0)
+        {
+            listItemView->SetPublisher(publisher);
+        }
+    }
     auto icon = internalFileInfo ? internalFileInfo->CreateGameIcon() : nullptr;
     if (!icon)
     {

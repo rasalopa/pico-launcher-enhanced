@@ -23,6 +23,22 @@ public:
 
     void SetGameTitleAsync(TaskQueueBase* taskQueue, const char16_t* gameTitle);
 
+    /// @brief Shows the publisher from the header on the second line, under the
+    ///        title. Does nothing when there is no publisher to show.
+    void SetPublisher(const char16_t* publisher)
+    {
+        SetPublisherAsync(nullptr, publisher);
+    }
+
+    void SetPublisherAsync(TaskQueueBase* taskQueue, const char16_t* publisher)
+    {
+        if (!publisher || publisher[0] == 0)
+            return;
+        if (_lines < 2)
+            _lines = 2;
+        SetSecondLineAsync(taskQueue, publisher);
+    }
+
     void SetIcon(std::unique_ptr<FileIcon> icon)
     {
         _icon = std::move(icon);

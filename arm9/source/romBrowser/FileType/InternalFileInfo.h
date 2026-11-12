@@ -17,6 +17,10 @@ public:
     /// @return A pointer to the game title if available, or \c nullptr otherwise.
     virtual const char16_t* GetGameTitle() const { return nullptr; }
 
+    /// @brief Returns the publisher named in the file's header.
+    /// @return A pointer to the publisher if available, or \c nullptr otherwise.
+    virtual const char16_t* GetPublisher() const { return nullptr; }
+
     /// @brief Creates an icon based on the internal file information.
     /// @return A unique pointer to the created icon when successful, or \c nullptr otherwise.
     virtual std::unique_ptr<FileIcon> CreateGameIcon() const { return nullptr; }
