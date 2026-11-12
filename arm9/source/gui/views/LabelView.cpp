@@ -40,6 +40,10 @@ LabelView::LabelView(u32 width, u32 height, u32 maxStringLength, const nft2_head
 
 void LabelView::Update()
 {
+    // a task thread was interrupted halfway through this label: rendering it now would mix the two
+    if (_rendering)
+        return;
+
     if (_ellipsisStyleChanged)
     {
         RestartMarquee();
@@ -75,6 +79,7 @@ void LabelView::SetTextBuffer(const char16_t* text, u32 length)
 
 void LabelView::UpdateTileBuffer()
 {
+    _rendering++;
     memset(_tileBuffer.get(), 0, _tileBufferSize);
     if (_textBuffer[0] != 0)
     {
@@ -103,6 +108,7 @@ void LabelView::UpdateTileBuffer()
     {
         _newStringWidth = 0;
     }
+    _rendering--;
 }
 
 QueueTask<void> LabelView::UpdateTileBufferAsync(TaskQueueBase* taskQueue)

@@ -79,6 +79,8 @@ protected:
     int _paletteRow = -1;
     EllipsisStyle _ellipsisStyle = EllipsisStyle::None;
     bool _a5i3;
+    /// @brief Renders of this label in progress; Update leaves a label a task thread is rendering alone.
+    volatile u8 _rendering = 0;
 
     LabelView(u32 width, u32 height, u32 maxStringLength, const nft2_header_t* font, bool a5i3);
 

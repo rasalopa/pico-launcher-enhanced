@@ -28,6 +28,7 @@ void Label3DView::InitVram(const VramContext& vramContext)
 
 void Label3DView::UpdateTileBuffer()
 {
+    _rendering++;
     _vblankTextureLoader->CancelLoad(_textureLoadRequest);
     LabelView::UpdateTileBuffer();
     // The 2d label promotes this when its sprites go up; nothing promoted it
@@ -37,6 +38,7 @@ void Label3DView::UpdateTileBuffer()
     _textureLoadRequest = VBlankTextureLoadRequest(_tileBuffer.get(), _tileBufferSize,
         _texVramOffset, nullptr, 0, 0, nullptr, nullptr);
     _vblankTextureLoader->RequestLoad(_textureLoadRequest);
+    _rendering--;
 }
 
 void Label3DView::Draw(GraphicsContext& graphicsContext)
