@@ -34,6 +34,9 @@ public:
     /// @param index The item index that was bound to the view.
     virtual void ReleaseView(SharedPtr<View> view, int index) const = 0;
 
+    /// @brief Called by the recycler view's destructor after it released its views and before it destroys them.
+    virtual void ViewsReleased() const { }
+
     /// @brief Returns the item to jump to when the user asks for a big step
     ///        through the list, or -1 when this adapter has nothing smarter to
     ///        offer than paging.

@@ -34,6 +34,8 @@ public:
 
     constexpr bool IsValid() const { return _task != nullptr; }
 
+    bool Wait() { return _task->Wait(); }
+
 protected:
     TaskBase* _task;
     TaskQueueBase* _taskQueue;
@@ -95,6 +97,9 @@ public:
         Enqueue(task);
         return QueueTask(task, this);
     }
+
+    /// @brief Returns once every task queued before this call has run.
+    void WaitForQueued() { Enqueue([] (const vu8&) { return TaskResult<void>::Completed(); }).Wait(); }
 
 protected:
     rtos_event_t _event;

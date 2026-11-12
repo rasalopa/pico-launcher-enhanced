@@ -7,6 +7,7 @@ CoverFlowRecyclerViewBase::~CoverFlowRecyclerViewBase()
     {
         _adapter->ReleaseView(_viewPool[i].view, _viewPool[i].itemIdx);
     }
+    _adapter->ViewsReleased();
 }
 
 void CoverFlowRecyclerViewBase::InitVram(const VramContext& vramContext)

@@ -276,6 +276,8 @@ void App::Run()
     _fadeAnimator = Animator(16, 0, 16, &md::sys::motion::easing::linear);
 
     MainLoop();
+    // ~App frees the controller before the views, so nothing may still run on io
+    _ioTaskQueue.WaitForQueued();
 
     _bgmService.StopBgm();
     rtos_disableIrqMask(RTOS_IRQ_VCOUNT);

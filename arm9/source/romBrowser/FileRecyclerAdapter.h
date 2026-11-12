@@ -14,6 +14,7 @@ class FileRecyclerAdapter : public RecyclerAdapter
 public:
     u32 GetItemCount() const override;
     void BindView(SharedPtr<View> view, int index) const override;
+    void ViewsReleased() const override;
 
     /// @brief Jumps to where the next initial starts, so a long folder can be
     ///        crossed in a few presses instead of a page at a time. Only when

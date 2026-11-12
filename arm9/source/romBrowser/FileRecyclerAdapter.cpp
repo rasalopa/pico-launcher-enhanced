@@ -118,3 +118,9 @@ void FileRecyclerAdapter::BindView(SharedPtr<View> view, int index) const
     });
     SetQueueTask(view, std::move(queueTask));
 }
+
+void FileRecyclerAdapter::ViewsReleased() const
+{
+    // a canceled bind can still be running on io with this adapter and its file infos
+    _taskQueue->WaitForQueued();
+}

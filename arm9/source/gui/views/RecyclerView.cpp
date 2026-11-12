@@ -24,6 +24,7 @@ RecyclerView::~RecyclerView()
         {
             _adapter->ReleaseView(_viewPool[i].view, _viewPool[i].itemIdx);
         }
+        _adapter->ViewsReleased();
     }
 }
 
