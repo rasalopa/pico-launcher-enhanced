@@ -466,6 +466,15 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     }
 }
 
+void DisplaySettingsBottomSheetView::Focus(FocusManager& focusManager)
+{
+    // open on the layout in use, the option Update marks as selected
+    u32 idx = _layoutOptions.size() - 1;
+    while (idx > 0 && sRomBrowserDisplayModes[idx] != _viewModel->GetRomBrowserDisplayMode())
+        idx--;
+    focusManager.Focus(_layoutOptions[idx]);
+}
+
 void DisplaySettingsBottomSheetView::Close()
 {
     _viewModel->Close();
