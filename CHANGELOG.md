@@ -22,6 +22,8 @@
 - Scrolling fast through a big folder could garble a title or an icon: an item that scrolled away
   had its file info freed while it was still loading. Changing the view, the sort or a filter
   during a load had the same problem. cgimenes found it (#40).
+- The display settings sheet opens with the focus on the layout in use. It opened on the first
+  one, whichever layout was in use. cgimenes found it (#43).
 
 ### [enhanced-v1.11.0]
 
