@@ -39,6 +39,8 @@
 #define JSON_POOL_BASE_SIZE       4096
 #define JSON_POOL_PER_ENTRY       440
 #define JSON_POOL_READ_MAX        (96 * 1024)
+// free entries kept for games first marked or launched in this session
+#define ENTRY_HEADROOM            16
 
 static u32 writePoolSize(u32 entryCount)
 {
@@ -117,7 +119,8 @@ GameDataEntry* JsonGameDataService::GetOrCreateEntry(const char* fileName, const
 
     if (_entryCount == _entryCapacity)
     {
-        u32 newCapacity = _entryCapacity == 0 ? 16 : _entryCapacity * 2;
+        // Load sized the array for the file, so this only makes room for new games
+        u32 newCapacity = _entryCapacity + ENTRY_HEADROOM;
         auto newEntries = std::make_unique<GameDataEntry[]>(newCapacity);
         for (u32 i = 0; i < _entryCount; i++)
             newEntries[i] = _entries[i];
@@ -423,6 +426,9 @@ void JsonGameDataService::Load()
     auto games = json[KEY_GAMES].as<JsonObjectConst>();
     if (games.isNull())
         return;
+    // one allocation for the games in the file instead of growing into it
+    _entryCapacity = games.size() + ENTRY_HEADROOM;
+    _entries = std::make_unique<GameDataEntry[]>(_entryCapacity);
     for (auto item : games)
     {
         auto* entry = GetOrCreateEntry(item.key().c_str(), item.value()[KEY_GAME_CODE] | "");
