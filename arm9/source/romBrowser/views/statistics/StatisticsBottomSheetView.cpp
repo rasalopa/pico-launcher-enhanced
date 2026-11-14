@@ -63,7 +63,8 @@
 #define RANK_WIDTH          12
 #define NAME_X              32
 #define NAME_WIDTH          132
-#define NAME_MAX_CHARS      120
+// a whole file name, with "Last: " before it on the last row
+#define NAME_MAX_CHARS      (FF_LFN_BUF + 6)
 #define COUNT_X             172
 #define COUNT_WIDTH         64
 
@@ -84,7 +85,8 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
 {
     _titleLabel = AddLabel(fontRepository, FontType::Medium11, TITLE_WIDTH, 25, "Statistics");
 
-    char text[144];
+    // a whole row: cutting a name could split a UTF-8 character
+    char text[NAME_MAX_CHARS + 1];
 
     // Just the version here; the build hash is the boot page's and the about
     // sheet's to show.
@@ -125,7 +127,7 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
         _totalLabel = AddLabel(fontRepository, FontType::Medium7_5, TOTAL_WIDTH, 24, text, Alignment::End);
     }
 
-    char name[100];
+    char name[FF_LFN_BUF + 1];
     _topCount = std::min(_viewModel->GetTopCount(), TOP_COUNT);
     for (u32 t = 0; t < _topCount; t++)
     {

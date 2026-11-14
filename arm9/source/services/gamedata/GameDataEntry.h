@@ -1,6 +1,7 @@
 #pragma once
 #include <string.h>
 #include "core/String.h"
+#include "fat/ff.h"
 
 /// @brief Persisted data for ONE rom file, keyed by its file name (same
 ///        convention as the /_pico/icons|covers/user folders). Marks and play
@@ -8,7 +9,8 @@
 ///        separately and renaming a rom starts it over.
 struct GameDataEntry
 {
-    String<char, 96> fileName;
+    /// @brief Whole: FatFs returns names of up to FF_LFN_BUF bytes.
+    String<char, FF_LFN_BUF> fileName;
     /// @brief Internal game code (NDS/GBA header), empty when the file has
     ///        none. Stored as information only - it is never used to look an
     ///        entry up, because the browser filter only ever sees file names and

@@ -1,6 +1,7 @@
 #pragma once
 #include "core/SharedPtr.h"
 #include "core/String.h"
+#include "fat/ff.h"
 #include "gui/views/ViewContainer.h"
 #include "BannerView.h"
 #include "gui/views/LabelView.h"
@@ -58,7 +59,7 @@ private:
     bool _launchInfoCentered = false;
     bool _launchInfoBare = false;
     // The most launched game's file name, refreshed when the game data changes.
-    String<char, 96> _mostPlayedFileName;
+    String<char, FF_LFN_BUF> _mostPlayedFileName;
     u32 _mostPlayedVersion = 0;
     bool _mostPlayedKnown = false;
     int _lastGameDataItem = -1;

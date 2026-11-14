@@ -52,10 +52,8 @@ static u32 writePoolSize(u32 entryCount)
 static bool isStorableFileName(const char* fileName)
 {
     // String<char, N> holds N characters plus the terminator, so a name of
-    // exactly kMaxFileNameLength fits and must be accepted: refusing it would
-    // drop entries that older versions stored just fine.
-    return fileName && fileName[0] != 0 &&
-        strlen(fileName) <= IGameDataService::kMaxFileNameLength;
+    // exactly FF_LFN_BUF bytes fits, and FatFs returns names that long.
+    return fileName && fileName[0] != 0 && strlen(fileName) <= FF_LFN_BUF;
 }
 
 // homebrew headers can hold garbage where retail games keep their code; only

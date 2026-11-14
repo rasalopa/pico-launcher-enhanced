@@ -76,11 +76,6 @@ public:
     ///        then destroy data this run never saw.
     virtual void SaveAsync(TaskQueueBase* ioTaskQueue) = 0;
 
-    /// @brief The longest rom file name that can be stored. Longer names are
-    ///        refused outright rather than silently truncated into a key that
-    ///        collides with a same-prefixed file.
-    static constexpr u32 kMaxFileNameLength = 96;
-
     /// @brief The highest save slot. One digit after .sav, so the save names
     ///        stay .sav1 to .sav9.
     static constexpr u32 kMaxSaveSlot = 9;

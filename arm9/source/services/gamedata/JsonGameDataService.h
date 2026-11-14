@@ -34,7 +34,7 @@ private:
     ///        set would overwrite the file and destroy every mark and play stat
     ///        it still holds.
     bool _loadFailed = false;
-    String<char, 96> _sessionGameFileName;
+    String<char, FF_LFN_BUF> _sessionGameFileName;
     String<char, 8> _sessionGameCode;
     String<char, 20> _sessionStart;
 
