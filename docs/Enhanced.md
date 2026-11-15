@@ -55,7 +55,7 @@ Hold X on a highlighted game for about half a second to mark it as completed (ho
 ## Favorites and completed filters
 **Only favorites** in the menu filters the browser down to favorites, and **Only completed** to completed games. While a filter is on, its name in the menu is red or green, and so is its icon except while the filter is highlighted, when the icon takes the theme's primary color; the browser behind it updates as soon as the menu closes. With both filters on, only games that are favorite *and* completed remain. The filters apply per folder, and folders themselves always stay visible.
 
-Marks, play counts and play time all belong to the ROM file, so what the top screen shows and what the filter matches are always the same thing (see [GameData.md](GameData.md)). Two copies of a game are marked separately, and a ROM hack no longer inherits its base game's mark. Renaming a ROM outside the launcher starts it over, and games whose file name is longer than 96 bytes cannot be marked at all (accented characters count double).
+Marks, play counts and play time all belong to the ROM file, so what the top screen shows and what the filter matches are the same thing (see [GameData.md](GameData.md)). Two copies of a game are marked separately, and a ROM hack no longer inherits its base game's mark. Renaming a ROM outside the launcher starts it over.
 
 ## Random game
 Hold SELECT and press A to launch a random game from the folder you are currently viewing. With the favorites filter active, it picks a random favorite. SELECT on its own does nothing, so the DSi brightness shortcut (SELECT + volume) stays free.
@@ -153,7 +153,7 @@ Favorites, completed marks, launch counts, play time, the recents list and each 
 | The same game in two folders has separate favorites | They are two files. Marking one does not mark the other |
 | A ROM hack does not inherit the base game's marks | Same reason: different files, even though they share an internal game code |
 | Two copies with the *same* file name share one entry | The name is the identity, so same name means same entry. Deleting one through the launcher removes the entry both were using |
-| Pressing X does nothing on some game | Its file name is longer than 96 bytes, which cannot be stored (accented characters count as two). The launcher logs it |
+| A game with a long file name lost its heart and its play time | An older launcher ran on the card. Versions up to v1.11.0 cannot store a file name longer than 96 bytes, and what a newer version stored for that game is gone the first time they save |
 | A favorite is missing from the favorites panel | The panel only lists entries with a stored path. Marks made before that existed get one the next time you launch or re-mark the game. Entries whose file has moved or is gone are still listed, but selecting them does nothing |
 
 Earlier versions identified a game by its internal game code instead, which made a ROM hack and its base game share one entry, and could leave the browser filter and the top screen disagreeing about the same game.

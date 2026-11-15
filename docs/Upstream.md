@@ -414,7 +414,7 @@ New files:
 
 ### Launch tracking and play time
 
-Every launch is recorded: launch count, last played date and the play time Pico Loader Enhanced measures, which feed the recently played list, the statistics panel and the star. A game whose file name is longer than 96 bytes is left out. With `"launchTracking": false` in `settings.json` nothing new is recorded, while earlier records, favorites and completed marks stay.
+Every launch is recorded: launch count, last played date and the play time Pico Loader Enhanced measures, which feed the recently played list, the statistics panel and the star. With `"launchTracking": false` in `settings.json` nothing new is recorded, while earlier records, favorites and completed marks stay.
 
 - **Commits:** `c61d1f6`, `0b65c7e`
 - **Upstream:** [PR #37](https://github.com/LNH-team/pico-launcher/pull/37) has similar work: it records a launch count and the last launch date per game, in its own file.

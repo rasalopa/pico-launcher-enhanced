@@ -79,13 +79,17 @@ names, could not match them, so filtering by favorites could come up empty. Wors
 file toggled the flag on the *other* copy's entry instead of creating its own.
 
 ## Limits
-**File names longer than 96 bytes are not tracked at all.** Marking such a game does nothing and
-logs an error. They used to be truncated, which silently merged two files sharing a 96-character prefix
-into one entry and lost one of their favorites for good; refusing them is the honest failure.
+**A file name can be up to 255 bytes**, the longest name the launcher reads from the card. A file
+whose name needs more than that, or is 255 characters long, is listed under its short 8.3 name and
+tracked by it. A key longer than 255 bytes is skipped when the file is loaded, and it is gone at
+the next save.
+
+Versions up to v1.11.0 stored names of up to 96 bytes. From v1.5.0 they skip a longer key the same
+way; v1.4.0 and older cut it to 96 bytes.
 
 Other values longer than these are truncated (lengths in bytes, so accented characters count double):
 
-- entry key / `sessionGame` (file name): 96 (longer names are refused, see above)
+- entry key / `sessionGame` (file name): 255 (a longer entry key is skipped, see above)
 - `gameCode`: 8
 - `lastPlayed` / `sessionStart`: 20
 - `path`: 256
@@ -106,4 +110,4 @@ Years in `lastPlayed` are written as `20YY`.
   everything.)
 - Duplicate `gameCode` values are fine: entries are never merged by code. Entry keys (file names)
   must be unique, which JSON already guarantees.
-- The launcher parses the file with a bounded memory budget of 96 KB (about three times the file size); files larger than roughly 32 KB may fail to load. In practice this fits several hundred entries.
+- The launcher parses the file with a memory budget of 96 KB, which holds about 600 entries with every key set, whatever the length of the names. A file with more than fit fails to load.
