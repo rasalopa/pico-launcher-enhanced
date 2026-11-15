@@ -565,7 +565,7 @@ New files:
 
 ### Three-dot menu and a three-button app bar
 
-The app bar holds back, a three-dot menu and display settings. The menu lists Recently played, Favorites, Statistics and Delete game by name, New save while a DS game is highlighted (see [Save slots](#save-slots)), and the Only favorites and Only completed filters side by side, whose name turns red or green while on. No app bar button hides a second action behind a long press any more (holding X on a game still marks it completed).
+The app bar holds back, a three-dot menu and display settings. The menu lists Recently played, Favorites, Statistics and Delete game by name, New save and Language while a DS game is highlighted (see [Save slots](#save-slots)), and the Only favorites and Only completed filters side by side, whose name turns red or green while on. No app bar button hides a second action behind a long press any more (holding X on a game still marks it completed).
 
 - **Commits:** `089eb53`, `0b90347`, `eb691fb`
 - **Upstream:** None found for the bar. [PR #37](https://github.com/LNH-team/pico-launcher/pull/37) has a loosely similar sheet of named entries, and [PR #67](https://github.com/LNH-team/pico-launcher/pull/67) would add a heart button to the bar.
