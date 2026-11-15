@@ -17,6 +17,8 @@ public:
     void RecordLaunch(const char* fileName, const char* gameCode,
         const char* fullPath, const char* lastPlayedDateTime) override;
     bool SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) override;
+    bool SetGameLanguage(const char* fileName, PicoLoaderGameLanguage gameLanguage,
+        const char* gameCode = nullptr) override;
     void RemoveEntry(const char* fileName) override;
     bool CloseOpenSession(u32 playSeconds) override;
     u32 GetEntryCount() const override { return _entryCount; }

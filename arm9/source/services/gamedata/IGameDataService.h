@@ -52,6 +52,12 @@ public:
     ///        store. Returns true when it wrote (the caller should then save).
     virtual bool SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) = 0;
 
+    /// @brief Stores the language picked for the given rom file, by file name like
+    ///        the save slot. PLOAD_GAME_LANGUAGE_AUTO, the console's, creates no
+    ///        entry. Returns true when it wrote (the caller should then save).
+    virtual bool SetGameLanguage(const char* fileName, PicoLoaderGameLanguage gameLanguage,
+        const char* gameCode = nullptr) = 0;
+
     /// @brief Drops the entry for a deleted rom file. By file name, matching how
     ///        marks are stored.
     virtual void RemoveEntry(const char* fileName) = 0;

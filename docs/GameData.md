@@ -1,5 +1,5 @@
 # Game Data File
-Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time, save slots; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
+Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time, save slots, languages; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
 
 Regular users never need to edit this file. Deleting it simply resets all favorites and statistics.
 
@@ -15,7 +15,8 @@ Regular users never need to edit this file. Deleting it simply resets all favori
       "playSeconds": 20412,
       "lastPlayed": "2026-07-16 21:03",
       "path": "/Games/nds/Some Game.nds",
-      "saveSlot": 2
+      "saveSlot": 2,
+      "gameLanguage": 1
     },
     "tetris.gb": {
       "launchCount": 2,
@@ -43,8 +44,9 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `lastPlayed` | string | non-empty | `"YYYY-MM-DD HH:MM"`, 24-hour clock. Lexicographic order equals chronological order, so tools can sort these as plain strings. |
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
 | `saveSlot` | number | 1 to 9 | The save the game was started on last time, `<game name>.sav<N>`; the save picker opens on it (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
+| `gameLanguage` | number | 0 to 7 | The language the game starts in: the DS firmware's language number, as in Pico Loader's `gameLanguage`, so 0 Japanese, 1 English, 2 French, 3 German, 4 Italian, 5 Spanish, 6 Chinese, 7 Korean. Absent means the console's language; any other value is read as absent. |
 
-An entry whose `favorite` and `completed` are both false, whose `launchCount`, `playSeconds` and `playMinutes` are all 0 and that has no `saveSlot` is pruned on the next write. Deleting a game through the launcher also removes its entry.
+An entry whose `favorite` and `completed` are both false, whose `launchCount`, `playSeconds` and `playMinutes` are all 0 and that has no `saveSlot` and no `gameLanguage` is pruned on the next write. Deleting a game through the launcher also removes its entry.
 
 ## Session keys (root level)
 While a play session is open, the root object holds:
@@ -110,4 +112,4 @@ Years in `lastPlayed` are written as `20YY`.
   everything.)
 - Duplicate `gameCode` values are fine: entries are never merged by code. Entry keys (file names)
   must be unique, which JSON already guarantees.
-- The launcher parses the file with a memory budget of 96 KB, which holds about 600 entries with every key set, whatever the length of the names. A file with more than fit fails to load.
+- The launcher parses the file with a memory budget of 96 KB, which holds about 550 entries with every key set, whatever the length of the names. A file with more than fit fails to load.

@@ -2,6 +2,7 @@
 #include <string.h>
 #include "core/String.h"
 #include "fat/ff.h"
+#include "picoLoader7.h"
 
 /// @brief Persisted data for ONE rom file, keyed by its file name (same
 ///        convention as the /_pico/icons|covers/user folders). Marks and play
@@ -30,6 +31,9 @@ struct GameDataEntry
     ///        0 is the regular .sav, 1 to IGameDataService::kMaxSaveSlot use
     ///        .sav1 to .sav9.
     u8 saveSlot = 0;
+    /// @brief The language the game starts in, a PicoLoaderGameLanguage:
+    ///        PLOAD_GAME_LANGUAGE_AUTO for the console's.
+    u8 gameLanguage = PLOAD_GAME_LANGUAGE_AUTO;
     /// @brief "YYYY-MM-DD HH:MM", empty when never launched. Lexicographic
     ///        order equals chronological order.
     String<char, 20> lastPlayed;

@@ -23,6 +23,7 @@
 #define KEY_LAST_PLAYED       "lastPlayed"
 #define KEY_PATH              "path"
 #define KEY_SAVE_SLOT         "saveSlot"
+#define KEY_GAME_LANGUAGE     "gameLanguage"
 #define KEY_SESSION_GAME      "sessionGame"
 #define KEY_SESSION_GAME_CODE "sessionGameCode"
 #define KEY_SESSION_START     "sessionStart"
@@ -235,6 +236,20 @@ bool JsonGameDataService::SetSaveSlot(const char* fileName, u32 saveSlot, const 
     return true;
 }
 
+bool JsonGameDataService::SetGameLanguage(const char* fileName, PicoLoaderGameLanguage gameLanguage,
+    const char* gameCode)
+{
+    // the console's language is what a game without an entry gets already
+    if (gameLanguage == PLOAD_GAME_LANGUAGE_AUTO && !Find(fileName))
+        return false;
+    auto* entry = GetOrCreateEntry(fileName, gameCode);
+    if (!entry)
+        return false;
+    entry->gameLanguage = (u8)gameLanguage;
+    _version++;
+    return true;
+}
+
 void JsonGameDataService::RemoveEntry(const char* fileName)
 {
     GameDataEntry* entry = Find(fileName);
@@ -267,7 +282,7 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
         const auto& entry = _entries[i];
         // entries reset back to all-default state are pruned on write
         if (!entry.favorite && !entry.completed && entry.launchCount == 0 && entry.playMinutes == 0 &&
-            entry.playSeconds == 0 && entry.saveSlot == 0)
+            entry.playSeconds == 0 && entry.saveSlot == 0 && entry.gameLanguage == PLOAD_GAME_LANGUAGE_AUTO)
             continue;
         auto game = games[entry.fileName.GetString()].to<JsonObject>();
         if (entry.gameCode.GetString()[0] != 0)
@@ -288,6 +303,8 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
             game[KEY_PATH] = entry.path.GetString();
         if (entry.saveSlot != 0)
             game[KEY_SAVE_SLOT] = entry.saveSlot;
+        if (entry.gameLanguage != PLOAD_GAME_LANGUAGE_AUTO)
+            game[KEY_GAME_LANGUAGE] = entry.gameLanguage;
     }
     if (_sessionStart.GetString()[0] != 0)
     {
@@ -446,6 +463,9 @@ void JsonGameDataService::Load()
         // a slot this build can't name a save for falls back to the regular one
         u32 saveSlot = item.value()[KEY_SAVE_SLOT] | 0u;
         entry->saveSlot = saveSlot <= kMaxSaveSlot ? (u8)saveSlot : 0;
+        // like the loader, anything past Korean is the console's language
+        u32 gameLanguage = item.value()[KEY_GAME_LANGUAGE] | (u32)PLOAD_GAME_LANGUAGE_AUTO;
+        entry->gameLanguage = gameLanguage <= PLOAD_GAME_LANGUAGE_KOREAN ? gameLanguage : PLOAD_GAME_LANGUAGE_AUTO;
     }
     _sessionGameFileName = json[KEY_SESSION_GAME] | "";
     _sessionGameCode = json[KEY_SESSION_GAME_CODE] | "";

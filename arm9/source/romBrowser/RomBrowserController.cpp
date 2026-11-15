@@ -839,6 +839,7 @@ void RomBrowserController::BeginLaunch()
     if (_triggerFileInfo.GetFileType()->UsesLoaderSave())
     {
         const auto* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
+        pload_setGameLanguage(entry ? (PicoLoaderGameLanguage)entry->gameLanguage : PLOAD_GAME_LANGUAGE_AUTO);
         if ((entry ? entry->saveSlot : 0) != _launchSaveSlot)
         {
             gameDataChanged = _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
