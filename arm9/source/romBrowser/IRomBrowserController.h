@@ -43,7 +43,8 @@ public:
     /// @brief The language the highlighted DS game starts in.
     virtual PicoLoaderGameLanguage GetGameLanguageOfSelected() const = 0;
     /// @brief The languages the loader lets the highlighted DS game start in, bit N for
-    ///        PicoLoaderGameLanguage N, or 0 without a game code.
+    ///        PicoLoaderGameLanguage N, or 0 without a game code or with a loader that
+    ///        can't set a language.
     virtual u32 GetGameLanguageMaskOfSelected() const = 0;
     virtual void SetGameLanguageOfSelected(PicoLoaderGameLanguage gameLanguage) = 0;
     virtual void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;

@@ -30,7 +30,8 @@ public:
     }
 
     PicoLoaderGameLanguage GetGameLanguage() const { return _gameLanguage; }
-    /// @brief Whether there is a language to pick, which there isn't without a game code.
+    /// @brief Whether there is a language to pick, which there isn't without a game code or
+    ///        with a loader that can't set a language.
     bool CanPickGameLanguage() const { return _gameLanguageMask != 0; }
     /// @brief Moves the game to the next language of its region, and after the last back to
     ///        the console's.

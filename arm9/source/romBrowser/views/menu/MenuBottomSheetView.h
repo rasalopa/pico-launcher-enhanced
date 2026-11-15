@@ -93,8 +93,8 @@ private:
 /// it to its next language and the sheet stays. Delete is faded while a folder is
 /// highlighted. New save and Language are only there for a DS game, the filters
 /// moving up into their row otherwise. New save is faded when all its saves are
-/// taken, and Language without a game code. A small button at the right of the
-/// title opens the about sheet.
+/// taken, and Language without a game code or with a loader that can't set a
+/// language. A small button at the right of the title opens the about sheet.
 class MenuBottomSheetView : public BottomSheetView, public IMenuItemHost
 {
     SHARED_ONLY(MenuBottomSheetView)

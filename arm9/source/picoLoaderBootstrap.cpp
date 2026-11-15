@@ -4,6 +4,7 @@
 #include "core/Environment.h"
 #include <stdlib.h>
 #include <string.h>
+#include <memory>
 #include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/mem/memVram.h>
 #include <libtwl/dma/dmaNitro.h>
@@ -72,6 +73,18 @@ void pload_setPlayFramesArgument(const char* argument)
 u32 pload_getPlaySeconds()
 {
     return (u32)((u64)sPlayFrames * 10000 / FRAMES_PER_10000_SECONDS);
+}
+
+u16 pload_readApiVersion()
+{
+    const auto file = std::make_unique<File>();
+    u16 apiVersion = 0;
+    if (file->Open(PICO_LOADER_7_PATH, FA_OPEN_EXISTING | FA_READ) == FR_OK)
+    {
+        file->Seek(offsetof(pload_header7_t, apiVersion));
+        file->ReadExact(&apiVersion, sizeof(apiVersion));
+    }
+    return apiVersion;
 }
 
 void pload_start()

@@ -193,6 +193,10 @@ private:
     ///        names the save itself.
     char _launchSavePath[sizeof(pload_params_t::savePath)];
     char _launchRefusedText[40] = "";
+    /// @brief Whether the card's Pico Loader can set a game's language (API 4), read once on
+    ///        the io thread after the first listing shows. False until then.
+    volatile bool _loaderSetsGameLanguage = false;
+    bool _loaderApiVersionQueued = false;
     bool _saveSettingsPending = false;
     std::unique_ptr<CoverRepository> _coverRepository;
     std::unique_ptr<IconRepository> _iconRepository;

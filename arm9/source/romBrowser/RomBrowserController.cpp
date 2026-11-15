@@ -121,7 +121,7 @@ PicoLoaderGameLanguage RomBrowserController::GetGameLanguageOfSelected() const
 u32 RomBrowserController::GetGameLanguageMaskOfSelected() const
 {
     const char* gameCode = FindGameCode(_romBrowserViewModel->GetSelectedItem());
-    if (!gameCode)
+    if (!_loaderSetsGameLanguage || !gameCode)
         return 0;
     switch (gameCode[3])
     {
@@ -567,6 +567,20 @@ void RomBrowserController::Update()
             else
             {
                 NavigateToPath("/");
+            }
+            break;
+        }
+        case RomBrowserState::Browser:
+        {
+            // once, a frame after the first listing shows, so it waits behind that listing's icons
+            if (!_loaderApiVersionQueued && !_stateMachine.HasStateChanged())
+            {
+                _loaderApiVersionQueued = true;
+                _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+                {
+                    _loaderSetsGameLanguage = pload_readApiVersion() >= 4;
+                    return TaskResult<void>::Completed();
+                });
             }
             break;
         }
