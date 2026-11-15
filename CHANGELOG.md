@@ -4,6 +4,15 @@
 
 ### [Unreleased]
 
+#### Added
+- A DS game can start in a language other than the console's. Language in the menu, next to New
+  save, moves the highlighted DS game to the next language of its region and names it; Console
+  is the default. The choice is `gameLanguage` in `gamedata.json`. It needs a Pico Loader
+  Enhanced newer than v1.0.1, where tasken wrote the part that sets the language: with v1.0.1 and
+  earlier, or the official Pico Loader v1.7.1 and earlier, Language is faded. Some games keep the
+  console's language whatever it says. Going back to v1.11.0 or earlier deletes `gameLanguage`
+  from `gamedata.json` the first time it saves. Cobalt246 asked for it (#45).
+
 #### Changed
 - Play time is measured now, with Pico Loader Enhanced: the loader counts the frames a DS game
   runs and hands them to the launcher when you leave the game with the in-game exit. Time asleep
@@ -29,6 +38,9 @@
   no sign of why. Names of up to 255 bytes are stored, the longest the launcher reads from the
   card. Going back to v1.11.0 or earlier loses what was stored for those games the first time
   it saves. OneSidedPrism reported it (#46).
+- Marking a favorite or a completed game, or anything else that saves `gamedata.json`, no longer
+  turns some colors of the bottom screen wrong for a moment, such as a black bar in the menu or
+  the first row of the menu in other colors.
 
 ### [enhanced-v1.11.0]
 
