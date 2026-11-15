@@ -20,9 +20,10 @@ protected:
     ~IMenuItemHost() = default;
 };
 
-/// @brief One entry of the menu: an icon, its name and, for New save, the save
-///        it would start. A tap or A runs it; the sheet decides what that means.
-///        The save picker lists its saves with these too, without an icon.
+/// @brief One entry of the menu: an icon, its name and, for New save and Language, the
+///        save it would start or the language the game starts in. A tap or A runs it; the
+///        sheet decides what that means. The save picker lists its saves with these too,
+///        without an icon.
 class MenuItemView : public ViewContainer
 {
     SHARED_ONLY(MenuItemView)
@@ -55,6 +56,9 @@ public:
     /// @brief Off is faded and inert, like the delete button was on a folder.
     void SetEnabled(bool enabled) { _enabled = enabled; }
 
+    /// @brief Changes the text at the end, for an item made with one.
+    void SetStateText(const char* stateText) { _stateLabel->SetText(stateText); }
+
 private:
     IMenuItemHost* _sheet;
     int _index;
@@ -62,7 +66,7 @@ private:
     Rgb<8, 8, 8> _activeColor;
     const MaterialColorScheme* _materialColorScheme;
     SharedPtr<Label2DView> _nameLabel;
-    /// Small grey text at the end of the row; only New save has one.
+    /// Small gray text at the end of the item; only New save and Language have one.
     SharedPtr<Label2DView> _stateLabel;
     u32 _iconVramOffset = 0;
     u32 _selectorVramOffset = 0;
@@ -71,8 +75,8 @@ private:
     bool _enabled = true;
     bool _penDown = false;
 
-    /// @param width A cell of the two-column part or a full row (see the .cpp).
-    /// @param stateText Text at the end of the row, or nullptr for none.
+    /// @param width A cell of the two columns (see the .cpp).
+    /// @param stateText Text at the end of the item, or nullptr for none.
     MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
         const char* stateText, const Rgb<8, 8, 8>& activeColor,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
@@ -81,14 +85,16 @@ private:
 /// @brief The sheet behind the app bar's "more" button: what the bar used to
 ///        hold as icons, and behind long presses, written out.
 ///
-/// Recently played, favorites, statistics and delete in two columns, New save
-/// as a full row that names the save it would start, then the two filters side
-/// by side, in their color while on. Picking a panel replaces this sheet with
-/// it; a filter closes the sheet through the display mode change it triggers;
-/// New save launches the highlighted game. Delete is faded while a folder is
-/// highlighted. New save is only there for a DS game, the filters moving up into
-/// its row otherwise, and is faded when all its saves are taken. A small button
-/// at the right of the title opens the about sheet.
+/// Recently played, favorites, statistics and delete in two columns, then New save,
+/// which names the save it would start, next to Language, which names the language
+/// the game starts in, then the two filters, in their color while on. Picking a
+/// panel replaces this sheet with it; a filter closes the sheet through the display
+/// mode change it triggers; New save launches the highlighted game; Language moves
+/// it to its next language and the sheet stays. Delete is faded while a folder is
+/// highlighted. New save and Language are only there for a DS game, the filters
+/// moving up into their row otherwise. New save is faded when all its saves are
+/// taken, and Language without a game code. A small button at the right of the
+/// title opens the about sheet.
 class MenuBottomSheetView : public BottomSheetView, public IMenuItemHost
 {
     SHARED_ONLY(MenuBottomSheetView)
@@ -118,6 +124,7 @@ private:
         ITEM_STATISTICS,
         ITEM_DELETE,
         ITEM_NEW_SAVE,
+        ITEM_LANGUAGE,
         ITEM_FAVORITES_FILTER,
         ITEM_COMPLETED_FILTER,
         ITEM_COUNT
@@ -128,18 +135,17 @@ private:
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<IconButton2DView> _aboutButton;
     SharedPtr<MenuItemView> _items[ITEM_COUNT];
-    /// @brief Whether New save is in the sheet: when it isn't, its item is made but never
-    ///        added, so it is neither drawn nor reached.
-    bool _newSaveShown = false;
+    /// @brief Whether New save and Language are in the sheet: when they aren't, their items
+    ///        are made but never added, so they are neither drawn nor reached.
+    bool _isDsGame = false;
 
     MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
 
     u32 LoadSprite(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
+    bool IsShown(int index) const;
     /// @brief The row an entry sits on: the ones under New save move up when it isn't shown.
     int GetRow(int index) const;
-    /// @brief The shown entry of a row in a column, or -1 when there is none. A full row
-    ///        answers for either column, and a row of cells answers for a full row with its
-    ///        first cell.
+    /// @brief The shown entry of a row in a column, or -1 when there is none.
     int FindEntry(int row, int column) const;
 };

@@ -110,6 +110,47 @@ void RomBrowserController::LaunchSelectedOnSaveSlot(u32 saveSlot)
     LaunchSaveSlot(saveSlot);
 }
 
+PicoLoaderGameLanguage RomBrowserController::GetGameLanguageOfSelected() const
+{
+    const auto* entry = _gameDataService->GetEntry(GetSelectedGame()->GetFileName());
+    return entry ? (PicoLoaderGameLanguage)entry->gameLanguage : PLOAD_GAME_LANGUAGE_AUTO;
+}
+
+// the languages Pico Loader accepts for the region the game code ends in
+// (NdsLoader::GetSupportedLanguagesByRegion)
+u32 RomBrowserController::GetGameLanguageMaskOfSelected() const
+{
+    const char* gameCode = FindGameCode(_romBrowserViewModel->GetSelectedItem());
+    if (!gameCode)
+        return 0;
+    switch (gameCode[3])
+    {
+        case 'A':
+        case 'O':
+            return 0xFF; // sold in every region: any
+        case 'J':
+            return 0x01; // Japanese
+        case 'E':
+        case 'T':
+            return 0x26; // English, French and Spanish
+        case 'U':
+            return 0x02; // English
+        case 'C':
+            return 0x40; // Chinese
+        case 'K':
+            return 0x80; // Korean
+        default:
+            return 0x3E; // English, French, German, Italian and Spanish
+    }
+}
+
+void RomBrowserController::SetGameLanguageOfSelected(PicoLoaderGameLanguage gameLanguage)
+{
+    const char* gameCode = FindGameCode(_romBrowserViewModel->GetSelectedItem());
+    if (_gameDataService->SetGameLanguage(GetSelectedGame()->GetFileName(), gameLanguage, gameCode))
+        _gameDataService->SaveAsync(_ioTaskQueue);
+}
+
 const FileInfo* RomBrowserController::GetSelectedGame() const
 {
     if (!_romBrowserViewModel.IsValid())

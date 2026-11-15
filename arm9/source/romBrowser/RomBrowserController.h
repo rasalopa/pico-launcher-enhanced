@@ -33,6 +33,9 @@ public:
     bool SelectedHasSaveSlots() const override;
     u32 FindNewSaveSlotOfSelected() const override;
     void LaunchSelectedOnSaveSlot(u32 saveSlot) override;
+    PicoLoaderGameLanguage GetGameLanguageOfSelected() const override;
+    u32 GetGameLanguageMaskOfSelected() const override;
+    void SetGameLanguageOfSelected(PicoLoaderGameLanguage gameLanguage) override;
     void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode) override;
     void ToggleFavoritesFilter() override;

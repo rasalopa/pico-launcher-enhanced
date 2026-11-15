@@ -1,6 +1,7 @@
 #pragma once
 #include "core/SharedPtr.h"
 #include "services/settings/AppSettings.h"
+#include "picoLoader7.h"
 
 class SdFolder;
 class RomBrowserStateMachine;
@@ -39,6 +40,12 @@ public:
     virtual u32 FindNewSaveSlotOfSelected() const = 0;
     /// @brief Launches the highlighted game with that save, as the save picker would.
     virtual void LaunchSelectedOnSaveSlot(u32 saveSlot) = 0;
+    /// @brief The language the highlighted DS game starts in.
+    virtual PicoLoaderGameLanguage GetGameLanguageOfSelected() const = 0;
+    /// @brief The languages the loader lets the highlighted DS game start in, bit N for
+    ///        PicoLoaderGameLanguage N, or 0 without a game code.
+    virtual u32 GetGameLanguageMaskOfSelected() const = 0;
+    virtual void SetGameLanguageOfSelected(PicoLoaderGameLanguage gameLanguage) = 0;
     virtual void ToggleFavorite(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleCompleted(const FileInfo& fileInfo, const char* gameCode = nullptr) = 0;
     virtual void ToggleFavoritesFilter() = 0;

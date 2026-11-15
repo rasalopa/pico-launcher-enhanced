@@ -18,6 +18,7 @@
 #include "statsIcon.h"
 #include "trashIcon.h"
 #include "plusIcon.h"
+#include "languageIcon.h"
 #include "heartIcon.h"
 #include "checkIcon.h"
 #include "infoIcon.h"
@@ -32,24 +33,23 @@
 #define ABOUT_BUTTON_X      212
 #define ABOUT_BUTTON_Y      (TITLE_Y - 7)
 
-// Two cells per row over the 224 px the recents list uses, or one full row.
-// Rows sit 26 apart so the 24 px items keep a hairline between them; the
-// fourth ends at 142, screen y 174, with the sheet's rounded edge below it. A
-// fifth would end past the screen, so the filters share a row.
+// Two cells per row over the 224 px the recents list uses. Rows sit 26 apart
+// so the 24 px items keep a hairline between them; the fourth ends at 142,
+// screen y 174, with the sheet's rounded edge below it. A fifth would end past
+// the screen, so every row holds two entries.
 #define ITEMS_X             16
 #define CELL_WIDTH          112
-#define ROW_WIDTH           224
 #define ROWS_Y              40
 #define ROW_SPACING         26
 
-// Inside an item.
+// Inside an item. "Japanese", the longest state, takes all 34 px and leaves the
+// name 48, of which "Language" takes 47.
 #define ICON_DX             4
 #define ICON_DY             4
 #define ICON_SIZE           16
 #define NAME_DX             26
 #define NAME_DY             4
-#define STATE_WIDTH         40
-#define STATE_DX            (ROW_WIDTH - 4 - STATE_WIDTH)
+#define STATE_WIDTH         34
 #define STATE_DY            7
 
 // The recents list's highlight sprite: 64 px wide, laid end to end.
@@ -61,7 +61,6 @@ namespace
     {
         const char* name;
         int row;
-        /// 0 or 1 for a cell, -1 for a full row.
         int column;
     };
 }
@@ -73,10 +72,20 @@ static constexpr MenuEntry kEntries[] =
     { "Favorites", 0, 1 },
     { "Statistics", 1, 0 },
     { "Delete game", 1, 1 },
-    { "New save", 2, -1 },
+    { "New save", 2, 0 },
+    { "Language", 2, 1 },
     { "Only favorites", 3, 0 },
     { "Only completed", 3, 1 }
 };
+
+// By PicoLoaderGameLanguage, from Japanese to Korean.
+static constexpr const char* kGameLanguageNames[] =
+    { "Japanese", "English", "French", "German", "Italian", "Spanish", "Chinese", "Korean" };
+
+static const char* GetGameLanguageName(PicoLoaderGameLanguage gameLanguage)
+{
+    return gameLanguage == PLOAD_GAME_LANGUAGE_AUTO ? "Console" : kGameLanguageNames[gameLanguage];
+}
 
 MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
     const char* stateText, const Rgb<8, 8, 8>& activeColor,
@@ -91,8 +100,8 @@ MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const cha
     AddChildTail(_nameLabel.GetPointer());
     if (stateText)
     {
-        // "Save 9" is the longest
-        _stateLabel = Label2DView::CreateShared(STATE_WIDTH, 16, 6, fontRepository->GetFont(FontType::Medium7_5));
+        // "Japanese" is the longest
+        _stateLabel = Label2DView::CreateShared(STATE_WIDTH, 16, 8, fontRepository->GetFont(FontType::Medium7_5));
         _stateLabel->SetHorizontalAlignment(Alignment::End);
         _stateLabel->SetText(stateText);
         AddChildTail(_stateLabel.GetPointer());
@@ -103,7 +112,7 @@ void MenuItemView::Update()
 {
     _nameLabel->SetPosition(_position.x + NAME_DX, _position.y + NAME_DY);
     if (_stateLabel)
-        _stateLabel->SetPosition(_position.x + STATE_DX, _position.y + STATE_DY);
+        _stateLabel->SetPosition(_position.x + _width - 4 - STATE_WIDTH, _position.y + STATE_DY);
     ViewContainer::Update();
 }
 
@@ -151,7 +160,8 @@ void MenuItemView::Draw(GraphicsContext& graphicsContext)
     if (_stateLabel)
     {
         _stateLabel->SetBackgroundColor(back);
-        _stateLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _stateLabel->SetForegroundColor(_enabled ? _materialColorScheme->onSurfaceVariant
+            : _materialColorScheme->outline);
     }
     ViewContainer::Draw(graphicsContext);
 
@@ -224,20 +234,22 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
 
     static_assert(std::size(kEntries) == ITEM_COUNT, "one entry per item");
     // the highlighted game can't change while the menu is open
-    _newSaveShown = _viewModel->ShowsNewSave();
+    _isDsGame = _viewModel->IsDsGame();
     u32 newSaveSlot = _viewModel->GetNewSaveSlot();
     char newSaveText[8];
     mini_snprintf(newSaveText, sizeof(newSaveText), "Save %u", newSaveSlot);
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        const char* stateText = i == ITEM_NEW_SAVE && newSaveSlot != 0 ? newSaveText : nullptr;
-        _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].column < 0 ? ROW_WIDTH : CELL_WIDTH,
+        const char* stateText = i == ITEM_NEW_SAVE && newSaveSlot != 0 ? newSaveText
+            : i == ITEM_LANGUAGE ? GetGameLanguageName(_viewModel->GetGameLanguage()) : nullptr;
+        _items[i] = MenuItemView::CreateShared(this, i, CELL_WIDTH,
             kEntries[i].name, stateText, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
             materialColorScheme, fontRepository);
-        if (i != ITEM_NEW_SAVE || _newSaveShown)
+        if (IsShown(i))
             AddChildTail(_items[i].GetPointer());
     }
     _items[ITEM_NEW_SAVE]->SetEnabled(newSaveSlot != 0);
+    _items[ITEM_LANGUAGE]->SetEnabled(_viewModel->CanPickGameLanguage());
 }
 
 void MenuBottomSheetView::InitVram(const VramContext& vramContext)
@@ -249,10 +261,10 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
         return;
     static const unsigned int* const kTiles[ITEM_COUNT] =
         { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, plusIconTiles,
-          heartIconTiles, checkIconTiles };
+          languageIconTiles, heartIconTiles, checkIconTiles };
     static const u32 kTilesLength[ITEM_COUNT] =
         { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, plusIconTilesLen,
-          heartIconTilesLen, checkIconTilesLen };
+          languageIconTilesLen, heartIconTilesLen, checkIconTilesLen };
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
@@ -269,25 +281,25 @@ u32 MenuBottomSheetView::LoadSprite(IVramManager& vramManager, const unsigned in
     return vramOffset;
 }
 
+bool MenuBottomSheetView::IsShown(int index) const
+{
+    return _isDsGame || kEntries[index].row != kEntries[ITEM_NEW_SAVE].row;
+}
+
 int MenuBottomSheetView::GetRow(int index) const
 {
     int row = kEntries[index].row;
-    return !_newSaveShown && row > kEntries[ITEM_NEW_SAVE].row ? row - 1 : row;
+    return !_isDsGame && row > kEntries[ITEM_NEW_SAVE].row ? row - 1 : row;
 }
 
 int MenuBottomSheetView::FindEntry(int row, int column) const
 {
-    int firstCell = -1;
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        if (GetRow(i) != row || (i == ITEM_NEW_SAVE && !_newSaveShown))
-            continue;
-        if (kEntries[i].column == column || kEntries[i].column < 0)
+        if (IsShown(i) && GetRow(i) == row && kEntries[i].column == column)
             return i;
-        if (firstCell < 0)
-            firstCell = i;
     }
-    return firstCell;
+    return -1;
 }
 
 void MenuBottomSheetView::Update()
@@ -297,7 +309,7 @@ void MenuBottomSheetView::Update()
     _aboutButton->SetPosition(ABOUT_BUTTON_X, y + ABOUT_BUTTON_Y);
     for (int i = 0; i < ITEM_COUNT; i++)
     {
-        int x = ITEMS_X + std::max(kEntries[i].column, 0) * CELL_WIDTH;
+        int x = ITEMS_X + kEntries[i].column * CELL_WIDTH;
         _items[i]->SetPosition(x, y + ROWS_Y + GetRow(i) * ROW_SPACING);
     }
     _items[ITEM_DELETE]->SetEnabled(_viewModel->CanDeleteSelected());
@@ -354,8 +366,7 @@ SharedPtr<View> MenuBottomSheetView::MoveFocus(const SharedPtr<View>& currentFoc
     {
         case FocusMoveDirection::Left:
         case FocusMoveDirection::Right:
-            if (column >= 0)
-                target = FindEntry(row, direction == FocusMoveDirection::Left ? 0 : 1);
+            target = FindEntry(row, direction == FocusMoveDirection::Left ? 0 : 1);
             break;
         case FocusMoveDirection::Up:
             if (row == 0)
@@ -399,6 +410,11 @@ void MenuBottomSheetView::Activate(int index)
         case ITEM_NEW_SAVE:
             // faded and inert without a free save: the view model checks
             _viewModel->StartNewSave();
+            break;
+        case ITEM_LANGUAGE:
+            // faded and inert while there is no language to pick: the view model checks
+            _viewModel->PickNextGameLanguage();
+            _items[ITEM_LANGUAGE]->SetStateText(GetGameLanguageName(_viewModel->GetGameLanguage()));
             break;
         case ITEM_FAVORITES_FILTER:
             _viewModel->ToggleFavoritesFilter();
