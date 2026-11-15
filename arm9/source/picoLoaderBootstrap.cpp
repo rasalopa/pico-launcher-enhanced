@@ -26,6 +26,7 @@ static pload_params_t sLoadParams;
 static char sLauncherPath[256] alignas(32);
 static PicoLoaderBootDrive sBootDrive;
 static const pload_cheats_t* sCheatData = nullptr;
+static PicoLoaderGameLanguage sGameLanguage = PLOAD_GAME_LANGUAGE_AUTO;
 static bool sCountPlayTime = false;
 static u32 sPlayFrames = 0;
 
@@ -47,6 +48,11 @@ void pload_setLauncherPath(const char* launcherPath)
 void pload_setCheatData(const pload_cheats_t* cheatData)
 {
     sCheatData = cheatData;
+}
+
+void pload_setGameLanguage(PicoLoaderGameLanguage gameLanguage)
+{
+    sGameLanguage = gameLanguage;
 }
 
 void pload_setCountPlayTime(bool countPlayTime)
@@ -126,6 +132,10 @@ void pload_start()
     if (header->apiVersion >= 3)
     {
         header->v3.cheats = sCheatData;
+    }
+    if (header->apiVersion >= 4)
+    {
+        header->v4.gameLanguage = sGameLanguage;
     }
     // only Pico Loader Enhanced has this part; the official loader has code there
     if (header->enhanced.magic == PLOAD_ENHANCED_MAGIC)

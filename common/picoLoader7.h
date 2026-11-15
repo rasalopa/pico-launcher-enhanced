@@ -1,7 +1,7 @@
 #pragma once
 
 /// @brief The Pico Loader API version supported by this header file.
-#define PICO_LOADER_API_VERSION     3
+#define PICO_LOADER_API_VERSION     4
 
 /// @brief Enum to specify the drive to boot from.
 typedef enum
@@ -18,6 +18,37 @@ typedef enum
     /// @brief Flag to indicate that a multiboot rom needs to be loaded that is already in memory.
     PLOAD_BOOT_DRIVE_MULTIBOOT_FLAG = 1u << 15
 } PicoLoaderBootDrive;
+
+/// @brief Enum to specify the language games see. Values match the DS/DSi firmware language numbering.
+typedef enum
+{
+    /// @brief Japanese.
+    PLOAD_GAME_LANGUAGE_JAPANESE = 0,
+
+    /// @brief English.
+    PLOAD_GAME_LANGUAGE_ENGLISH = 1,
+
+    /// @brief French.
+    PLOAD_GAME_LANGUAGE_FRENCH = 2,
+
+    /// @brief German.
+    PLOAD_GAME_LANGUAGE_GERMAN = 3,
+
+    /// @brief Italian.
+    PLOAD_GAME_LANGUAGE_ITALIAN = 4,
+
+    /// @brief Spanish.
+    PLOAD_GAME_LANGUAGE_SPANISH = 5,
+
+    /// @brief Chinese.
+    PLOAD_GAME_LANGUAGE_CHINESE = 6,
+
+    /// @brief Korean.
+    PLOAD_GAME_LANGUAGE_KOREAN = 7,
+
+    /// @brief Pick the language based on the rom region and the console language (default).
+    PLOAD_GAME_LANGUAGE_AUTO = 0xFF
+} PicoLoaderGameLanguage;
 
 /// @brief Struct containing the load params.
 typedef struct
@@ -83,6 +114,18 @@ typedef struct
     const pload_cheats_t* cheats;
 } pload_header7_v3_t;
 
+/// @brief Struct representing the API version 4 part of the header of picoLoader7.bin.
+typedef struct
+{
+    /// @brief Reserved, do not use.
+    u16 reserved;
+
+    /// @brief The language games see, see \see PicoLoaderGameLanguage. Defaults to \see PLOAD_GAME_LANGUAGE_AUTO.
+    ///        A forced language is only used when the rom region supports it; otherwise the automatic choice is used.
+    ///        Any value above \see PLOAD_GAME_LANGUAGE_KOREAN is treated as \see PLOAD_GAME_LANGUAGE_AUTO.
+    u16 gameLanguage;
+} pload_header7_v4_t;
+
 /// @brief Magic of the Pico Loader Enhanced part of the header ('PLE1').
 #define PLOAD_ENHANCED_MAGIC    0x31454C50
 
@@ -137,9 +180,12 @@ typedef struct
     /// @brief The API version 3 part of the header. Only access this when \see apiVersion >= 3.
     pload_header7_v3_t v3;
 
-    /// @brief Left free, as zeros, for the API version 4 and later parts of the official
+    /// @brief The API version 4 part of the header. Only access this when \see apiVersion >= 4.
+    pload_header7_v4_t v4;
+
+    /// @brief Left free, as zeros, for the API version 5 and later parts of the official
     ///        Pico Loader header, so the Enhanced part can stay at 0x480 when they come.
-    u32 reservedForOfficialParts[27];
+    u32 reservedForOfficialParts[26];
 
     /// @brief The Pico Loader Enhanced part of the header, see \see pload_header7_enhanced_t.
     pload_header7_enhanced_t enhanced;

@@ -6,6 +6,9 @@ void pload_setBootDrive(PicoLoaderBootDrive bootDrive);
 void pload_setLauncherPath(const char* launcherPath);
 void pload_setCheatData(const pload_cheats_t* cheatData);
 
+/// @brief Sets the language the next game starts in, see \see PicoLoaderGameLanguage.
+void pload_setGameLanguage(PicoLoaderGameLanguage gameLanguage);
+
 /// @brief Asks Pico Loader Enhanced to count the frames the next game runs.
 void pload_setCountPlayTime(bool countPlayTime);
 
