@@ -146,6 +146,7 @@ private:
     void EndSplashBottom();
     void LoadTheme();
     void VCountIrq();
+    void VBlankIrq();
     void HandleInput();
     void HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState);
     void HandleShowGameInfoTrigger();

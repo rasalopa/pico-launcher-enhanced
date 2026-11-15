@@ -177,7 +177,7 @@ void AdvancedPaletteManagerBase::Reset()
 
 void AdvancedPaletteManagerBase::CreateScheme(const PaletteRow* rows, SchemeEntry* scheme)
 {
-    _nextSchemeEntry = scheme;
+    const SchemeEntry* first = scheme;
     u32 y = 0;
     u8 curRow[HW_PALETTE_ROWS];
     for (int i = 0; i < HW_PALETTE_ROWS; i++)
@@ -223,6 +223,9 @@ void AdvancedPaletteManagerBase::CreateScheme(const PaletteRow* rows, SchemeEntr
 
     scheme->endMarker = 0;
     scheme->nextVCount = 0;
+    // handed over only once whole, as the vblank irq may walk it at any moment
+    asm volatile("" ::: "memory");
+    _nextSchemeEntry = first;
 }
 
 void AdvancedPaletteManagerBase::VCount()

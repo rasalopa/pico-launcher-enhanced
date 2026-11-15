@@ -185,6 +185,14 @@ void App::VCountIrq()
     _mainObjPltt.VCount();
 }
 
+void App::VBlankIrq()
+{
+    // left alone while a screenshot has the main engine, as wide on purpose as the test in Draw
+    if (!_screenshot.IsMirroringMainEngine())
+        _mainObjPltt.VBlank();
+    VBlank::NotifyIrq();
+}
+
 void App::Run()
 {
     // The hardware OAM still holds whatever the firmware or the previous
@@ -906,20 +914,12 @@ void App::VBlank()
     {
         rtos_ackIrqMask(RTOS_IRQ_VCOUNT);
         rtos_enableIrqMask(RTOS_IRQ_VCOUNT);
+        // the boot page's empty scheme, so the vcount irq has one if the theme selector left a match on
+        _mainObjPltt.VBlank();
+        // from the next vblank the irq walks the palettes, so a frame the main loop misses keeps its colors
+        rtos_setIrqFunc(RTOS_IRQ_VBLANK, [] (u32 mask) { ((App*)gProcessManager.GetRunningProcess())->VBlankIrq(); });
         _vcountIrqStarted = true;
     }
-    // Left alone from the moment the top half is queued until the mirror is
-    // handed back, which is wider than the frame the palette is actually the
-    // other screen's - on the first of those frames nothing has been mirrored
-    // yet, since that happens further down this same function. Wider on
-    // purpose, for the reason in Draw: too narrow writes into a saved image.
-    // Runs during the boot page too: its scheme is empty then, so it writes no
-    // palette row and leaves the page's own, but it is what arms the scanline
-    // walk the vcount irq performs - which fires from the first frame when the
-    // theme selector left the match line enabled, and would otherwise walk a
-    // null scheme and hang.
-    if (!_screenshot.IsMirroringMainEngine())
-        _mainObjPltt.VBlank();
 
     if (_topBackground)
         _topBackground->VBlank();
