@@ -92,7 +92,7 @@ public:
     ///        handler: for the bottom screen as the first thing, so the sprites
     ///        uploaded just after are the ones recorded, and the mirroring for
     ///        the top screen needs the sub sprites already uploaded, so this is
-    ///        called at the end too.
+    ///        called at the end too. It also lifts the blackout after a handback.
     void VBlankBegin();
 
     /// @brief Hands the sub engine's memory, palettes and objects to the main
@@ -149,7 +149,7 @@ private:
     ///
     /// Master brightness is not in this list even though it can be read. The
     /// blackout it carries has to be the last thing lifted, so it is saved and
-    /// put back on its own - see RestoreMainEngine.
+    /// put back on its own (see VBlankBegin).
     static constexpr u16 kMirroredRegs[] =
     {
         0x08, 0x0A, 0x0C, 0x0E, // BG0-3 control
@@ -230,6 +230,8 @@ private:
     u32 _savedDispCnt = 0;
     /// Kept apart from _savedRegs because the blackout is lifted last.
     u16 _savedMasterBright = 0;
+    /// Set at the handback, so the next VBlankBegin lifts the blackout.
+    bool _liftBlackout = false;
     u16 _savedRegs[kMirroredRegCount] = { };
     u16 _savedBgPltt[256] = { };
     u16 _savedObjPltt[256] = { };

@@ -325,6 +325,13 @@ Screenshot::~Screenshot()
 
 void Screenshot::VBlankBegin()
 {
+    // a handback lifts the blackout here: the irq has just walked the palettes of the sprites going up
+    if (_liftBlackout)
+    {
+        mainReg(REG_OFFSET_MASTER_BRIGHT) = _savedMasterBright;
+        _liftBlackout = false;
+    }
+
     // The bottom screen is what the main engine already draws, so it is armed
     // before this frame's sprites go up: those are the ones recorded.
     if (_state != State::Arming || _screen != Screen::Bottom)
@@ -533,8 +540,8 @@ void Screenshot::MirrorSubEngine()
     // So turn it off instead of showing borrowed state. Master brightness is
     // the last thing in the display pipeline, after the capture unit reads the
     // engine, so the recorded image should not care - and if it does, the saved
-    // bmp comes out black and says so plainly. Put back as the very last thing
-    // the restore does, so the screen never lights up on borrowed state.
+    // bmp comes out black and says so plainly. Put back at the vblank after the
+    // restore, so the screen never lights up on borrowed state or old palettes.
     mainReg(REG_OFFSET_MASTER_BRIGHT) = MASTER_BRIGHT_BLACK;
 
     // The palette manager rewrites object palette rows partway down the frame,
@@ -575,13 +582,8 @@ void Screenshot::RestoreMainEngine()
         rtos_enableIrqMask(RTOS_IRQ_VCOUNT);
         _vcountIrqSuppressed = false;
     }
-    // Last, and on its own. This is what the player is looking at, so it comes
-    // off only once every piece of borrowed state is back: while it was part of
-    // the mirrored list it went back first, and the bottom screen then drew
-    // several lines with the other screen's palettes, with two of its own
-    // background blocks still lent out as palette slots, and for a moment with
-    // no block mapped at its background memory at all.
-    mainReg(REG_OFFSET_MASTER_BRIGHT) = _savedMasterBright;
+    // not lifted here: the rest of this frame would show the sprites with the palettes saved at the mirror
+    _liftBlackout = true;
 }
 
 void Screenshot::Update()
