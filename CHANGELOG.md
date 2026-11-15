@@ -24,6 +24,11 @@
   during a load had the same problem. cgimenes found it (#40).
 - The display settings sheet opens with the focus on the layout in use. It opened on the first
   one, whichever layout was in use. cgimenes found it (#43).
+- Games with a file name longer than 96 bytes keep their favorite and completed marks, launch
+  count, last played date, play time and last save used. Nothing was stored for them, and X gave
+  no sign of why. Names of up to 255 bytes are stored, the longest the launcher reads from the
+  card. Going back to v1.11.0 or earlier loses what was stored for those games the first time
+  it saves. OneSidedPrism reported it (#46).
 
 ### [enhanced-v1.11.0]
 
