@@ -189,7 +189,11 @@ void App::VBlankIrq()
 {
     // left alone only while the main engine holds the top screen's palettes for a screenshot
     if (!_screenshot.IsMirrorInPlace())
+    {
+        // a vcount still pending here is the last frame's, and would run after this walk
+        rtos_ackIrqMask(RTOS_IRQ_VCOUNT);
         _mainObjPltt.VBlank();
+    }
     VBlank::NotifyIrq();
 }
 
