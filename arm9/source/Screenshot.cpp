@@ -413,6 +413,9 @@ void Screenshot::PrepareTopCapture()
     // Block A receives the capture, so save the part being written to. The upper
     // 96 KB is used, which leaves the single flat texel the material theme keeps
     // at offset 0 alone.
+    // dark from here: the 3d engine is drawing this frame, and a custom theme's bottom background is in block A
+    _savedMasterBright = mainReg(REG_OFFSET_MASTER_BRIGHT);
+    mainReg(REG_OFFSET_MASTER_BRIGHT) = MASTER_BRIGHT_BLACK;
     _savedVramAMapping = mem_getVramAMapping();
     mem_setVramAMapping(MEM_VRAM_AB_LCDC);
     DC_InvalidateRange(_blockBackup, CAPTURE_BYTES);
@@ -437,7 +440,6 @@ void Screenshot::MirrorSubEngine()
     _vcountIrqSuppressed = true;
 
     _savedDispCnt = REG_DISPCNT;
-    _savedMasterBright = mainReg(REG_OFFSET_MASTER_BRIGHT);
     for (u32 i = 0; i < kMirroredRegCount; i++)
         _savedRegs[i] = mainReg(kMirroredRegs[i]);
     for (u32 i = 0; i < PLTT_HALFWORDS; i++)
@@ -546,9 +548,8 @@ void Screenshot::MirrorSubEngine()
     // So turn it off instead of showing borrowed state. Master brightness is
     // the last thing in the display pipeline, after the capture unit reads the
     // engine, so the recorded image should not care - and if it does, the saved
-    // bmp comes out black and says so plainly. Put back at the vblank after the
-    // restore, so the screen never lights up on borrowed state or old palettes.
-    mainReg(REG_OFFSET_MASTER_BRIGHT) = MASTER_BRIGHT_BLACK;
+    // bmp comes out black and says so plainly. Turned off in PrepareTopCapture,
+    // a frame before this, and put back at the vblank after the restore.
 }
 
 void Screenshot::RestoreMainEngine()
