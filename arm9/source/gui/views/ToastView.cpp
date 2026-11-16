@@ -85,12 +85,12 @@ static const u8 kCornerInset[CORNER_ROWS] = { 1 };
 #define MAX_ALPHA           31
 #define PROGRESS_MAX        256
 
-// Two ids, because translucent polygons that share one do not blend with each
-// other: on a single id the text would punch a hole through the panel while both
-// are fading. And not 62 or 63, which look free and are not - the icon button
-// selector draws with 62 and the custom app bar scrim with 63, so a shared id
-// with either would drop the overlap instead of blending it. Everything from 1
-// to 61 is unused.
+// The text is translucent, from its A5I3 texels and from its fade, and a
+// translucent pixel is dropped instead of blended when the translucent pixel
+// under it has the same id. So its id stays off 62, which the icon button
+// selector draws with, and off 63, which the custom app bar scrim draws with.
+// The panel is opaque on every frame, and with edge marking off nothing
+// compares its id.
 #define BACKGROUND_POLYGON_ID   60
 #define TEXT_POLYGON_ID         61
 
@@ -197,11 +197,7 @@ Rectangle ToastView::GetBounds() const
 // user was told nothing at all.
 //
 // A window can only switch a layer off, so the sheet is switched off inside this
-// rectangle rather than the message being lifted above it. While the message is
-// fading its panel is not yet opaque, so for those frames the rectangle shows
-// the page behind the sheet instead of the sheet. That is the price of the only
-// mechanism the hardware offers here, and it buys a confirmation that is
-// actually visible.
+// rectangle rather than the message being lifted above it.
 #define WINDOW_SHEET_BGS    0x06
 
 void ToastView::ApplyWindow()
@@ -283,8 +279,9 @@ void ToastView::Draw(GraphicsContext& graphicsContext)
     // sitting on top of it. Material would invert a snackbar to its darkest
     // surface, which here would read as a foreign element.
     Gx::MtxIdentity();
+    // solid from the first frame, as the window is: a fading panel showed the art the window uncovers
     Gx::PolygonAttr(GX_LIGHTMASK_NONE, GX_POLYGON_MODE_MODULATE, GX_DISPLAY_MODE_FRONT,
-        false, false, false, GX_DEPTH_FUNC_LESS, false, _alpha, BACKGROUND_POLYGON_ID);
+        false, false, false, GX_DEPTH_FUNC_LESS, false, MAX_ALPHA, BACKGROUND_POLYGON_ID);
     Gx::TexImageParam(0, false, false, false, false, GX_TEXSIZE_8, GX_TEXSIZE_8,
         GX_TEXFMT_NONE, false, GX_TEXGEN_NONE);
     Gx::Color(Rgb<5, 5, 5>(_materialColorScheme->secondaryContainer));
