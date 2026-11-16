@@ -41,6 +41,12 @@
 - Marking a favorite or a completed game, or anything else that saves `gamedata.json`, no longer
   turns some colors of the bottom screen wrong for a moment, such as a black bar in the menu or
   the first row of the menu in other colors.
+- Taking a screenshot no longer shows a frame of wrong colors on the bottom screen before and
+  after the black flash, and with a custom theme the background no longer goes missing for a
+  frame just before it. The flash lasts a frame longer.
+- The "Screenshot saved" message and the other short messages at the bottom no longer show the
+  theme's background through their box while they appear and go away, which on a dark theme
+  looked like a smudge.
 
 ### [enhanced-v1.11.0]
 
