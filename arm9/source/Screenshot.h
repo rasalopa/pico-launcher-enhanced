@@ -88,6 +88,13 @@ public:
         return _screen == Screen::Top && _state != State::Idle;
     }
 
+    /// @brief Whether the main engine holds the top screen's palettes, from the
+    ///        vblank that mirrors them until the handback.
+    bool IsMirrorInPlace() const
+    {
+        return _screen == Screen::Top && _state == State::Capturing;
+    }
+
     /// @brief Sets the capture up for the coming frame. Call from the VBlank
     ///        handler: for the bottom screen as the first thing, so the sprites
     ///        uploaded just after are the ones recorded, and the mirroring for

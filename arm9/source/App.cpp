@@ -187,8 +187,8 @@ void App::VCountIrq()
 
 void App::VBlankIrq()
 {
-    // left alone while a screenshot has the main engine, as wide on purpose as the test in Draw
-    if (!_screenshot.IsMirroringMainEngine())
+    // left alone only while the main engine holds the top screen's palettes for a screenshot
+    if (!_screenshot.IsMirrorInPlace())
         _mainObjPltt.VBlank();
     VBlank::NotifyIrq();
 }

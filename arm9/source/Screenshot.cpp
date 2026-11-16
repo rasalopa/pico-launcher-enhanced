@@ -5,6 +5,7 @@
 #include <libtwl/gfx/gfxBackground.h>
 #include <libtwl/gfx/gfxOam.h>
 #include <libtwl/gfx/gfxPalette.h>
+#include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/dma/dmaNitro.h>
 #include <libtwl/rtos/rtosIrq.h>
 #include "core/mini-printf.h"
@@ -430,6 +431,11 @@ void Screenshot::PrepareTopCapture()
 
 void Screenshot::MirrorSubEngine()
 {
+    // The palette manager rewrites object palette rows partway down the frame,
+    // which would repaint the colors copied below, inside the capture.
+    rtos_disableIrqMask(RTOS_IRQ_VCOUNT);
+    _vcountIrqSuppressed = true;
+
     _savedDispCnt = REG_DISPCNT;
     _savedMasterBright = mainReg(REG_OFFSET_MASTER_BRIGHT);
     for (u32 i = 0; i < kMirroredRegCount; i++)
@@ -543,11 +549,6 @@ void Screenshot::MirrorSubEngine()
     // bmp comes out black and says so plainly. Put back at the vblank after the
     // restore, so the screen never lights up on borrowed state or old palettes.
     mainReg(REG_OFFSET_MASTER_BRIGHT) = MASTER_BRIGHT_BLACK;
-
-    // The palette manager rewrites object palette rows partway down the frame,
-    // which would repaint the colours we just copied, inside the capture.
-    rtos_disableIrqMask(RTOS_IRQ_VCOUNT);
-    _vcountIrqSuppressed = true;
 }
 
 void Screenshot::RestoreMainEngine()
@@ -578,6 +579,8 @@ void Screenshot::RestoreMainEngine()
     mem_setVramAMapping(_savedVramAMapping);
     if (_vcountIrqSuppressed)
     {
+        // the walk the irq began at the mirroring vblank stays stopped; the next vblank starts a new one
+        gfx_setVCountMatchIrqEnabled(false);
         rtos_ackIrqMask(RTOS_IRQ_VCOUNT);
         rtos_enableIrqMask(RTOS_IRQ_VCOUNT);
         _vcountIrqSuppressed = false;
