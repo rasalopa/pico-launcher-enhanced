@@ -1,6 +1,7 @@
 #pragma once
 #include <string.h>
 #include "core/mini-printf.h"
+#include "core/StringUtil.h"
 #include "../IRomBrowserController.h"
 #include "../FileInfo.h"
 #include "services/gamedata/IGameDataService.h"
@@ -8,7 +9,8 @@
 /// @brief View model for the save picker, which A opens on a DS game with saves besides
 ///        its main one: the main save first, even when its file is missing, then every
 ///        other save found when the folder was read, then a new save while one is free.
-///        It opens on the save the game was started on last time.
+///        It opens on the save the game was started on last time. A save shows the name
+///        PicoDex gave it and the day it was last started, when those are known.
 class SavePickerViewModel
 {
 public:
@@ -57,15 +59,34 @@ public:
     ///        that save is gone.
     u32 GetInitialEntry() const { return _initialEntry; }
 
-    /// @brief Writes "Main save", "Save N" or "+ New save" for the entry.
+    /// @brief Writes the name PicoDex gave the save, else "Main save" or "Save N", or
+    ///        "+ New save" for the entry that makes one.
     void FormatEntry(u32 index, char* buffer, u32 bufferLength) const
     {
-        if (_newSaveSlot != 0 && index == _entryCount - 1)
+        const GameSaveInfo* save = GetSaveInfo(index);
+        if (IsNewSaveEntry(index))
             mini_snprintf(buffer, bufferLength, "+ New save");
+        else if (save && save->name.GetString()[0] != 0)
+            StringUtil::Copy(buffer, save->name.GetString(), bufferLength);
         else if (_slots[index] == 0)
             mini_snprintf(buffer, bufferLength, "Main save");
         else
             mini_snprintf(buffer, bufferLength, "Save %u", (u32)_slots[index]);
+    }
+
+    /// @brief Writes "DD/MM", the day the game was last started on the save, as the
+    ///        recents list does. Returns false when there is no date to show.
+    bool FormatDate(u32 index, char* buffer, u32 bufferLength) const
+    {
+        const GameSaveInfo* save = GetSaveInfo(index);
+        if (IsNewSaveEntry(index) || !save)
+            return false;
+        // "YYYY-MM-DD HH:MM"
+        const char* lastPlayed = save->lastPlayed.GetString();
+        if (strlen(lastPlayed) < 10)
+            return false;
+        mini_snprintf(buffer, bufferLength, "%c%c/%c%c", lastPlayed[8], lastPlayed[9], lastPlayed[5], lastPlayed[6]);
+        return true;
     }
 
     void ActivateEntry(int index)
@@ -80,6 +101,17 @@ public:
     }
 
 private:
+    bool IsNewSaveEntry(u32 index) const { return _newSaveSlot != 0 && index == _entryCount - 1; }
+
+    /// @brief nullptr for the new save, and when nothing is stored for the game's saves.
+    const GameSaveInfo* GetSaveInfo(u32 index) const
+    {
+        if (IsNewSaveEntry(index))
+            return nullptr;
+        return _romBrowserController->GetGameDataService()->GetSaveInfo(
+            _romBrowserController->GetTriggerFileInfo().GetFileName(), _slots[index]);
+    }
+
     IRomBrowserController* _romBrowserController;
     /// @brief The save each entry starts.
     u8 _slots[kMaxEntryCount];

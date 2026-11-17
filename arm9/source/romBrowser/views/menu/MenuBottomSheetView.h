@@ -23,13 +23,22 @@ protected:
 /// @brief One entry of the menu: an icon, its name and, for New save and Language, the
 ///        save it would start or the language the game starts in. A tap or A runs it; the
 ///        sheet decides what that means. The save picker lists its saves with these too,
-///        without an icon.
+///        without an icon and with the date each save was last started on.
 class MenuItemView : public ViewContainer
 {
     SHARED_ONLY(MenuItemView)
 
 public:
     static constexpr int HEIGHT = 24;
+
+    /// @brief The menu's entries have an icon before the name and room for a
+    ///        language at the end. The save picker's have no icon, so the name
+    ///        starts at the left, and a date at the end, which is narrower.
+    enum class Layout
+    {
+        Menu,
+        SavePicker
+    };
 
     void Update() override;
     void Draw(GraphicsContext& graphicsContext) override;
@@ -63,10 +72,13 @@ private:
     IMenuItemHost* _sheet;
     int _index;
     int _width;
+    int _nameX;
+    int _stateWidth;
     Rgb<8, 8, 8> _activeColor;
     const MaterialColorScheme* _materialColorScheme;
     SharedPtr<Label2DView> _nameLabel;
-    /// Small gray text at the end of the item; only New save and Language have one.
+    /// Small gray text at the end of the item: in the menu only New save and Language
+    /// have one, in the save picker the saves with a date.
     SharedPtr<Label2DView> _stateLabel;
     u32 _iconVramOffset = 0;
     u32 _selectorVramOffset = 0;
@@ -79,7 +91,8 @@ private:
     /// @param stateText Text at the end of the item, or nullptr for none.
     MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
         const char* stateText, const Rgb<8, 8, 8>& activeColor,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        Layout layout = Layout::Menu);
 };
 
 /// @brief The sheet behind the app bar's "more" button: what the bar used to

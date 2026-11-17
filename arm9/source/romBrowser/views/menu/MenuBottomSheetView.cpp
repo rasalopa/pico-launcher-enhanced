@@ -52,6 +52,11 @@
 #define STATE_WIDTH         34
 #define STATE_DY            7
 
+// In the save picker's entries, which have no icon: "16/11" takes 19 of the 24 px,
+// leaving the name 72, about 14 characters.
+#define SAVE_PICKER_NAME_DX 8
+#define DATE_WIDTH          24
+
 // The recents list's highlight sprite: 64 px wide, laid end to end.
 #define SELECTOR_WIDTH      64
 
@@ -89,11 +94,14 @@ static const char* GetGameLanguageName(PicoLoaderGameLanguage gameLanguage)
 
 MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const char* name,
     const char* stateText, const Rgb<8, 8, 8>& activeColor,
-    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
-    : _sheet(sheet), _index(index), _width(width), _activeColor(activeColor)
-    , _materialColorScheme(materialColorScheme)
+    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository, Layout layout)
+    : _sheet(sheet), _index(index), _width(width)
+    , _nameX(layout == Layout::SavePicker ? SAVE_PICKER_NAME_DX : NAME_DX)
+    , _stateWidth(layout == Layout::SavePicker ? DATE_WIDTH : STATE_WIDTH)
+    , _activeColor(activeColor), _materialColorScheme(materialColorScheme)
 {
-    int nameWidth = width - NAME_DX - 4 - (stateText ? STATE_WIDTH : 0);
+    int nameWidth = width - _nameX - 4 - (stateText ? _stateWidth : 0);
+    // 24 holds a save's name, which is up to 20 characters
     _nameLabel = Label2DView::CreateShared(nameWidth, 16, 24, fontRepository->GetFont(FontType::Regular10));
     _nameLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
     _nameLabel->SetText(name);
@@ -101,7 +109,7 @@ MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const cha
     if (stateText)
     {
         // "Japanese" is the longest
-        _stateLabel = Label2DView::CreateShared(STATE_WIDTH, 16, 8, fontRepository->GetFont(FontType::Medium7_5));
+        _stateLabel = Label2DView::CreateShared(_stateWidth, 16, 8, fontRepository->GetFont(FontType::Medium7_5));
         _stateLabel->SetHorizontalAlignment(Alignment::End);
         _stateLabel->SetText(stateText);
         AddChildTail(_stateLabel.GetPointer());
@@ -110,9 +118,9 @@ MenuItemView::MenuItemView(IMenuItemHost* sheet, int index, int width, const cha
 
 void MenuItemView::Update()
 {
-    _nameLabel->SetPosition(_position.x + NAME_DX, _position.y + NAME_DY);
+    _nameLabel->SetPosition(_position.x + _nameX, _position.y + NAME_DY);
     if (_stateLabel)
-        _stateLabel->SetPosition(_position.x + _width - 4 - STATE_WIDTH, _position.y + STATE_DY);
+        _stateLabel->SetPosition(_position.x + _width - 4 - _stateWidth, _position.y + STATE_DY);
     ViewContainer::Update();
 }
 

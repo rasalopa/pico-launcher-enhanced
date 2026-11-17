@@ -40,10 +40,12 @@ SavePickerBottomSheetView::SavePickerBottomSheetView(SharedPtr<SavePickerViewMod
 
     for (u32 i = 0; i < _entryCount; i++)
     {
-        char name[16];
+        char name[GameSaveInfo::kMaxNameBytes + 1];
         _viewModel->FormatEntry(i, name, sizeof(name));
-        _entries[i] = MenuItemView::CreateShared(this, i, CELL_WIDTH, name, nullptr,
-            materialColorScheme->primary, materialColorScheme, fontRepository);
+        char date[6];
+        bool hasDate = _viewModel->FormatDate(i, date, sizeof(date));
+        _entries[i] = MenuItemView::CreateShared(this, i, CELL_WIDTH, name, hasDate ? date : nullptr,
+            materialColorScheme->primary, materialColorScheme, fontRepository, MenuItemView::Layout::SavePicker);
         AddChildTail(_entries[i].GetPointer());
     }
 }
