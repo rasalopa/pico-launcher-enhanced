@@ -24,6 +24,8 @@
 #define KEY_PATH              "path"
 #define KEY_SAVE_SLOT         "saveSlot"
 #define KEY_GAME_LANGUAGE     "gameLanguage"
+#define KEY_SAVES             "saves"
+#define KEY_SAVE_NAME         "name"
 #define KEY_SESSION_GAME      "sessionGame"
 #define KEY_SESSION_GAME_CODE "sessionGameCode"
 #define KEY_SESSION_START     "sessionStart"
@@ -40,12 +42,25 @@
 #define JSON_POOL_BASE_SIZE       4096
 #define JSON_POOL_PER_ENTRY       440
 #define JSON_POOL_READ_MAX        (96 * 1024)
+// a game's "saves" member, and three slots for each of its ten saves
+#define JSON_POOL_PER_GAME_SAVES  (31 * 16)
 // free entries kept for games first marked or launched in this session
 #define ENTRY_HEADROOM            16
+// the same for games whose saves get a name or a date
+#define GAME_SAVES_HEADROOM       4
 
-static u32 writePoolSize(u32 entryCount)
+// literals, so ArduinoJson links the keys instead of copying them
+static const char* const sSaveKeys[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+static_assert(sizeof(sSaveKeys) / sizeof(sSaveKeys[0]) == IGameDataService::kMaxSaveSlot + 1);
+
+static u32 writePoolSize(u32 entryCount, u32 gameSavesCount)
 {
-    return JSON_POOL_BASE_SIZE + entryCount * JSON_POOL_PER_ENTRY;
+    return JSON_POOL_BASE_SIZE + entryCount * JSON_POOL_PER_ENTRY + gameSavesCount * JSON_POOL_PER_GAME_SAVES;
+}
+
+static bool isEmpty(const GameSaveInfo& save)
+{
+    return save.name.GetString()[0] == 0 && save.lastPlayed.GetString()[0] == 0;
 }
 
 // A file name at or over the storage limit would be silently truncated into a
@@ -135,6 +150,38 @@ GameDataEntry* JsonGameDataService::GetOrCreateEntry(const char* fileName, const
     if (isUsableGameCode(gameCode))
         entry.gameCode = gameCode;
     return &entry;
+}
+
+const JsonGameDataService::GameSaves* JsonGameDataService::FindGameSaves(const GameDataEntry& entry) const
+{
+    return entry.gameSavesIndex == GameDataEntry::kNoGameSaves ? nullptr : &_gameSaves[entry.gameSavesIndex];
+}
+
+JsonGameDataService::GameSaves& JsonGameDataService::GetOrCreateGameSaves(GameDataEntry& entry)
+{
+    if (entry.gameSavesIndex != GameDataEntry::kNoGameSaves)
+        return _gameSaves[entry.gameSavesIndex];
+
+    u32 index = 0;
+    while (index < _gameSavesCount && _gameSaves[index].inUse)
+        index++;
+    if (index == _gameSavesCount)
+    {
+        if (_gameSavesCount == _gameSavesCapacity)
+        {
+            u32 newCapacity = _gameSavesCapacity + GAME_SAVES_HEADROOM;
+            auto newGameSaves = std::make_unique<GameSaves[]>(newCapacity);
+            for (u32 i = 0; i < _gameSavesCount; i++)
+                newGameSaves[i] = _gameSaves[i];
+            _gameSaves = std::move(newGameSaves);
+            _gameSavesCapacity = newCapacity;
+        }
+        _gameSavesCount++;
+    }
+    _gameSaves[index] = GameSaves();
+    _gameSaves[index].inUse = true;
+    entry.gameSavesIndex = (u16)index;
+    return _gameSaves[index];
 }
 
 void JsonGameDataService::ToggleFavorite(const char* fileName, const char* gameCode,
@@ -236,6 +283,56 @@ bool JsonGameDataService::SetSaveSlot(const char* fileName, u32 saveSlot, const 
     return true;
 }
 
+const GameSaveInfo* JsonGameDataService::GetSaveInfo(const char* fileName, u32 saveSlot) const
+{
+    const auto* entry = GetEntry(fileName);
+    const auto* gameSaves = entry && saveSlot <= kMaxSaveSlot ? FindGameSaves(*entry) : nullptr;
+    return gameSaves ? &gameSaves->saves[saveSlot] : nullptr;
+}
+
+bool JsonGameDataService::RecordSaveLaunch(const char* fileName, u32 saveSlot, bool newSave,
+    const char* lastPlayedDateTime, const char* gameCode)
+{
+    if (saveSlot > kMaxSaveSlot)
+        return false;
+    bool changed = false;
+    GameDataEntry* entry = Find(fileName);
+    GameSaves* gameSaves = entry && entry->gameSavesIndex != GameDataEntry::kNoGameSaves
+        ? &_gameSaves[entry->gameSavesIndex] : nullptr;
+    // counted before the new save below can take the only date away
+    bool hasDates = false;
+    if (gameSaves)
+    {
+        for (const auto& save : gameSaves->saves)
+            hasDates |= save.lastPlayed.GetString()[0] != 0;
+    }
+    if (newSave && gameSaves)
+    {
+        // the slot's last save was deleted, and its name was for that one
+        gameSaves->saves[saveSlot] = GameSaveInfo();
+        changed = true;
+    }
+    if (lastPlayedDateTime)
+    {
+        if (!entry)
+            entry = GetOrCreateEntry(fileName, gameCode);
+        if (entry)
+        {
+            auto& saves = GetOrCreateGameSaves(*entry).saves;
+            // Saves from before they had dates: the one the last launch was on was
+            // started at the game's lastPlayed. Only while no save has a date, as a
+            // later launch with tracking off moves saveSlot and leaves lastPlayed behind.
+            if (!hasDates)
+                saves[entry->saveSlot].lastPlayed = entry->lastPlayed.GetString();
+            saves[saveSlot].lastPlayed = lastPlayedDateTime;
+            changed = true;
+        }
+    }
+    if (changed)
+        _version++;
+    return changed;
+}
+
 bool JsonGameDataService::SetGameLanguage(const char* fileName, PicoLoaderGameLanguage gameLanguage,
     const char* gameCode)
 {
@@ -255,6 +352,8 @@ void JsonGameDataService::RemoveEntry(const char* fileName)
     GameDataEntry* entry = Find(fileName);
     if (!entry)
         return;
+    if (entry->gameSavesIndex != GameDataEntry::kNoGameSaves)
+        _gameSaves[entry->gameSavesIndex].inUse = false;
     _entryCount--;
     *entry = _entries[_entryCount];
     _version++;
@@ -275,14 +374,22 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
     // serialization happens on the calling (main) thread: ArduinoJson links
     // pointers into _entries, which a concurrent mutation could reallocate if
     // this ran on the IO thread. Only the finished byte buffer crosses threads.
-    DynamicJsonDocument json(writePoolSize(_entryCount));
+    DynamicJsonDocument json(writePoolSize(_entryCount, _gameSavesCount));
     auto games = json[KEY_GAMES].to<JsonObject>();
     for (u32 i = 0; i < _entryCount; i++)
     {
         const auto& entry = _entries[i];
+        const auto* gameSaves = FindGameSaves(entry);
+        bool hasSaveInfo = false;
+        if (gameSaves)
+        {
+            for (const auto& save : gameSaves->saves)
+                hasSaveInfo |= !isEmpty(save);
+        }
         // entries reset back to all-default state are pruned on write
         if (!entry.favorite && !entry.completed && entry.launchCount == 0 && entry.playMinutes == 0 &&
-            entry.playSeconds == 0 && entry.saveSlot == 0 && entry.gameLanguage == PLOAD_GAME_LANGUAGE_AUTO)
+            entry.playSeconds == 0 && entry.saveSlot == 0 && entry.gameLanguage == PLOAD_GAME_LANGUAGE_AUTO &&
+            !hasSaveInfo)
             continue;
         auto game = games[entry.fileName.GetString()].to<JsonObject>();
         if (entry.gameCode.GetString()[0] != 0)
@@ -305,6 +412,21 @@ void JsonGameDataService::SaveAsync(TaskQueueBase* ioTaskQueue)
             game[KEY_SAVE_SLOT] = entry.saveSlot;
         if (entry.gameLanguage != PLOAD_GAME_LANGUAGE_AUTO)
             game[KEY_GAME_LANGUAGE] = entry.gameLanguage;
+        if (hasSaveInfo)
+        {
+            auto saves = game[KEY_SAVES].to<JsonObject>();
+            for (u32 slot = 0; slot <= kMaxSaveSlot; slot++)
+            {
+                const auto& save = gameSaves->saves[slot];
+                if (isEmpty(save))
+                    continue;
+                auto saveJson = saves[sSaveKeys[slot]].to<JsonObject>();
+                if (save.name.GetString()[0] != 0)
+                    saveJson[KEY_SAVE_NAME] = save.name.GetString();
+                if (save.lastPlayed.GetString()[0] != 0)
+                    saveJson[KEY_LAST_PLAYED] = save.lastPlayed.GetString();
+            }
+        }
     }
     if (_sessionStart.GetString()[0] != 0)
     {
@@ -446,6 +568,16 @@ void JsonGameDataService::Load()
     // one allocation for the games in the file instead of growing into it
     _entryCapacity = games.size() + ENTRY_HEADROOM;
     _entries = std::make_unique<GameDataEntry[]>(_entryCapacity);
+    // the same for the games with names or dates for their saves, while the parse
+    // pool is still taking its share of the heap
+    u32 gameSavesCount = 0;
+    for (auto item : games)
+        gameSavesCount += item.value()[KEY_SAVES].size() != 0;
+    if (gameSavesCount != 0)
+    {
+        _gameSavesCapacity = gameSavesCount + GAME_SAVES_HEADROOM;
+        _gameSaves = std::make_unique<GameSaves[]>(_gameSavesCapacity);
+    }
     for (auto item : games)
     {
         auto* entry = GetOrCreateEntry(item.key().c_str(), item.value()[KEY_GAME_CODE] | "");
@@ -466,6 +598,24 @@ void JsonGameDataService::Load()
         // like the loader, anything past Korean is the console's language
         u32 gameLanguage = item.value()[KEY_GAME_LANGUAGE] | (u32)PLOAD_GAME_LANGUAGE_AUTO;
         entry->gameLanguage = gameLanguage <= PLOAD_GAME_LANGUAGE_KOREAN ? gameLanguage : PLOAD_GAME_LANGUAGE_AUTO;
+        for (auto saveJson : item.value()[KEY_SAVES].as<JsonObjectConst>())
+        {
+            // "0" to "9"; like saveSlot, one this build has no save for is dropped
+            const char* key = saveJson.key().c_str();
+            if (key[0] < '0' || key[0] > '0' + (int)kMaxSaveSlot || key[1] != 0)
+                continue;
+            // Too long is dropped, not cut: a cut could split a UTF-8 character, and
+            // the labels read all the bytes its first byte announces, even past the end.
+            const char* name = saveJson.value()[KEY_SAVE_NAME] | "";
+            const char* lastPlayed = saveJson.value()[KEY_LAST_PLAYED] | "";
+            GameSaveInfo save;
+            if (strlen(name) <= GameSaveInfo::kMaxNameBytes)
+                save.name = name;
+            if (strlen(lastPlayed) <= GameSaveInfo::kDateLength)
+                save.lastPlayed = lastPlayed;
+            if (!isEmpty(save))
+                GetOrCreateGameSaves(*entry).saves[key[0] - '0'] = save;
+        }
     }
     _sessionGameFileName = json[KEY_SESSION_GAME] | "";
     _sessionGameCode = json[KEY_SESSION_GAME_CODE] | "";

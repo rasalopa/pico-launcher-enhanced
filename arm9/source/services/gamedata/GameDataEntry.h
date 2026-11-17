@@ -4,6 +4,22 @@
 #include "fat/ff.h"
 #include "picoLoader7.h"
 
+/// @brief The name PicoDex gave one of a game's saves, and when the game was last
+///        started on it. See IGameDataService::GetSaveInfo.
+struct GameSaveInfo
+{
+    /// @brief The longest name in bytes: PicoDex takes 20 characters, and a kana
+    ///        is three bytes in UTF-8.
+    static constexpr u32 kMaxNameBytes = 60;
+    /// @brief "YYYY-MM-DD HH:MM"
+    static constexpr u32 kDateLength = 16;
+
+    String<char, kMaxNameBytes> name;
+    /// @brief "YYYY-MM-DD HH:MM", empty when the save was not started since the
+    ///        launcher began keeping a date for each save.
+    String<char, kDateLength> lastPlayed;
+};
+
 /// @brief Persisted data for ONE rom file, keyed by its file name (same
 ///        convention as the /_pico/icons|covers/user folders). Marks and play
 ///        statistics belong to the file, so two copies of a game are tracked
@@ -40,6 +56,11 @@ struct GameDataEntry
     /// @brief Full path of the file at its last launch, empty when never
     ///        launched. Used by the recents list to navigate back to it.
     String<char, 256> path;
+
+    static constexpr u16 kNoGameSaves = 0xFFFF;
+    /// @brief Where JsonGameDataService keeps this game's GameSaveInfo, apart from
+    ///        the entries; kNoGameSaves for none. Only the service reads it.
+    u16 gameSavesIndex = kNoGameSaves;
 };
 
 /// @brief Orders games by launches, ties by file name regardless of case, so

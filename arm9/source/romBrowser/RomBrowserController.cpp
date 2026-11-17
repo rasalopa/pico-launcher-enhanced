@@ -888,6 +888,12 @@ bool RomBrowserController::IsDsiOnlyCheckNeeded() const
 
 void RomBrowserController::BeginLaunch()
 {
+    bool launchTracking = _appSettingsService->GetAppSettings().launchTracking;
+    char lastPlayed[20];
+    if (launchTracking)
+        FormatNowDateTime(lastPlayed, sizeof(lastPlayed));
+    const char* gameCode = _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr;
+
     // the save picker opens on the save started last time. it is written with launch
     // tracking off too, since the player picked it, but only when it changed
     bool gameDataChanged = false;
@@ -895,23 +901,33 @@ void RomBrowserController::BeginLaunch()
     {
         const auto* entry = _gameDataService->GetEntry(_triggerFileInfo.GetFileName());
         pload_setGameLanguage(entry ? (PicoLoaderGameLanguage)entry->gameLanguage : PLOAD_GAME_LANGUAGE_AUTO);
-        if ((entry ? entry->saveSlot : 0) != _launchSaveSlot)
+        u32 lastSaveSlot = entry ? entry->saveSlot : 0;
+        // Only a game with more than one save shows the picker, where the dates and names
+        // go. One that already has them keeps its main save's date current too, for when
+        // it has extra saves again.
+        u16 saveSlots = _triggerFileInfo.GetSaveSlots();
+        if (_launchSaveSlot != 0 || (saveSlots & ~1u) ||
+            _gameDataService->GetSaveInfo(_triggerFileInfo.GetFileName(), 0))
         {
-            gameDataChanged = _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
-                _launchSaveSlot, _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr);
+            // the picker and New save offer a free slot as the new save
+            bool newSave = _launchSaveSlot != 0 && !(saveSlots & (1 << _launchSaveSlot));
+            gameDataChanged = _gameDataService->RecordSaveLaunch(_triggerFileInfo.GetFileName(),
+                _launchSaveSlot, newSave, launchTracking ? lastPlayed : nullptr, gameCode);
+        }
+        if (lastSaveSlot != _launchSaveSlot)
+        {
+            gameDataChanged |= _gameDataService->SetSaveSlot(_triggerFileInfo.GetFileName(),
+                _launchSaveSlot, gameCode);
         }
     }
-    if (_appSettingsService->GetAppSettings().launchTracking)
+    if (launchTracking)
     {
-        char lastPlayed[20];
-        FormatNowDateTime(lastPlayed, sizeof(lastPlayed));
         // full path into a local buffer: _navigatePath belongs to the navigation
         // flow (same construction the favorite/completed toggles use)
         TCHAR fullPath[256];
         BuildCurrentFolderFilePath(_triggerFileInfo.GetFileName(), fullPath,
             sizeof(fullPath) / sizeof(fullPath[0]));
-        _gameDataService->RecordLaunch(_triggerFileInfo.GetFileName(),
-            _triggerGameCode[0] != 0 ? _triggerGameCode : nullptr, fullPath, lastPlayed);
+        _gameDataService->RecordLaunch(_triggerFileInfo.GetFileName(), gameCode, fullPath, lastPlayed);
         gameDataChanged = true;
     }
     pload_setCountPlayTime(_appSettingsService->GetAppSettings().launchTracking);

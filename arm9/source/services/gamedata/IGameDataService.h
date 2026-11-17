@@ -52,6 +52,19 @@ public:
     ///        store. Returns true when it wrote (the caller should then save).
     virtual bool SetSaveSlot(const char* fileName, u32 saveSlot, const char* gameCode = nullptr) = 0;
 
+    /// @brief The name and last start of one of the game's saves, or nullptr when
+    ///        none of its saves has either. Valid until the next mutation.
+    virtual const GameSaveInfo* GetSaveInfo(const char* fileName, u32 saveSlot) const = 0;
+
+    /// @brief Notes the save a game is starting on. Call it before SetSaveSlot and
+    ///        RecordLaunch: the first time a game's saves get dates, the save of the
+    ///        last launch takes the game's lastPlayed. A new save drops the name and
+    ///        date of the deleted save that had its slot. \p lastPlayedDateTime is
+    ///        nullptr when launches are not tracked, and then no date is written.
+    ///        Returns true when it wrote (the caller should then save).
+    virtual bool RecordSaveLaunch(const char* fileName, u32 saveSlot, bool newSave,
+        const char* lastPlayedDateTime, const char* gameCode = nullptr) = 0;
+
     /// @brief Stores the language picked for the given rom file, by file name like
     ///        the save slot. PLOAD_GAME_LANGUAGE_AUTO, the console's, creates no
     ///        entry. Returns true when it wrote (the caller should then save).
