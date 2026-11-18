@@ -131,6 +131,14 @@ void RomBrowserTopScreenView::Update()
             }
             _fileInfoView->SetIcon(std::move(_selectedFileIcon));
             _fileInfoView->SetFileNameAsync(_viewModel->GetBgTaskQueue(), item.GetFileName(), fileNameAsTitle);
+            if (fileNameAsTitle)
+            {
+                const char16_t* publisher = info ? info->GetPublisher() : nullptr;
+                if (publisher && publisher[0] != 0)
+                {
+                    _fileInfoView->SetPublisherAsync(_viewModel->GetBgTaskQueue(), publisher);
+                }
+            }
 
             _lastSelectedItem = selectedItem;
 
