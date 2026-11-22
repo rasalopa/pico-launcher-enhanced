@@ -12,6 +12,10 @@
   earlier, or the official Pico Loader v1.7.1 and earlier, Language is faded. Some games keep the
   console's language whatever it says. Going back to v1.11.0 or earlier deletes `gameLanguage`
   from `gamedata.json` the first time it saves. Cobalt246 asked for it (#45).
+- The save picker shows the day and month each save was last played, and a save named in PicoDex
+  shows that name in place of Main save or Save N. Both are `saves` in `gamedata.json`, and the
+  dates stay as they were while launch tracking is off. Going back to v1.11.0 or earlier deletes
+  `saves` from `gamedata.json` the first time it saves.
 
 #### Changed
 - Play time is measured now, with Pico Loader Enhanced: the loader counts the frames a DS game

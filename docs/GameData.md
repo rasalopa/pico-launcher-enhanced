@@ -1,7 +1,7 @@
 # Game Data File
-Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time, save slots, languages; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
+Pico Launcher Enhanced stores per-game data (favorites, launch counts, play time, save slots and their names, languages; see [Enhanced.md](Enhanced.md)) in `/_pico/gamedata.json`. This document specifies the format for external tool authors.
 
-Regular users never need to edit this file. Deleting it simply resets all favorites and statistics.
+Regular users never need to edit this file. Deleting it simply resets all favorites, statistics and save names.
 
 ## Example
 ```json
@@ -16,7 +16,16 @@ Regular users never need to edit this file. Deleting it simply resets all favori
       "lastPlayed": "2026-07-16 21:03",
       "path": "/Games/nds/Some Game.nds",
       "saveSlot": 2,
-      "gameLanguage": 1
+      "gameLanguage": 1,
+      "saves": {
+        "0": {
+          "lastPlayed": "2026-07-02 18:15"
+        },
+        "2": {
+          "name": "Nuzlocke",
+          "lastPlayed": "2026-07-16 21:03"
+        }
+      }
     },
     "tetris.gb": {
       "launchCount": 2,
@@ -45,8 +54,11 @@ Each key in `games` is a file name (not a path). All keys inside an entry are op
 | `path` | string | non-empty | Full path of the file at its last launch. Used by the recently played panel to navigate back to the game. |
 | `saveSlot` | number | 1 to 9 | The save the game was started on last time, `<game name>.sav<N>`; the save picker opens on it (see [Save slots](Enhanced.md#save-slots)). Absent means slot 0, the regular save; a value above 9 is read as 0. |
 | `gameLanguage` | number | 0 to 7 | The language the game starts in: the DS firmware's language number, as in Pico Loader's `gameLanguage`, so 0 Japanese, 1 English, 2 French, 3 German, 4 Italian, 5 Spanish, 6 Chinese, 7 Korean. Absent means the console's language; any other value is read as absent. |
+| `saves` | object | a save has a name or a date | One member for each save with either, keyed `"0"` (the regular save) to `"9"` (`<game name>.sav9`); other keys are dropped. `name` is the name PicoDex gave the save, which the save picker shows in place of Main save or Save N. `lastPlayed` is when the game was last started on that save, in the format of the entry's `lastPlayed`; the picker shows its day and month. |
 
-An entry whose `favorite` and `completed` are both false, whose `launchCount`, `playSeconds` and `playMinutes` are all 0 and that has no `saveSlot` and no `gameLanguage` is pruned on the next write. Deleting a game through the launcher also removes its entry.
+Dates are written only for games with extra saves or with `saves` already, and not while `launchTracking` is `false`; dates written before stay. While none of a game's saves has a date, as in files from v1.11.0 and earlier, the first launch that writes one also gives the save named by `saveSlot` the entry's `lastPlayed`. If the game was started with `launchTracking` off in between, that date can belong to another save. Starting a game on + New save or New save drops what was stored for that slot, which belonged to a deleted save, also with `launchTracking` off.
+
+An entry whose `favorite` and `completed` are both false, whose `launchCount`, `playSeconds` and `playMinutes` are all 0 and that has no `saveSlot`, no `gameLanguage` and no `saves` is pruned on the next write. Deleting a game through the launcher also removes its entry.
 
 ## Session keys (root level)
 While a play session is open, the root object holds:
@@ -59,7 +71,7 @@ While a play session is open, the root object holds:
 
 A session opens when a game is launched and closes at the next launcher boot, which removes the session keys. With Pico Loader Enhanced, a DS game that is left with the in-game exit hands the launcher the frames it ran, counted by the game itself, so time the console spends asleep is not in them. On boot the launcher adds them to the game's `playSeconds`. A session that ends by switching the console off, a game without the in-game exit, or the official Pico Loader adds nothing.
 
-With `launchTracking` set to `false` in `settings.json`, a launch writes nothing here, and a session still open from before the switch is removed on the next boot without being credited. A save slot is still written when it changes, since the player picked it.
+With `launchTracking` set to `false` in `settings.json`, a launch writes nothing here, and a session still open from before the switch is removed on the next boot without being credited. A save slot is still written when it changes, since the player picked it, and so is what a new save clears in `saves`.
 
 ## Identity
 **An entry belongs to one ROM file, and the file name is its identity.** Favorites, completed marks
@@ -96,6 +108,8 @@ Other values longer than these are truncated (lengths in bytes, so accented char
 - `lastPlayed` / `sessionStart`: 20
 - `path`: 256
 
+A save's `name` longer than 60 bytes, or its `lastPlayed` longer than 16, is skipped instead, and is gone at the next save. PicoDex takes up to 20 characters for a name.
+
 Years in `lastPlayed` are written as `20YY`.
 
 ## Rules for external tools
@@ -112,4 +126,4 @@ Years in `lastPlayed` are written as `20YY`.
   everything.)
 - Duplicate `gameCode` values are fine: entries are never merged by code. Entry keys (file names)
   must be unique, which JSON already guarantees.
-- The launcher parses the file with a memory budget of 96 KB, which holds about 550 entries with every key set, whatever the length of the names. A file with more than fit fails to load.
+- The launcher parses the file with a memory budget of 96 KB, which holds about 550 entries with every key set, whatever the length of the names. A file with more than fit fails to load. That count leaves out `saves`: a game with all ten saves named and dated takes the room of about three entries.
