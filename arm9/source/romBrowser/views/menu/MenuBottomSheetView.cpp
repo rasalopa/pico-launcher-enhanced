@@ -53,7 +53,7 @@
 #define STATE_DY            7
 
 // In the save picker's entries, which have no icon: "16/11" takes 19 of the 24 px,
-// leaving the name 72, about 14 characters.
+// leaving the name 76, about 14 characters.
 #define SAVE_PICKER_NAME_DX 8
 #define DATE_WIDTH          24
 
